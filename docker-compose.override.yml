@@ -1,0 +1,36 @@
+services:
+  backend:
+    volumes:
+      - ./backend:/code/
+    networks:
+      - postgres-db-network
+
+  frontend:
+    volumes:
+      - ./frontend:/code/
+  
+  postgres:
+    networks:
+      - postgres-db-network
+  
+  pgadmin:
+    image: dpage/pgadmin4:8.13.0
+    environment:
+        PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
+        PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+        - 1654:80
+    volumes:
+        - pgadmin-data:/var/lib/pgadmin
+    networks:
+        - postgres-db-network
+    depends_on:
+      - postgres
+
+networks:
+    postgres-db-network:
+        driver: bridge
+
+volumes:
+  pgadmin-data:
+  
