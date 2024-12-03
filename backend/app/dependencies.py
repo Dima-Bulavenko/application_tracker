@@ -3,11 +3,11 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from .models import engine
+from .db import Session as SessionMaker
 
 
 def get_session():
-    with Session(engine) as session:
+    with SessionMaker() as session:
         yield session
 
 
