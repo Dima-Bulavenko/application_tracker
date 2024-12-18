@@ -1,0 +1,14 @@
+services:
+  backend:
+    image: app_tracker_back_prod:python-3.12-alpine
+    container_name: application_tacker_backend_prod
+    build:
+      target: production
+
+  frontend:
+    image: app_tracker_front_prod:nginx-1.27.3-alpine
+    container_name: application_tacker_frontend_prod
+    build:
+      target: production
+    environment:
+      - NODE_ENV=production
