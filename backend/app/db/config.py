@@ -1,24 +1,23 @@
 from __future__ import annotations
 
 from decouple import config
-from models import Base
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import URL, Engine, create_engine
 from sqlalchemy.orm import sessionmaker
 
-pg_user = config("POSTGRES_USER")
-pg_password = config("POSTGRES_PASSWORD")
-pg_db_name = config("POSTGRES_DB")
-pg_host = config("POSTGRES_HOST")
-pg_port = config("POSTGRES_PORT")
+from .models import Base
 
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_db_name}"
+url_object = URL.create(
+    "postgresql",
+    config("POSTGRES_USER"),
+    config("POSTGRES_PASSWORD"),
+    config("POSTGRES_HOST"),
+    config("POSTGRES_PORT"),
+    config("POSTGRES_DB"),
 )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=True)
+engine = create_engine(url_object, echo=config("PRINT_SQL_QUERIES", default=False, cast=bool))
 Session = sessionmaker(engine)
 
 
 def create_db_tables(engine: Engine = engine):
     Base.metadata.create_all(engine)
-

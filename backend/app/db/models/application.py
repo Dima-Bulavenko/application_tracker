@@ -6,7 +6,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from . import Base, pk_tp, time_create_tp, time_update_tp
+from .config import Base, pk_tp, time_create_tp, time_update_tp
 
 
 class AppStatus(enum.Enum):
@@ -33,10 +33,15 @@ class WorkLocation(enum.Enum):
 class Application(Base):
     __tablename__ = "application"
     id: Mapped[pk_tp]
-    role: Mapped[str] = mapped_column(String(40), index=True)
+    role: Mapped[str] = mapped_column(
+        String(40),
+        index=True,
+    )
     status: Mapped["AppStatus"] = mapped_column(server_default=AppStatus.APPLIED.value)
     company: Mapped["Company"] = relationship(back_populates="applications")
-    company_id: Mapped[int] = mapped_column(ForeignKey("company.id"))
+    company_id: Mapped[int] = mapped_column(
+        ForeignKey("company.id", ondelete="CASCADE")
+    )
     time_create: Mapped[time_create_tp]
     time_update: Mapped[time_update_tp]
     interview_date: Mapped[datetime | None]
@@ -55,4 +60,3 @@ class Company(Base):
     id: Mapped[pk_tp]
     name: Mapped[str] = mapped_column(String(40), unique=True)
     applications: Mapped[list["Application"]] = relationship(back_populates="company")
-    location: Mapped[str]
