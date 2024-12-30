@@ -1,8 +1,8 @@
-# Get Started 
-    
+# Get Started
+
     ```bash
     git clone https://github.com/Dima-Bulavenko/application_tracker.git
-    
+
     cd application_tracker/frontend
 
     npm install  # Install python dependencies
@@ -17,7 +17,7 @@
 
     bash ./scripts/generate-client.sh  # Generate openapi JSON schema and client
 
-    docker compose up -d --build  # Runs docker for development 
+    docker compose up -d --build  # Runs docker for development
 
     # Or if you don't want to use docker. Run this commands.
 

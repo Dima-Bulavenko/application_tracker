@@ -3,7 +3,7 @@ FROM python:3.12-alpine AS build
 WORKDIR /code
 
 # Poetry will not create a new virtual environment (to reduce container )
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true \ 
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
     POETRY_VIRTUALENVS_OPTIONS_NO_PIP=true \
     # Ensure pipx is available in the PATH
     PATH="/root/.local/bin:$PATH"
@@ -50,4 +50,3 @@ COPY --from=build /code /code
 
 # Run the FastAPI application
 CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
-

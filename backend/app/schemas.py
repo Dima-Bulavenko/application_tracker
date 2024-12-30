@@ -1,13 +1,12 @@
+# mypy: disable-error-code=assignment
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TypeVar
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
 from .db.models import AppStatus, WorkLocation, WorkType
-
-T = TypeVar("T")
 
 
 def remove_tdo_suffix(class_obj: type):
@@ -25,9 +24,9 @@ class Model(BaseModel):
 
     @field_validator("*", mode="before")
     @classmethod
-    def empty_str_to_none(cls, v: T) -> T | None:
+    def empty_str_to_none[T](cls, v: T) -> T | None:
         if isinstance(v, str):
-            return v.strip() or None
+            return cast(T, v.strip()) or None
         return v
 
 

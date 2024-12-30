@@ -57,7 +57,8 @@ def get_or_create(
     try:
         return session.query(model).filter_by(**kwargs).one()
     except NoResultFound:
-        kwargs.update(default)
+        if default:
+            kwargs.update(default)
         instance = model(**kwargs)
         session.add(instance)
     return instance

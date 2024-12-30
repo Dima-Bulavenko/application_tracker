@@ -15,7 +15,9 @@ url_object = URL.create(
     config("POSTGRES_DB"),
 )
 
-engine = create_engine(url_object, echo=config("PRINT_SQL_QUERIES", default=False, cast=bool))
+engine = create_engine(
+    url_object, echo=config("PRINT_SQL_QUERIES", default=False, cast=bool)
+)
 Session = sessionmaker(engine)
 
 
