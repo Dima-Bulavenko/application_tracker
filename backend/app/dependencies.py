@@ -3,12 +3,13 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from .models import engine
+from .db import Session as SessionMaker
 
 
-def get_session():
-    with Session(engine) as session:
+def get_session() -> Session:
+    with SessionMaker() as session:
         yield session
+        session.commit()
 
 
 SessionDep = Annotated[Session, Depends(get_session)]

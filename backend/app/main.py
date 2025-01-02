@@ -1,60 +1,55 @@
 from __future__ import annotations
 
-from typing import Annotated
+from contextlib import asynccontextmanager
 
-from decouple import config
-from fastapi import Depends, FastAPI
-from sqlmodel import Field, Session, SQLModel, create_engine, select
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
-
-pg_user = config("POSTGRES_USER")
-pg_password = config("POSTGRES_PASSWORD")
-pg_db_name = config("POSTGRES_DB")
-pg_host = config("POSTGRES_HOST")
-pg_port = config("POSTGRES_PORT")
-
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_db_name}"
+from app.schemas import (
+    ApplicationCreateDTO,
+    ApplicationReadRelDTO,
+    CompanyReadDTO,
 )
-print(SQLALCHEMY_DATABASE_URL)
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+from .db import create_db_tables
+from .dependencies import SessionDep
+from .orm import ApplicationORM, CompanyORM
 
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-
-def get_session():
-    with Session(engine) as session:
-        yield session
+origins = [
+    "http://localhost:3000",
+]
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_tables()
+    yield
 
 
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-class Hero(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
-    age: int | None = Field(default=None, index=True)
-    secret_name: str
+@app.post("/applications/", response_model=ApplicationReadRelDTO)
+def create_application(new_app: ApplicationCreateDTO, session: SessionDep):
+    app = ApplicationORM.create_app(new_app, session)
+    session.commit()
+    print(app)
+    return app
 
 
-sqlite_file_name = "database.db"
-sqlite_url = f"postgres///postgres:5432"
+@app.get("/applications/", response_model=list[ApplicationReadRelDTO])
+def get_application(session: SessionDep):
+    return ApplicationORM.get_apps(session)
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+@app.get("/companies/", response_model=list[CompanyReadDTO])
+def get_companies(session: SessionDep):
+    return CompanyORM.get_companies(session)
