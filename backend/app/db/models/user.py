@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy import String, sql
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .config import Base, pk_tp, time_create_tp, time_update_tp
+
+if TYPE_CHECKING:
+    from .application import Application
 
 
 class User(Base):
@@ -16,3 +21,4 @@ class User(Base):
     time_create: Mapped[time_create_tp]
     time_update: Mapped[time_update_tp]
     is_active: Mapped[bool] = mapped_column(default=True, server_default=sql.true())
+    applications: Mapped[list["Application"]] = relationship(back_populates="user")

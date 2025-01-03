@@ -7,6 +7,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .config import Base, pk_tp, time_create_tp, time_update_tp
+from .user import User
 
 
 class AppStatus(enum.Enum):
@@ -42,6 +43,8 @@ class Application(Base):
     company_id: Mapped[int] = mapped_column(
         ForeignKey("company.id", ondelete="CASCADE")
     )
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    user: Mapped["User"] = relationship(back_populates="applications")
     time_create: Mapped[time_create_tp]
     time_update: Mapped[time_update_tp]
     interview_date: Mapped[datetime | None]
