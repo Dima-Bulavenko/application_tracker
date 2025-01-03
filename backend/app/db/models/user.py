@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import String
+from sqlalchemy import String, sql
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .config import Base, pk_tp, time_create_tp, time_update_tp
@@ -15,4 +15,4 @@ class User(Base):
     second_name: Mapped[str | None] = mapped_column(String(40))
     time_create: Mapped[time_create_tp]
     time_update: Mapped[time_update_tp]
-    is_active: Mapped[bool] = mapped_column(default=True)
+    is_active: Mapped[bool] = mapped_column(default=True, server_default=sql.true())
