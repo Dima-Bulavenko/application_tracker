@@ -4,7 +4,15 @@ from __future__ import annotations
 from datetime import datetime
 from typing import cast
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    HttpUrl,
+    SecretStr,
+    field_validator,
+)
 
 from .db.models import AppStatus, WorkLocation, WorkType
 
@@ -82,4 +90,37 @@ class CompanyUpdateDTO(CompanyBaseDTO):
 
 
 class CompanyRelDTO(CompanyReadDTO):
+    applications: list["ApplicationReadDTO"]
+
+
+class UserRead(Model):
+    id: int
+    email: EmailStr
+    first_name: str | None = Field(max_length=40, default=None)
+    second_name: str | None = Field(max_length=40, default=None)
+    time_create: datetime
+    time_update: datetime
+    is_active: bool = True
+
+
+class UserCreate(Model):
+    email: EmailStr
+    password: SecretStr
+
+
+class UserUpdate(Model):
+    first_name: str | None = Field(max_length=40, default=None)
+    second_name: str | None = Field(max_length=40, default=None)
+    is_active: bool = True
+
+
+class UserUpdatePassword(Model):
+    password: SecretStr
+
+
+class UserUpdateEmail(Model):
+    email: EmailStr
+
+
+class UserReadRel(UserRead):
     applications: list["ApplicationReadDTO"]

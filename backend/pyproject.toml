@@ -11,6 +11,7 @@ fastapi = {extras = ["standard"], version = "^0.115.5"}
 python-decouple = "^3.8"
 psycopg2-binary = "^2.9.10"
 sqlalchemy = "^2.0.36"
+email-validator = "^2.2.0"
 
 
 [tool.poetry.group.dev.dependencies]
