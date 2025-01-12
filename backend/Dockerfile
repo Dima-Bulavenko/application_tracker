@@ -12,7 +12,7 @@ ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
 RUN python3 -m pip install --user pipx && \
     python3 -m pipx ensurepath && \
     # Install Poetry using pipx
-    pipx install poetry
+    pipx install poetry==1.8.4
 
 
 # Copy Poetry files
