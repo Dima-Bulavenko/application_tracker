@@ -6,15 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 
-from .db.models import Application, Base, Company
-from .schemas import ApplicationCreateDTO
+from .db.models import Application, Base, Company, User
+from .schemas import ApplicationCreate
 
 TAlchemyModel = TypeVar("TAlchemyModel", bound=Base)
 
 
 class ApplicationORM:
     @staticmethod
-    def create_app(new_app: ApplicationCreateDTO, session: Session) -> Application:
+    def create_app(new_app: ApplicationCreate, session: Session) -> Application:
         new_app_dict = new_app.model_dump(mode="json")
         company_dict = new_app_dict.pop("company")
         company = get_or_create(
@@ -36,6 +36,18 @@ class CompanyORM:
     def get_companies(session: Session):
         companies = session.scalars(select(Company))
         return companies
+
+
+class UserORM:
+    @staticmethod
+    def get_user(session: Session, **kwargs):
+        return session.query(User).filter_by(**kwargs).one()
+
+    @staticmethod
+    def create_user(session: Session, email: str, password: str, **kwargs):
+        user = User(email=email, password=password, **kwargs)
+        session.add(user)
+        return user
 
 
 def get_or_create(
