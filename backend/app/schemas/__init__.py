@@ -1,11 +1,9 @@
 from .application import (
     ApplicationBase,
+    ApplicationCreate,
     ApplicationRead,
     ApplicationReadRel,
     ApplicationUpdate,
-)
-from .application import (
-    ApplicationCreate as ApplicationCreate,
 )
 from .company import CompanyBase, CompanyCreate, CompanyRead, CompanyRel, CompanyUpdate
 from .user import (
