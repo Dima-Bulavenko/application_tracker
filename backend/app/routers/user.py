@@ -12,6 +12,5 @@ router = APIRouter(prefix="/users", tags=[Tags.USER])
 @router.post("/", response_model=UserRead)
 async def create_user(credentials: UserCreate, session: SessionDep):
     hashed_password = get_password_hash(credentials.password.get_secret_value())
-    user = UserORM.create_user(session, credentials.email, hashed_password)
-    session.commit()
+    user = await UserORM(session).create(credentials.email, hashed_password)
     return user

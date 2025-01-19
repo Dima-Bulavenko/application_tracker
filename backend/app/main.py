@@ -23,7 +23,7 @@ origins = [
 
 @asynccontextmanager
 async def lifespan(_):
-    create_db_tables()
+    await create_db_tables()
     yield
 
 

@@ -1,9 +1,10 @@
+from collections.abc import AsyncGenerator
 from typing import Annotated, cast
 
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ALGORITHM, SECRET_KEY
 from app.schemas import TokenData, UserInDB
@@ -14,10 +15,10 @@ from .db import Session as SessionMaker
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
-def get_session() -> Session:
-    with SessionMaker() as session:
+async def get_session() -> AsyncGenerator[AsyncSession]:
+    async with SessionMaker() as session:
         yield session
-        session.commit()
+        await session.commit()
 
 
 async def get_current_user(token: "TokenDep", session: "SessionDep"):
@@ -46,7 +47,7 @@ def get_current_active_user(user: "CurrentUserDep"):
     return user
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 CurrentUserDep = Annotated[UserInDB, Depends(get_current_user)]
 ActiveCurrentUserDep = Annotated[UserInDB, Depends(get_current_active_user)]

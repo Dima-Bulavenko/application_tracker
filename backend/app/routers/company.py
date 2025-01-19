@@ -9,5 +9,5 @@ router = APIRouter(prefix="/companies", tags=[Tags.COMPANY])
 
 
 @router.get("/", response_model=list[CompanyRead])
-def get_companies(session: SessionDep):
-    return CompanyORM.get_companies(session)
+async def get_companies(session: SessionDep):
+    return await CompanyORM.get_companies(session)

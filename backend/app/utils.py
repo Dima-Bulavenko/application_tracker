@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 import jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
 
 from app import ALGORITHM, SECRET_KEY
 from app.orm import UserORM
 from app.schemas import UserInDB
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -21,7 +24,7 @@ def get_password_hash(password: str):
     return pwd_context.hash(password)
 
 
-async def authenticate_user(session: Session, username: str, password: str):
+async def authenticate_user(session: AsyncSession, username: str, password: str):
     user = await get_user(session, email=username)
     if not user:
         return False
@@ -41,6 +44,6 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 
-async def get_user(session: Session, email: str):
-    user_from_db = UserORM.get_user(session=session, email=email)
+async def get_user(session: AsyncSession, email: str):
+    user_from_db = await UserORM(session).get(email=email)
     return UserInDB.model_validate(user_from_db)
