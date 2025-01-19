@@ -8,7 +8,6 @@ from passlib.context import CryptContext
 
 from app import ALGORITHM, SECRET_KEY
 from app.orm import UserORM
-from app.schemas import UserInDB
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,7 +27,7 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     user = await get_user(session, email=username)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.password):
         return False
     return user
 
@@ -45,5 +44,5 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_user(session: AsyncSession, email: str):
-    user_from_db = await UserORM(session).get(email=email)
-    return UserInDB.model_validate(user_from_db)
+    user = await UserORM(session).get(email=email)
+    return user

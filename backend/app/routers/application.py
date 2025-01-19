@@ -10,9 +10,9 @@ router = APIRouter(prefix="/applications", tags=[Tags.APPLICATION])
 
 @router.post("/", response_model=ApplicationReadRel)
 async def create_application(
-    new_app: ApplicationCreate, session: SessionDep, user: ActiveCurrentUserDep
+    app_data: ApplicationCreate, session: SessionDep, user: ActiveCurrentUserDep
 ):
-    app = await ApplicationORM.create_app(new_app, session, user)
+    app = await ApplicationORM(session).create(app_data, user)
     session.commit()
     return app
 

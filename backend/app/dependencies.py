@@ -7,7 +7,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ALGORITHM, SECRET_KEY
-from app.schemas import TokenData, UserInDB
+from app.db.models.user import User
+from app.schemas import TokenData
 from app.utils import get_user
 
 from .db import Session as SessionMaker
@@ -49,6 +50,6 @@ def get_current_active_user(user: "CurrentUserDep"):
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
-CurrentUserDep = Annotated[UserInDB, Depends(get_current_user)]
-ActiveCurrentUserDep = Annotated[UserInDB, Depends(get_current_active_user)]
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
+ActiveCurrentUserDep = Annotated[User, Depends(get_current_active_user)]
 LoginFormDep = Annotated[OAuth2PasswordRequestForm, Depends()]

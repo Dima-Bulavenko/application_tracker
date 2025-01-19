@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from sqlalchemy import select
@@ -12,8 +11,6 @@ from .schemas import ApplicationCreate
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
-    from app.schemas import UserInDB
-
 TAlchemyModel = TypeVar("TAlchemyModel", bound=Base)
 
 
@@ -24,29 +21,26 @@ class BaseORM[TAlchemyModel]:
         self.session = session
 
 
-class ApplicationORM:
-    @staticmethod
-    async def create_app(
-        new_app: ApplicationCreate, session: AsyncSession, user: UserInDB
-    ) -> Application:
-        new_app_dict = new_app.model_dump(mode="json")
-        company_dict = new_app_dict.pop("company")
-        company = await get_or_create(
-            Company, session, create_with_values=company_dict, name=company_dict["name"]
-        )
-        # FIXME: Come up with caching user
-        users = await session.scalars(select(User).filter_by(email=user.email))
-        user_instance = users.one()
-        # FIXME: The asyncpg takes only datetime data type so I need to convert back to datetime
-        # there's must be a better way https://github.com/MagicStack/asyncpg/issues/692?utm_source=chatgpt.com
-        new_app_dict["interview_date"] = datetime.fromisoformat(
-            new_app_dict["interview_date"]
-        )
+class ApplicationORM(BaseORM):
+    model: Application
 
-        application = Application(**new_app_dict, company=company)
-        application.user = user_instance
-        session.add(application)
-        await session.commit()
+    async def create(self, app_data: ApplicationCreate, user: User) -> Application:
+        interview_date = app_data.interview_date
+        app_data_dict = app_data.model_dump(mode="json", exclude={"interview_date"})
+        company_dict = app_data_dict.pop("company")
+        company = await get_or_create(
+            Company,
+            self.session,
+            create_with_values=company_dict,
+            name=company_dict["name"],
+        )
+        application = Application(**app_data_dict, company=company)
+        application.user = user
+
+        # This needed because asyncpg don't accept data and time in string format
+        application.interview_date = interview_date
+        self.session.add(application)
+        await self.session.commit()
         return application
 
     @staticmethod
@@ -62,7 +56,7 @@ class CompanyORM:
         return companies
 
 
-class UserORM(BaseORM):
+class UserORM(BaseORM):  # TEST: UserORM
     model: type[User] = User
 
     async def get(self, **kwargs):
