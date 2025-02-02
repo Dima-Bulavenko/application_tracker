@@ -1,0 +1,38 @@
+{
+	"name": "backend_dev_container",
+
+	"dockerComposeFile": [
+		"../../docker-compose.yml",
+		"../../docker-compose.override.yml",
+		"../docker-compose.override.yml"
+	],
+
+	"service": "backend",
+
+	"workspaceFolder": "/code/backend",
+	"customizations": {
+		"vscode": {
+			"settings": {"terminal.integrated.defaultProfile.linux": "zsh"},
+			"extensions": [
+				"streetsidesoftware.code-spell-checker",
+				"codezombiech.gitignore",
+				"docsmsft.docs-yaml",
+				"bierner.markdown-emoji",
+				"foxundermoon.shell-format",
+				"ms-python.vscode-pylance",
+				"ms-python.python",
+				"ms-python.debugpy",
+				"charliermarsh.ruff",
+				"SimonSiefke.svg-preview",
+				"Gruntfuggly.todo-tree",
+				"redhat.vscode-yaml",
+				"yzhang.markdown-all-in-one",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	},
+
+	"shutdownAction": "none",
+	"postCreateCommand": "sh ../.devcontainer/post_install.sh"
+
+}

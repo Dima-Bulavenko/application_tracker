@@ -5,9 +5,10 @@ services:
     build:
       target: development
     volumes:
-      - ./backend/app:/code/app
+      - ./backend/:/code/
     ports:
       - 8000:8000
+      - 5620:5620
 
   frontend:
     image: app_tracker_front_dev:node-23-alpine3.19

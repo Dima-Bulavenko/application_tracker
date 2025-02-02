@@ -3,6 +3,7 @@ import enum
 from typing import Annotated
 
 from sqlalchemy import DateTime, Enum, func
+from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 time_create_tp = Annotated[
@@ -22,7 +23,7 @@ time_update_tp = Annotated[
 pk_tp = Annotated[int, mapped_column(primary_key=True)]
 
 
-class Base(DeclarativeBase):
+class Base(AsyncAttrs, DeclarativeBase):
     type_annotation_map = {
         enum.Enum: Enum(values_callable=lambda x: [e.value for e in x])
     }
