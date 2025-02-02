@@ -1,10 +1,26 @@
-FROM python:3.12-alpine AS build
+FROM python:3.12-alpine AS base
 
 WORKDIR /code
 
-# Poetry will not create a new virtual environment (to reduce container )
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true \
-    POETRY_VIRTUALENVS_OPTIONS_NO_PIP=true \
+ENV VIRTUAL_ENV="/venvs/.venv"
+
+RUN python3 -m venv $VIRTUAL_ENV
+
+
+
+FROM base AS build
+
+ENV POETRY_NO_INTERACTION=1 \
+    # restrict poetry create .venv in project directory
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    # make sure that poetry will create virtual environment
+    POETRY_VIRTUALENVS_CREATE=0 \
+    # don't install pip in new .venv
+    POETRY_VIRTUALENVS_OPTIONS_NO_PIP=1 \
+    # change directory where poetry stores cache
+    POETRY_CACHE_DIR=/tmp/poetry_cache \
+    # change path where poetry store its .venv
+    POETRY_VIRTUALENVS_PATH=$VIRTUAL_ENV \
     # Ensure pipx is available in the PATH
     PATH="/root/.local/bin:$PATH"
 
@@ -14,39 +30,46 @@ RUN python3 -m pip install --user pipx && \
     # Install Poetry using pipx
     pipx install poetry==1.8.4
 
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Copy Poetry files
 COPY pyproject.toml poetry.lock ./
 
 # Install project dependencies
-RUN poetry install --no-interaction --no-ansi --only main
+RUN poetry install --no-interaction --no-ansi --no-root --only main
 
-COPY ./app ./app
+COPY . .
+
+
+# Command to run devcontainer
+FROM build AS dev_container
+
+RUN poetry install --no-interaction --no-ansi --no-root
+
+CMD ["sleep", "infinity"]
+
 
 
 # Command for development
 FROM build AS development
 
-ENV PATH="/code/.venv/bin:${PATH}"
+RUN poetry install --no-interaction --no-ansi --no-root
 
-CMD ["fastapi", "dev", "app/main.py", "--host", "0.0.0.0"]
+CMD ["python3", "-m", "debugpy", "--listen", "0.0.0.0:5620", "-m", "fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
+
 
 
 # Commands for production
-FROM python:3.12-alpine AS production
+FROM base AS production
 
-WORKDIR /code
+COPY --from=build $VIRTUAL_ENV $VIRTUAL_ENV
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1 \
     # Turns off buffering for easier container logging
     PYTHONUNBUFFERED=1 \
-    # Disable pip cache
-    PIP_NO_CACHE_DIR=1 \
-    PATH="/code/.venv/bin:${PATH}"
+    PATH="$VIRTUAL_ENV/bin:$PATH"
 
-
-COPY --from=build /code /code
-
+COPY ./app ./app
 # Run the FastAPI application
 CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
