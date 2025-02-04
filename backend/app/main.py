@@ -3,15 +3,20 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from datetime import timedelta
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import ACCESS_TOKEN_EXPIRE_MINUTES, TOKEN_TYPE
+from app import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    DEBUG,
+    REFRESH_TOKEN_EXPIRE_MINUTES,
+    TOKEN_TYPE,
+)
 from app.routers import application, company, user
 from app.schemas import (
     Token,
 )
-from app.utils import authenticate_user, create_access_token
+from app.utils import authenticate_user, create_token
 
 from .db import create_db_tables
 from .dependencies import LoginFormDep, SessionDep
@@ -43,7 +48,7 @@ app.include_router(company.router)
 
 
 @app.post("/login")
-async def login(form_data: LoginFormDep, session: SessionDep):
+async def login(form_data: LoginFormDep, session: SessionDep, response: Response):
     user = await authenticate_user(session, form_data.username, form_data.password)
 
     if not user:
@@ -53,7 +58,18 @@ async def login(form_data: LoginFormDep, session: SessionDep):
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
+    refresh_token_expires = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+    access_token = create_token(
         data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    refresh_token = create_token(
+        data={"sub": user.email}, expires_delta=refresh_token_expires
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=not DEBUG,
+        max_age=refresh_token_expires.total_seconds(),
     )
     return Token(access_token=access_token, token_type=TOKEN_TYPE)
