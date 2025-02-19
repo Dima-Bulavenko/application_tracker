@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import AsyncGenerator
 from typing import Annotated, cast
 
@@ -9,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import ALGORITHM, SECRET_KEY
 from app.db.models.user import User
 from app.schemas import TokenData
-from app.utils import get_user
+from app.utils import get_user, verify_password
 
 from .db import Session as SessionMaker
 
@@ -48,6 +50,21 @@ def get_current_active_user(user: "CurrentUserDep"):
     return user
 
 
+async def authenticate_user(session: SessionDep, form_data: LoginFormDep):
+    invalid_credentials = HTTPException(
+        status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    user = await get_user(session, email=form_data.username)
+    if not user:
+        raise invalid_credentials
+    if not verify_password(form_data.password, user.password):
+        raise invalid_credentials
+    return user
+
+
+AuthenticatedUserDep = Annotated[User, Depends(authenticate_user)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]

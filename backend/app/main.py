@@ -1,25 +1,28 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from datetime import timedelta
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Response, status
+import jwt
+from fastapi import Cookie, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
     DEBUG,
     REFRESH_TOKEN_EXPIRE_MINUTES,
+    SECRET_KEY,
     TOKEN_TYPE,
 )
 from app.routers import application, company, user
 from app.schemas import (
     Token,
 )
-from app.utils import authenticate_user, create_token
+from app.utils import create_token
 
 from .db import create_db_tables
-from .dependencies import LoginFormDep, SessionDep
+from .dependencies import AuthenticatedUserDep
 
 origins = [
     "http://localhost:3000",
@@ -48,28 +51,57 @@ app.include_router(company.router)
 
 
 @app.post("/login")
-async def login(form_data: LoginFormDep, session: SessionDep, response: Response):
-    user = await authenticate_user(session, form_data.username, form_data.password)
+async def login(user: AuthenticatedUserDep, response: Response):
+    payload = {"sub": user.email, "type": "access"}
+    access_token = create_token(payload, ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    if not user:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    refresh_token_expires = timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-    access_token = create_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    refresh_token = create_token(
-        data={"sub": user.email}, expires_delta=refresh_token_expires
-    )
+    payload.update(type="refresh")
+    refresh_token = create_token(payload, REFRESH_TOKEN_EXPIRE_MINUTES)
+
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         secure=not DEBUG,
-        max_age=refresh_token_expires.total_seconds(),
+        max_age=int(REFRESH_TOKEN_EXPIRE_MINUTES * 60),
+        path="/refresh",
     )
     return Token(access_token=access_token, token_type=TOKEN_TYPE)
+
+
+@app.get("/refresh")
+async def refresh(
+    response: Response, refresh_token: Annotated[str | None, Cookie()] = None
+):
+    try:
+        payload: dict = jwt.decode(
+            refresh_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            options={"required": ["exp"]},
+        )
+    except jwt.ExpiredSignatureError as err:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Token expires, log in again",
+            {"WWW-Authenticate": "Bearer"},
+        ) from err
+    except jwt.InvalidTokenError as err:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Could not authorize user",
+            {"WWW-Authenticate": "Bearer"},
+        ) from err
+
+    new_access_token = create_token(payload, ACCESS_TOKEN_EXPIRE_MINUTES)
+    new_refresh_token = create_token(payload, REFRESH_TOKEN_EXPIRE_MINUTES)
+
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        secure=not DEBUG,
+        max_age=int(REFRESH_TOKEN_EXPIRE_MINUTES * 60),
+        path="/refresh",
+    )
+    return Token(access_token=new_access_token, token_type=TOKEN_TYPE)

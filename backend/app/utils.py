@@ -6,7 +6,10 @@ from typing import TYPE_CHECKING
 import jwt
 from passlib.context import CryptContext
 
-from app import ALGORITHM, SECRET_KEY
+from app import (
+    ALGORITHM,
+    SECRET_KEY,
+)
 from app.orm import UserORM
 
 if TYPE_CHECKING:
@@ -32,8 +35,10 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     return user
 
 
-def create_token(data: dict, expires_delta: timedelta):
-    to_encode = data.copy()
+def create_token(payload: dict, expires_delta: timedelta | int):
+    if isinstance(expires_delta, int):
+        expires_delta = timedelta(minutes=expires_delta)
+    to_encode = payload.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
