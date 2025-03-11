@@ -1,9 +1,11 @@
 #/bin/sh
 
+# THIS SCRIPT SET UP ZSH TERMINAL AND ITS THEME
+
 set -e
 
 # Install required packages
-apk add zsh nano zsh-vcs git less git-doc man-pages mandoc
+apt-get install -y zsh
 
 
 # Install Oh-My-ZSH
@@ -41,4 +43,4 @@ else
 fi
 
 touch ~/.spaceshiprc.zsh
-cat ../.devcontainer/.spaceshiprc.zsh >> ~/.spaceshiprc.zsh
+cat /tmp/.spaceshiprc.zsh >> ~/.spaceshiprc.zsh

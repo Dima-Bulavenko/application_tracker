@@ -1,0 +1,48 @@
+services:
+  development:
+    build:
+      context: ./
+      dockerfile: Dockerfile_for_dev_container
+    volumes:
+      - ./:/code
+      - /home/dima/.zsh_history:/root/.zsh_history
+    ports:
+      - 8000:8000
+      - 5173:5173
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    networks:
+      - default
+    command: ["sleep", "infinity"]
+
+  pgadmin:
+    image: dpage/pgadmin4:8.13.0
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+      - 1654:80
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - default
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17-alpine
+    env_file:
+      - .env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5434:${POSTGRES_PORT}
+    networks:
+      - default
+
+volumes:
+  postgres-data:
+    name: postgres_data_volume
+  pgadmin-data:

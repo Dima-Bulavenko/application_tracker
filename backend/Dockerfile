@@ -38,25 +38,6 @@ COPY pyproject.toml poetry.lock ./
 # Install project dependencies
 RUN poetry install --no-interaction --no-ansi --no-root --only main
 
-COPY . .
-
-
-# Command to run devcontainer
-FROM build AS dev_container
-
-RUN poetry install --no-interaction --no-ansi --no-root
-
-CMD ["sleep", "infinity"]
-
-
-
-# Command for development
-FROM build AS development
-
-RUN poetry install --no-interaction --no-ansi --no-root
-
-CMD ["python3", "-m", "debugpy", "--listen", "0.0.0.0:5620", "-m", "fastapi", "dev", "app/main.py", "--host", "0.0.0.0", "--port", "8000"]
-
 
 
 # Commands for production

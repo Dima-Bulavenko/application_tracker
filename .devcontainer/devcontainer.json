@@ -1,41 +1,34 @@
 {
-	"name": "frontend_dev_container",
+	"dockerComposeFile": "../docker-compose.devcontainer.yml",
 
-	"dockerComposeFile": [
-		"../../docker-compose.yml",
-		"../../docker-compose.override.yml",
-		"../docker-compose.override.yml"
-	],
-
-	"service": "frontend",
-
-	"workspaceFolder": "/code/frontend",
-
+	"service": "development",
+	"workspaceFolder": "/code",
 	"customizations": {
 		"vscode": {
 			"settings": {"terminal.integrated.defaultProfile.linux": "zsh"},
 			"extensions": [
 				"streetsidesoftware.code-spell-checker",
 				"codezombiech.gitignore",
-				"ecmel.vscode-html-css",
-				"solnurkarim.html-to-css-autocompletion",
 				"docsmsft.docs-yaml",
 				"bierner.markdown-emoji",
-				"esbenp.prettier-vscode",
 				"foxundermoon.shell-format",
+				"ms-python.vscode-pylance",
+				"ms-python.python",
+				"ms-python.debugpy",
+				"charliermarsh.ruff",
 				"SimonSiefke.svg-preview",
 				"Gruntfuggly.todo-tree",
 				"redhat.vscode-yaml",
 				"yzhang.markdown-all-in-one",
+				"ms-azuretools.vscode-docker",
+				"ecmel.vscode-html-css",
+				"solnurkarim.html-to-css-autocompletion",
+				"esbenp.prettier-vscode",
 				"bierner.color-info",
 				"dsznajder.es7-react-js-snippets",
 				"dbaeumer.vscode-eslint",
-				"ms-azuretools.vscode-docker"
+
 			]
 		}
-	},
-
-	"shutdownAction": "none",
-	"postCreateCommand": "sh ../.devcontainer/post_install.sh"
-
+	}
 }
