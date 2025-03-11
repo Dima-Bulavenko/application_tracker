@@ -7,7 +7,7 @@ export const defaultConfig: Plugin.Config<Config> = {
   _dependencies: ['@hey-api/typescript'],
   _handler: handler,
   _handlerLegacy: () => {},
-  myOption: false, // implements default value from types
+  myOption: true, // implements default value from types
   name: 'my-zod',
   output: 'zod',
 };

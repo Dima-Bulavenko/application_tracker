@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
+    ALLOWED_HOSTS,
     DEBUG,
     REFRESH_TOKEN_EXPIRE_MINUTES,
     SECRET_KEY,
@@ -24,10 +25,6 @@ from app.utils import create_token
 from .db import create_db_tables
 from .dependencies import AuthenticatedUserDep
 
-origins = [
-    "http://localhost:3000",
-]
-
 
 @asynccontextmanager
 async def lifespan(_):
@@ -39,7 +36,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ALLOWED_HOSTS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
