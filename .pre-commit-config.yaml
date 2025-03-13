@@ -36,3 +36,11 @@ repos:
           ]
         language: system
         types_or: [javascript, ts, tsx, jsx, json, yaml, html, css]
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: frontend/node_modules/.bin/eslint
+        language: system
+        args: ['--config', './frontend/eslint.config.js']
+        types_or: [javascript, ts, tsx, jsx]
