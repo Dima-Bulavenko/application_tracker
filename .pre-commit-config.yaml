@@ -15,10 +15,24 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff
-        args: ["--select", "I", "--fix"]
+        args: ['--select', 'I', '--fix']
       # Run the formatter.
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.0
     hooks:
       - id: mypy
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: frontend/node_modules/.bin/prettier
+        args:
+          [
+            '--write',
+            '--ignore-unknown',
+            '--config',
+            './frontend/prettier.config.js',
+          ]
+        language: system
+        types_or: [javascript, ts, tsx, jsx, json, yaml, html, css]
