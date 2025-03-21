@@ -1,3 +1,7 @@
 .MuiInputLabel-asterisk {
-    color: #cc0a0a
+  color: #cc0a0a;
+}
+
+#root {
+  height: 100dvh;
 }
