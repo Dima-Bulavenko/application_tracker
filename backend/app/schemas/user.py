@@ -1,6 +1,7 @@
 # mypy: disable-error-code=assignment
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 from pydantic import EmailStr, Field, SecretStr
@@ -21,7 +22,10 @@ class UserRead(Model):
 
 class UserCreate(Model):
     email: EmailStr
-    password: SecretStr
+    password: str = Field(
+        pattern=re.compile(r"^(?=.*[A-Z])(?=.*\d).{8,}$"),
+        description="Password must be 8 characters long, contain at least one uppercase letter and one number.",
+    )
 
 
 class UserUpdate(Model):

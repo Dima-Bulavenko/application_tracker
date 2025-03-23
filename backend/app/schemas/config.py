@@ -18,7 +18,9 @@ def remove_tdo_suffix(class_obj: type):
 
 class Model(BaseModel):
     model_config = ConfigDict(
-        model_title_generator=remove_tdo_suffix, from_attributes=True
+        model_title_generator=remove_tdo_suffix,
+        from_attributes=True,
+        regex_engine="python-re",
     )
 
     @field_validator("*", mode="before")

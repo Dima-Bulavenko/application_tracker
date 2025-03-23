@@ -1,4 +1,6 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Form
 
 from app import Tags
 from app.dependencies import SessionDep
@@ -10,7 +12,7 @@ router = APIRouter(prefix="/users", tags=[Tags.USER])
 
 
 @router.post("/", response_model=UserRead)
-async def create_user(credentials: UserCreate, session: SessionDep):
-    hashed_password = get_password_hash(credentials.password.get_secret_value())
+async def create_user(credentials: Annotated[UserCreate, Form()], session: SessionDep):
+    hashed_password = get_password_hash(credentials.password)
     user = await UserORM(session).create(credentials.email, hashed_password)
     return user
