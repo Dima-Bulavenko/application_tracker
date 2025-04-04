@@ -47,7 +47,7 @@ app.include_router(application.router)
 app.include_router(company.router)
 
 
-@app.post("/login")
+@app.post("/login", response_model=Token)
 async def login(user: AuthenticatedUserDep, response: Response):
     payload = {"sub": user.email, "type": "access"}
     access_token = create_token(payload, ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -66,7 +66,7 @@ async def login(user: AuthenticatedUserDep, response: Response):
     return Token(access_token=access_token, token_type=TOKEN_TYPE)
 
 
-@app.get("/refresh")
+@app.get("/refresh", response_model=Token)
 async def refresh(
     response: Response, refresh_token: Annotated[str | None, Cookie()] = None
 ):
