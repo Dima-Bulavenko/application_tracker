@@ -3,6 +3,10 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile_for_dev_container
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION}
+        - POETRY_VERSION=${POETRY_VERSION}
+        - NODE_VERSION=${NODE_VERSION}
     volumes:
       - ./:/code
       - /home/dima/.zsh_history:/root/.zsh_history
@@ -15,7 +19,7 @@ services:
       - .env
     networks:
       - default
-    command: ["sleep", "infinity"]
+    command: ['sleep', 'infinity']
 
   pgadmin:
     image: dpage/pgadmin4:8.13.0
