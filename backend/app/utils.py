@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, cast
 
 import jwt
 from passlib.context import CryptContext
@@ -35,11 +35,14 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     return user
 
 
-def create_token(payload: dict, expires_delta: timedelta | int):
-    if isinstance(expires_delta, int):
-        expires_delta = timedelta(minutes=expires_delta)
+TimeUnits = Literal["seconds", "weeks", "hours", "minutes", "days"]
+
+
+def create_token(payload: dict, expires_delta: float, time_unit: TimeUnits = "minutes"):
     to_encode = payload.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
+    expire = datetime.now(timezone.utc) + timedelta(
+        **{cast("str", time_unit): expires_delta}
+    )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
