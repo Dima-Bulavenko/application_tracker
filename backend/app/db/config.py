@@ -1,23 +1,22 @@
 from __future__ import annotations
 
-from decouple import config
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+
+from app import env
 
 from .models import Base
 
 url_object = URL.create(
     "postgresql+asyncpg",
-    config("POSTGRES_USER"),
-    config("POSTGRES_PASSWORD"),
-    config("POSTGRES_HOST"),
-    config("POSTGRES_PORT"),
-    config("POSTGRES_DB"),
+    env.str("POSTGRES_USER"),
+    env.str("POSTGRES_PASSWORD"),
+    env.str("POSTGRES_HOST"),
+    env.int("POSTGRES_PORT"),
+    env.str("POSTGRES_DB"),
 )
 
-engine = create_async_engine(
-    url_object, echo=config("PRINT_SQL_QUERIES", default=False, cast=bool)
-)
+engine = create_async_engine(url_object, echo=env.bool("PRINT_SQL_QUERIES", False))
 Session = async_sessionmaker(engine, expire_on_commit=False)
 
 
