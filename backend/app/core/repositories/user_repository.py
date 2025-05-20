@@ -9,3 +9,6 @@ class IUserRepository(ABC):
 
     @abstractmethod
     async def get_by_id(self, user_id: int) -> User: ...
+
+    @abstractmethod
+    async def save(self, user: User) -> User: ...
