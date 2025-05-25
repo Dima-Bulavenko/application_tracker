@@ -2,9 +2,9 @@ class BaseExceptionError(Exception):
     pass
 
 
-class NotFoundError(BaseException):
+class NotFoundError(BaseExceptionError):
     pass
 
 
-class AlreadyExistError(BaseException):
+class AlreadyExistError(BaseExceptionError):
     pass
