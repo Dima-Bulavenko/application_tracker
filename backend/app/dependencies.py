@@ -9,7 +9,10 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ALGORITHM, SECRET_KEY
+from app.core.services import UserService
 from app.db.models.user import User
+from app.infrastructure.repositories import UserSQLAlchemyRepository
+from app.infrastructure.security import PasslibHasher
 from app.schemas import TokenData
 from app.utils import get_user, verify_password
 
@@ -22,6 +25,12 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
     async with SessionMaker() as session:
         yield session
         await session.commit()
+
+
+async def get_user_service(session: SessionDep) -> UserService:
+    return UserService(
+        user_repo=UserSQLAlchemyRepository(session), password_hasher=PasslibHasher()
+    )
 
 
 async def get_current_user(token: "TokenDep", session: "SessionDep"):
@@ -38,7 +47,7 @@ async def get_current_user(token: "TokenDep", session: "SessionDep"):
         token_data = TokenData(username=username)
     except jwt.InvalidTokenError:
         raise credentials_exception from None
-    user = await get_user(session, email=cast(str, token_data.username))
+    user = await get_user(session, email=cast("str", token_data.username))
     if user is None:
         raise credentials_exception
     return user
@@ -70,3 +79,5 @@ TokenDep = Annotated[str, Depends(oauth2_scheme)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 ActiveCurrentUserDep = Annotated[User, Depends(get_current_active_user)]
 LoginFormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
+
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
