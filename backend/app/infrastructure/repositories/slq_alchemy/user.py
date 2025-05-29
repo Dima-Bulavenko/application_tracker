@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from sqlalchemy import exc, select
-
 from app.core.domain import User
 from app.core.exceptions.user import UserAlreadyExistError, UserNotFoundError
 from app.core.repositories import IUserRepository

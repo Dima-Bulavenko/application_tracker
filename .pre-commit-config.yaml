@@ -10,20 +10,37 @@ repos:
         exclude: frontend/src/client/.*
       - id: check-yaml
       - id: check-added-large-files
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
-    hooks:
-      # Run the linter.
-      - id: ruff
-        args: ['--select', 'I', '--fix']
-      # Run the formatter.
-      - id: ruff-format
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.0
-    hooks:
-      - id: mypy
   - repo: local
     hooks:
+      # ruff linter
+      - id: ruff-check
+        name: ruff check
+        entry: backend/.venv/bin/ruff check
+        args: ['--select', 'I', '--fix']
+        language: system
+        types_or: [python, pyi]
+      # ruff formatter
+      - id: ruff-format
+        name: ruff format
+        entry: backend/.venv/bin/ruff format
+        language: system
+        types_or: [python, pyi]
+      # mypy
+      - id: mypy
+        name: mypy
+        entry: backend/.venv/bin/mypy
+        args: ['--ignore-missing-imports', '--scripts-are-modules']
+        require_serial: true
+        language: system
+        types_or: [python, pyi]
+      # eslint
+      - id: eslint
+        name: eslint
+        entry: frontend/node_modules/.bin/eslint
+        language: system
+        args: ['--config', './frontend/eslint.config.js']
+        types_or: [javascript, ts, tsx, jsx]
+      # prettier
       - id: prettier
         name: prettier
         entry: frontend/node_modules/.bin/prettier
@@ -36,11 +53,3 @@ repos:
           ]
         language: system
         types_or: [javascript, ts, tsx, jsx, json, yaml, html, css]
-  - repo: local
-    hooks:
-      - id: eslint
-        name: eslint
-        entry: frontend/node_modules/.bin/eslint
-        language: system
-        args: ['--config', './frontend/eslint.config.js']
-        types_or: [javascript, ts, tsx, jsx]
