@@ -8,3 +8,7 @@ class NotFoundError(BaseExceptionError):
 
 class AlreadyExistError(BaseExceptionError):
     pass
+
+
+class InvalidPasswordError(BaseException):
+    pass
