@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from app.core.domain import User
+
 
 class IPasswordHasher(ABC):
     @abstractmethod
@@ -7,3 +9,13 @@ class IPasswordHasher(ABC):
 
     @abstractmethod
     def verify(self, raw_password: str, hashed_password: str) -> bool: ...
+
+
+class ITokenProvider(ABC):
+    @abstractmethod
+    def create_access_token(self, user: User) -> str:
+        pass
+
+    @abstractmethod
+    def create_refresh_token(self, user: User) -> str:
+        pass
