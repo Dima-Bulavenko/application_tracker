@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Literal, cast
 
 import jwt
+from fastapi import Response
 from passlib.context import CryptContext
 
 from app import (
@@ -35,19 +36,18 @@ async def authenticate_user(session: AsyncSession, username: str, password: str)
     return user
 
 
-TimeUnits = Literal["seconds", "weeks", "hours", "minutes", "days"]
-
-
-def create_token(payload: dict, expires_delta: float, time_unit: TimeUnits = "minutes"):
-    to_encode = payload.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        **{cast("str", time_unit): expires_delta}
-    )
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
 async def get_user(session: AsyncSession, email: str):
     user = await UserORM(session).get(email=email)
     return user
+
+
+def set_refresh_token(response: Response, token: str) -> None:
+    payload = jwt.decode(token, SECRET_KEY, (ALGORITHM,))
+    response.set_cookie(
+        key="refresh",
+        value=token,
+        expires=payload.get("exp"),
+        path="auth/refresh",
+        secure=True,
+        httponly=True,
+    )
