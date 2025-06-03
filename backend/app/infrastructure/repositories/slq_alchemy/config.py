@@ -19,17 +19,17 @@ class SQLAlchemyRepository[T: BaseModel]:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def __get(self, **kwargs):
+    async def _get(self, **kwargs):
         statement = select(self.model).filter_by(**kwargs)
         return await self.session.scalars(statement)
 
-    async def __get_one(
+    async def _get_one(
         self,
         error_message: str | None = None,
         exception_class: type[BaseExceptionError] = NotFoundError,
         **kwargs,
     ):
-        items = await self.__get(**kwargs)
+        items = await self._get(**kwargs)
         try:
             item = items.one()
         except exc.NoResultFound as exp:

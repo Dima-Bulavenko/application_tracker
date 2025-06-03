@@ -17,7 +17,7 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
         error_message = (
             f"User with {', '.join((f'{k} = {v}' for k, v in kwargs.items()))}"
         )
-        item = await super().__get_one(error_message, UserNotFoundError, **kwargs)
+        item = await super()._get_one(error_message, UserNotFoundError, **kwargs)
         return item
 
     async def get_by_email(self, email: str) -> User:
