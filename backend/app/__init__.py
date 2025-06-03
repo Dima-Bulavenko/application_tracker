@@ -17,3 +17,4 @@ class Tags(Enum):
     USER = "user"
     APPLICATION = "application"
     COMPANY = "company"
+    AUTHENTICATION = "authentication"

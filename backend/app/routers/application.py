@@ -13,7 +13,7 @@ async def create_application(
     app_data: ApplicationCreate, session: SessionDep, user: ActiveCurrentUserDep
 ):
     app = await ApplicationORM(session).create(app_data, user)
-    session.commit()
+    await session.commit()
     return app
 
 
