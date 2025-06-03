@@ -4,21 +4,23 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, cast
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ALGORITHM, SECRET_KEY
-from app.core.services import UserService
+from app.core.dto import Tokens
+from app.core.exceptions import InvalidPasswordError, UserNotFoundError
+from app.core.services import AuthService, UserService
 from app.db.models.user import User
 from app.infrastructure.repositories import UserSQLAlchemyRepository
-from app.infrastructure.security import PasslibHasher
+from app.infrastructure.security import JWTTokenProvider, PasslibHasher
 from app.schemas import TokenData
 from app.utils import get_user, verify_password
 
 from .db import Session as SessionMaker
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 async def get_session() -> AsyncGenerator[AsyncSession]:
@@ -30,6 +32,14 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
 async def get_user_service(session: SessionDep) -> UserService:
     return UserService(
         user_repo=UserSQLAlchemyRepository(session), password_hasher=PasslibHasher()
+    )
+
+
+async def get_auth_service(session: SessionDep) -> AuthService:
+    return AuthService(
+        user_repo=UserSQLAlchemyRepository(session),
+        password_hasher=PasslibHasher(),
+        token_provider=JWTTokenProvider(),
     )
 
 
@@ -59,21 +69,19 @@ def get_current_active_user(user: "CurrentUserDep"):
     return user
 
 
-async def authenticate_user(session: SessionDep, form_data: LoginFormDep):
-    invalid_credentials = HTTPException(
-        status.HTTP_401_UNAUTHORIZED,
-        detail="Incorrect username or password",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    user = await get_user(session, email=form_data.username)
-    if not user:
-        raise invalid_credentials
-    if not verify_password(form_data.password, user.password):
-        raise invalid_credentials
-    return user
+async def authenticate_user(auth_service: AuthServiceDep, form_data: LoginFormDep):
+    try:
+        tokens = await auth_service.authenticate(form_data.username, form_data.password)
+    except (UserNotFoundError, InvalidPasswordError) as exp:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exp
+    return tokens
 
 
-AuthenticatedUserDep = Annotated[User, Depends(authenticate_user)]
+AuthenticatedUserDep = Annotated[Tokens, Depends(authenticate_user)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
@@ -81,3 +89,4 @@ ActiveCurrentUserDep = Annotated[User, Depends(get_current_active_user)]
 LoginFormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
