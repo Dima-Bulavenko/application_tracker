@@ -4,19 +4,19 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, cast
 
 import jwt
-from fastapi import Depends, HTTPException, Request, Response, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ALGORITHM, SECRET_KEY
-from app.core.dto import Tokens
+from app.core.dto import UserRead
 from app.core.exceptions import InvalidPasswordError, UserNotFoundError
 from app.core.services import AuthService, UserService
 from app.db.models.user import User
 from app.infrastructure.repositories import UserSQLAlchemyRepository
-from app.infrastructure.security import JWTTokenProvider, PasslibHasher
+from app.infrastructure.security import PasslibHasher
 from app.schemas import TokenData
-from app.utils import get_user, verify_password
+from app.utils import get_user
 
 from .db import Session as SessionMaker
 
@@ -37,9 +37,7 @@ async def get_user_service(session: SessionDep) -> UserService:
 
 async def get_auth_service(session: SessionDep) -> AuthService:
     return AuthService(
-        user_repo=UserSQLAlchemyRepository(session),
-        password_hasher=PasslibHasher(),
-        token_provider=JWTTokenProvider(),
+        user_repo=UserSQLAlchemyRepository(session), password_hasher=PasslibHasher()
     )
 
 
@@ -69,19 +67,21 @@ def get_current_active_user(user: "CurrentUserDep"):
     return user
 
 
-async def authenticate_user(auth_service: AuthServiceDep, form_data: LoginFormDep):
+async def authenticate_user(
+    auth_service: AuthServiceDep, form_data: LoginFormDep
+) -> UserRead:
     try:
-        tokens = await auth_service.authenticate(form_data.username, form_data.password)
+        user = await auth_service.authenticate(form_data.username, form_data.password)
     except (UserNotFoundError, InvalidPasswordError) as exp:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exp
-    return tokens
+    return user
 
 
-AuthenticatedUserDep = Annotated[Tokens, Depends(authenticate_user)]
+AuthenticatedUserDep = Annotated[UserRead, Depends(authenticate_user)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
