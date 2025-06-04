@@ -13,9 +13,7 @@ class IPasswordHasher(ABC):
 
 class ITokenProvider(ABC):
     @abstractmethod
-    def create_access_token(self, user: User) -> str:
-        pass
+    def create_access_token(self, user: User) -> str: ...
 
     @abstractmethod
-    def create_refresh_token(self, user: User) -> str:
-        pass
+    def create_refresh_token(self, user: User) -> str: ...
