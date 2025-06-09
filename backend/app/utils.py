@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Literal, cast
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 import jwt
 from fastapi import Response
@@ -46,7 +46,7 @@ def set_refresh_token(response: Response, token: str) -> None:
     response.set_cookie(
         key="refresh",
         value=token,
-        expires=payload.get("exp"),
+        expires=datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc),
         path="auth/refresh",
         secure=True,
         httponly=True,
