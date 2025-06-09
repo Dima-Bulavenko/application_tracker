@@ -11,11 +11,6 @@ class TokenType(StrEnum):
     refresh = "refresh"
 
 
-class Tokens(Model):
-    access: str
-    refresh: str
-
-
 class Token(Model):
     token: str
     type: str = "bearer"
@@ -25,3 +20,8 @@ class AuthTokenPayload(Model):
     user_email: str
     exp: int | datetime
     type: TokenType
+
+
+class AuthTokenPair(Model):
+    access: Token
+    refresh: Token
