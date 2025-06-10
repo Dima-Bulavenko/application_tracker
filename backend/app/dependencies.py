@@ -4,12 +4,12 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, cast
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ALGORITHM, SECRET_KEY
-from app.core.dto import AuthTokenPair, UserLogin
+from app.core.dto import AuthTokenPair, Token, UserLogin
 from app.core.exceptions import InvalidPasswordError, UserNotFoundError
 from app.core.services import AuthService, UserService
 from app.db.models.user import User
@@ -85,6 +85,11 @@ async def login_user(
     return tokens
 
 
+def get_refresh_token(refresh: Annotated[str, Cookie()]):
+    return Token(token=refresh)
+
+
+RefreshTokenDep = Annotated[Token, Depends(get_refresh_token)]
 LoginUserDep = Annotated[AuthTokenPair, Depends(login_user)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]

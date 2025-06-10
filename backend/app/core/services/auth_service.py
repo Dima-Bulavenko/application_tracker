@@ -1,4 +1,4 @@
-from app.core.dto import AuthTokenPair, UserLogin
+from app.core.dto import AuthTokenPair, Token, UserLogin
 from app.core.exceptions import InvalidPasswordError, UserNotFoundError
 from app.core.repositories import IUserRepository
 from app.core.security import IPasswordHasher, ITokenProvider
@@ -26,3 +26,16 @@ class AuthService:
         access_token = self.token_provider.create_refresh_token(user)
         refresh_token = self.token_provider.create_refresh_token(user)
         return AuthTokenPair(access=access_token, refresh=refresh_token)
+
+    async def refresh_token(self, old_refresh_token: Token) -> AuthTokenPair:
+        refresh_payload = self.token_provider.verify_refresh_token(old_refresh_token)
+
+        user = await self.user_repo.get_by_email(refresh_payload.user_email)
+
+        if not user:
+            raise UserNotFoundError(f"User with {user.email} email does not exist")  # noqa: EM102
+
+        new_access_token = self.token_provider.create_access_token(user)
+        new_refresh_token = self.token_provider.create_refresh_token(user)
+
+        return AuthTokenPair(access=new_access_token, refresh=new_refresh_token)
