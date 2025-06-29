@@ -19,8 +19,10 @@ class SQLAlchemyRepository[T: BaseModel]:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def _get(self, **kwargs):
-        statement = select(self.model).filter_by(**kwargs)
+    async def _get(
+        self, *, limit: int | None = None, offset: int | None = None, **kwargs
+    ):
+        statement = select(self.model).filter_by(**kwargs).limit(limit).offset(offset)
         return await self.session.scalars(statement)
 
     async def _get_one(
