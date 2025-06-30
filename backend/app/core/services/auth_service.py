@@ -23,7 +23,7 @@ class AuthService:
         if not self.password_hasher.verify(user_creds.password, user.password):
             raise InvalidPasswordError("Incorrect password")
 
-        access_token = self.token_provider.create_refresh_token(user)
+        access_token = self.token_provider.create_access_token(user)
         refresh_token = self.token_provider.create_refresh_token(user)
         return AuthTokenPair(access=access_token, refresh=refresh_token)
 
