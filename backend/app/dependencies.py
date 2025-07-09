@@ -69,11 +69,58 @@ async def login_user(
     return tokens
 
 
+async def get_user(
+    user_service: UserServiceDep, payload: AccessTokenPayloadDep
+) -> UserRead:
+    try:
+        user = await user_service.get_by_email(email=payload.user_email)
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            f"User with {payload.user_email} email was not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    return user
+
+
+async def get_active_user(user: UserDep) -> UserRead:
+    if not user.is_active:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "User account is not activated")
+    return user
+
+
 def get_refresh_token(refresh: Annotated[str, Cookie()]):
     return Token(token=refresh)
 
 
+def get_access_token(
+    access: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="auth/login"))],
+):
+    return Token(token=access)
+
+
+def get_access_token_payload(token: AccessTokenDep):
+    exp = HTTPException(
+        status.HTTP_401_UNAUTHORIZED, headers={"WWW-Authenticate": "Bearer"}
+    )
+    try:
+        payload = JWTTokenProvider().verify_access_token(token)
+    except TokenExpireError as e:
+        exp.detail = "Token expired"
+        raise exp from e
+    except TokenInvalidError as e:
+        exp.detail = "Token invalid"
+        raise exp from e
+    return payload
+
+
 RefreshTokenDep = Annotated[Token, Depends(get_refresh_token)]
+AccessTokenDep = Annotated[Token, Depends(get_access_token)]
+AccessTokenPayloadDep = Annotated[AuthTokenPayload, Depends(get_access_token_payload)]
+
+UserDep = Annotated[UserRead, Depends(get_user)]
+ActiveUserDep = Annotated[UserRead, Depends(get_active_user)]
+
 LoginUserDep = Annotated[AuthTokenPair, Depends(login_user)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 LoginFormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
