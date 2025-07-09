@@ -29,13 +29,13 @@ class WorkLocation(enum.Enum):
 
 class Application(BaseModel):
     role: str
-    company: int
-    user: int
+    company_id: int
+    user_id: int
     id: int | None = None
     status: AppStatus = AppStatus.APPLIED
     work_type: WorkType = WorkType.FULL_TIME
     work_location: WorkLocation = WorkLocation.ON_SITE
-    note: str | None = None
+    notes: str | None = None
     application_url: str | None = None
     time_create: datetime = Field(datetime.now(UTC))
     time_update: datetime = Field(datetime.now(UTC))

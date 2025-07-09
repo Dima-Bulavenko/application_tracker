@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from sqlalchemy import select
+
 from app.core.domain import Application
 from app.core.repositories import IApplicationRepository
 from app.db.models import Application as ApplicationModel
+from app.db.models import User
 
 from .config import SQLAlchemyRepository
 
@@ -13,15 +16,20 @@ class ApplicationSQLAlchemyRepository(
     model = ApplicationModel
 
     async def create(self, application: Application) -> Application:
-        app_model = await self._save(self.model(**application.model_dump()))
-
+        app_model = self.model(**application.model_dump())
+        self.session.add(app_model)
+        await self.session.flush()
         return Application.model_validate(app_model, from_attributes=True)
 
     async def get_by_user_email(
         self, email: str, limit: int | None = None, offset: int | None = None
     ) -> list[Application]:
-        model_applications = await self._get(limit=limit, offset=offset, email=email)
-        return [
-            Application.model_validate(app, from_attributes=True)
-            for app in model_applications
-        ]
+        statement = (
+            select(self.model)
+            .join(User)
+            .where(User.email == email)
+            .limit(limit)
+            .offset(offset)
+        )
+        apps = await self.session.scalars(statement)
+        return [Application.model_validate(app, from_attributes=True) for app in apps]
