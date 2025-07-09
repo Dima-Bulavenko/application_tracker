@@ -4,13 +4,22 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dto import AuthTokenPair, Token, UserLogin
-from app.core.exceptions import InvalidPasswordError, UserNotFoundError
-from app.core.services import AuthService, UserService
-from app.infrastructure.repositories import UserSQLAlchemyRepository
+from app.core.dto import AuthTokenPair, AuthTokenPayload, Token, UserLogin, UserRead
+from app.core.exceptions import (
+    InvalidPasswordError,
+    TokenExpireError,
+    TokenInvalidError,
+    UserNotFoundError,
+)
+from app.core.services import ApplicationService, AuthService, UserService
+from app.infrastructure.repositories import (
+    ApplicationSQLAlchemyRepository,
+    CompanySQLAlchemyRepository,
+    UserSQLAlchemyRepository,
+)
 from app.infrastructure.security import JWTTokenProvider, PasslibHasher
 
 from .db import Session as SessionMaker
@@ -33,6 +42,14 @@ async def get_auth_service(session: SessionDep) -> AuthService:
         user_repo=UserSQLAlchemyRepository(session),
         password_hasher=PasslibHasher(),
         token_provider=JWTTokenProvider(),
+    )
+
+
+async def get_application_service(session: SessionDep) -> ApplicationService:
+    return ApplicationService(
+        app_repo=ApplicationSQLAlchemyRepository(session),
+        user_repo=UserSQLAlchemyRepository(session),
+        company_repo=CompanySQLAlchemyRepository(session),
     )
 
 
@@ -63,3 +80,4 @@ LoginFormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+ApplicationServiceDep = Annotated[ApplicationService, Depends(get_application_service)]
