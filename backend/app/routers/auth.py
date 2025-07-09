@@ -1,15 +1,28 @@
 from fastapi import APIRouter, Response, status
 
 from app import Tags
-from app.core.dto import Token
+from app.core.dto import AccessToken, Token
 from app.dependencies import AuthServiceDep, LoginUserDep, RefreshTokenDep
 from app.utils import set_refresh_token
 
 router = APIRouter(prefix="/auth", tags=[Tags.AUTHENTICATION])
 
 
+# @router.post("/login", status_code=status.HTTP_200_OK)
+# async def login(tokens: LoginUserDep, response: Response) -> Token:
+#     """
+#     **Create** a user with provided email and password.
+
+#     Send link to provided email address for account activation.
+
+#     If the user with the email exist, return success response but send warning email to the email address.
+#     """
+
+
+#     set_refresh_token(response, tokens.refresh.token)
+#     return tokens.access
 @router.post("/login", status_code=status.HTTP_200_OK)
-async def login(tokens: LoginUserDep, response: Response) -> Token:
+async def login(tokens: LoginUserDep, response: Response) -> AccessToken:
     """
     **Create** a user with provided email and password.
 
@@ -19,7 +32,7 @@ async def login(tokens: LoginUserDep, response: Response) -> Token:
     """
 
     set_refresh_token(response, tokens.refresh.token)
-    return tokens.access
+    return AccessToken(access_token=tokens.access.token)
 
 
 @router.get("/refresh", status_code=status.HTTP_200_OK)

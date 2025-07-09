@@ -16,6 +16,11 @@ class Token(Model):
     type: str = "bearer"
 
 
+class AccessToken(Model):
+    access_token: str
+    token_type: str = "bearer"
+
+
 class AuthTokenPayload(Model):
     user_email: str
     exp: int | datetime
