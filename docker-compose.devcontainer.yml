@@ -42,7 +42,17 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - 5434:${POSTGRES_PORT}
+      - ${POSTGRES_PORT}:5434
+    networks:
+      - default
+  db-test:
+    image: postgres:17-alpine
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST_TEST}
+    ports:
+      - ${POSTGRES_PORT_TEST}:5432
     networks:
       - default
 
