@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -89,7 +89,14 @@ async def get_active_user(user: UserDep) -> UserRead:
     return user
 
 
-def get_refresh_token(refresh: Annotated[str, Cookie()]):
+def get_refresh_token(request: Request):
+    refresh = request.cookies.get("refresh")
+    if not refresh:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return Token(token=refresh)
 
 

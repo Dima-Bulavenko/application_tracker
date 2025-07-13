@@ -24,3 +24,12 @@ def set_refresh_token(response: Response, token: str) -> None:
         secure=True,
         httponly=True,
     )
+
+
+def delete_refresh_token(response: Response) -> None:
+    response.delete_cookie(
+        key="refresh",
+        path="auth/refresh",
+        secure=True,
+        httponly=True,
+    )

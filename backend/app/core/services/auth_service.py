@@ -39,3 +39,14 @@ class AuthService:
         new_refresh_token = self.token_provider.create_refresh_token(user)
 
         return AuthTokenPair(access=new_access_token, refresh=new_refresh_token)
+
+    async def logout(self, access_token: Token, refresh_token: Token):
+        token_payload = self.token_provider.verify_access_token(access_token)
+        self.token_provider.verify_refresh_token(refresh_token)
+
+        try:
+            await self.user_repo.get_by_email(token_payload.user_email)
+        except UserNotFoundError as e:
+            message = f"User with {token_payload.user_email} email does not exist"
+            raise UserNotFoundError(message) from e
+        # TODO: Implement token blacklisting
