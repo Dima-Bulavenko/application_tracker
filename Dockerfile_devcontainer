@@ -7,6 +7,7 @@ ARG NODE_VERSION=23
 
 WORKDIR /code
 
+
 # create .venv in project directory
 ENV POETRY_VIRTUALENVS_IN_PROJECT=1 \
     # Ensure pipx is available in the PATH
@@ -31,8 +32,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x -o nodesource_
     bash nodesource_setup.sh && \
     apt-get install -y nodejs
 
-COPY ./.devcontainer/set_up_zsh.sh /tmp/set_up_zsh.sh
-
-COPY ./.devcontainer/.spaceshiprc.zsh /tmp/.spaceshiprc.zsh
-
+COPY .devcontainer/set_up_zsh.sh /tmp/set_up_zsh.sh
+COPY .devcontainer/.spaceshiprc.zsh /tmp/.spaceshiprc.zsh
 RUN sh /tmp/set_up_zsh.sh
+
+COPY . /code
