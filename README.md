@@ -26,6 +26,16 @@ Before starting, you need to configure the environment variables:
    - `ALLOWED_HOSTS` - CORS allowed hosts (adjust if needed)
    - `DEBUG` - Enable/disable debug mode
 
+## Frontend API Client Generation
+
+This project uses a script to automatically generate a TypeScript client for the frontend based on the FastAPI OpenAPI schema. The `scripts/generate-client.sh` script:
+
+1. Extracts the OpenAPI JSON schema from the running FastAPI application
+2. Uses the `hey-api` library to generate TypeScript client code
+3. Creates type-safe API methods and models for the frontend
+
+**Note**: The client generation requires the backend dependencies to be installed (Poetry) and is automatically run during dev container setup.
+
 ## Option 1: Dev Container Setup (Recommended)
 
 **Requirements:**
@@ -52,12 +62,14 @@ Before starting, you need to configure the environment variables:
    - Use Command Palette (`Ctrl+Shift+P`): "Dev Containers: Reopen in Container"
 
 4. **Wait for container setup:**
-   - The container will automatically install:
-     - Python 3.12 with Poetry
-     - Node.js 23
-     - All project dependencies
-     - PostgreSQL database
-     - pgAdmin for database management
+   - The container will automatically:
+     - Install Python 3.12 with Poetry
+     - Install Node.js 23
+     - Install all Python dependencies (backend)
+     - Install all Node.js dependencies (frontend)
+     - Generate frontend API client using hey-api
+     - Set up PostgreSQL database
+     - Configure pgAdmin for database management
 
 5. **Start the application:**
 
@@ -130,7 +142,12 @@ Before starting, you need to configure the environment variables:
    npm install
    ```
 
-6. **Start the applications:**
+6. **Generate Frontend API Client:**
+   ```bash
+   bash scripts/generate-client.sh
+   ```
+
+7. **Start the applications:**
 
    **Backend (in one terminal):**
    ```bash
