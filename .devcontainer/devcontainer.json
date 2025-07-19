@@ -1,34 +1,33 @@
 {
-	"dockerComposeFile": "../docker-compose.devcontainer.yml",
+  "dockerComposeFile": "../docker-compose-devcontainer.yaml",
 
-	"service": "development",
-	"workspaceFolder": "/code",
-	"customizations": {
-		"vscode": {
-			"settings": {"terminal.integrated.defaultProfile.linux": "zsh"},
-			"extensions": [
-				"streetsidesoftware.code-spell-checker",
-				"codezombiech.gitignore",
-				"docsmsft.docs-yaml",
-				"bierner.markdown-emoji",
-				"foxundermoon.shell-format",
-				"ms-python.vscode-pylance",
-				"ms-python.python",
-				"ms-python.debugpy",
-				"charliermarsh.ruff",
-				"SimonSiefke.svg-preview",
-				"Gruntfuggly.todo-tree",
-				"redhat.vscode-yaml",
-				"yzhang.markdown-all-in-one",
-				"ms-azuretools.vscode-docker",
-				"ecmel.vscode-html-css",
-				"solnurkarim.html-to-css-autocompletion",
-				"esbenp.prettier-vscode",
-				"bierner.color-info",
-				"dsznajder.es7-react-js-snippets",
-				"dbaeumer.vscode-eslint",
-
-			]
-		}
-	}
+  "service": "development",
+  "workspaceFolder": "/code",
+  "customizations": {
+    "vscode": {
+      "settings": { "terminal.integrated.defaultProfile.linux": "zsh" },
+      "extensions": [
+        "streetsidesoftware.code-spell-checker",
+        "codezombiech.gitignore",
+        "docsmsft.docs-yaml",
+        "bierner.markdown-emoji",
+        "foxundermoon.shell-format",
+        "ms-python.vscode-pylance",
+        "ms-python.python",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+        "SimonSiefke.svg-preview",
+        "Gruntfuggly.todo-tree",
+        "redhat.vscode-yaml",
+        "yzhang.markdown-all-in-one",
+        "ms-azuretools.vscode-docker",
+        "ecmel.vscode-html-css",
+        "solnurkarim.html-to-css-autocompletion",
+        "esbenp.prettier-vscode",
+        "bierner.color-info",
+        "dsznajder.es7-react-js-snippets",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
 }
