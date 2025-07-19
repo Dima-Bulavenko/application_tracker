@@ -1,22 +1,23 @@
 from fastapi import APIRouter
 
 from app import Tags
-from app.dependencies import ActiveCurrentUserDep, SessionDep
-from app.orm import ApplicationORM
-from app.schemas import ApplicationCreate, ApplicationReadRel
+from app.core.dto import ApplicationCreate, ApplicationRead
+from app.dependencies import ActiveUserDep, ApplicationServiceDep
 
 router = APIRouter(prefix="/applications", tags=[Tags.APPLICATION])
 
 
-@router.post("/", response_model=ApplicationReadRel)
+@router.get("/")
+async def get_applications_by_email(
+    app_service: ApplicationServiceDep, user: ActiveUserDep
+) -> list[ApplicationRead]:
+    apps = await app_service.get_applications_by_user_email(user.email)
+    return apps
+
+
+@router.post("/")
 async def create_application(
-    app_data: ApplicationCreate, session: SessionDep, user: ActiveCurrentUserDep
-):
-    app = await ApplicationORM(session).create(app_data, user)
-    session.commit()
-    return app
-
-
-@router.get("/", response_model=list[ApplicationReadRel])
-async def get_application(session: SessionDep, user: ActiveCurrentUserDep):
-    return await ApplicationORM.get_apps(session)
+    app_service: ApplicationServiceDep, app: ApplicationCreate, user: ActiveUserDep
+) -> ApplicationRead:
+    application = await app_service.create(app, user.id)
+    return application

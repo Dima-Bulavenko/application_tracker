@@ -4,17 +4,18 @@ version = "0.1.0"
 description = ""
 authors = ["Dima Bulavenko <dima99bylovenko@gmail.com>"]
 readme = "../README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
 fastapi = {extras = ["standard"], version = "^0.115.5"}
-python-decouple = "^3.8"
 psycopg2-binary = "^2.9.10"
 sqlalchemy = "^2.0.36"
 email-validator = "^2.2.0"
 pyjwt = "^2.10.1"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 asyncpg = "^0.30.0"
+environs = "^14.1.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -24,6 +25,9 @@ pytest = "^8.3.4"
 pytest-sqlalchemy = "^0.2.1"
 coverage = "^7.6.10"
 debugpy = "^1.8.12"
+ruff = "^0.11.12"
+pytest-asyncio = "^1.0.0"
+freezegun = "^1.5.3"
 
 [build-system]
 requires = ["poetry-core"]
@@ -31,3 +35,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*"=["S106", "S101"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.mypy]
+exclude = [
+    "app/tests/",
+    "test_.*\\.py$",
+    ".*_test\\.py$"
+]

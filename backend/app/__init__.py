@@ -1,14 +1,20 @@
 from enum import Enum
 
-from decouple import config
+from environs import env
 
-SECRET_KEY = config("SECRET_KEY")
-ALGORITHM = config("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = config("ACCESS_TOKEN_EXPIRE_MINUTES", cast=int)
+env.read_env()
+
+SECRET_KEY = env.str("SECRET_KEY")
+ALGORITHM = env.str("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = env.int("ACCESS_TOKEN_EXPIRE_MINUTES", 5)
+REFRESH_TOKEN_EXPIRE_MINUTES = env.int("REFRESH_TOKEN_EXPIRE_MINUTES", 160)
+DEBUG = env.bool("DEBUG", False)
 TOKEN_TYPE = "bearer"
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", subcast=str)
 
 
 class Tags(Enum):
     USER = "user"
     APPLICATION = "application"
     COMPANY = "company"
+    AUTHENTICATION = "authentication"

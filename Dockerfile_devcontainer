@@ -1,0 +1,48 @@
+ARG PYTHON_VERSION=3.12
+
+FROM python:${PYTHON_VERSION}
+
+ARG POETRY_VERSION=1.8.3
+ARG NODE_VERSION=23
+
+WORKDIR /code
+
+
+# create .venv in project directory
+ENV POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    # Ensure pipx is available in the PATH
+    PATH="/root/.local/bin:$PATH"
+
+
+# Install additional software
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y git nano man-db
+
+
+COPY .devcontainer/set_up_zsh.sh /tmp/set_up_zsh.sh
+COPY .devcontainer/.spaceshiprc.zsh /tmp/.spaceshiprc.zsh
+RUN sh /tmp/set_up_zsh.sh
+
+# Install system dependencies and pipx
+RUN python3 -m pip install --user pipx && \
+    python3 -m pipx ensurepath
+
+# Install Poetry using pipx
+RUN pipx install poetry==${POETRY_VERSION}
+
+# Install node
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x -o nodesource_setup.sh && \
+    bash nodesource_setup.sh && \
+    apt-get install -y nodejs
+
+COPY . /code
+
+# Install Python dependencies
+RUN cd backend && poetry install
+
+# Install Node.js dependencies
+RUN cd frontend && npm install
+
+# Generate frontend API client
+RUN bash scripts/generate-client.sh

@@ -6,29 +6,10 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.domain import AppStatus, WorkLocation, WorkType
+
 from .config import Base, pk_tp, time_create_tp, time_update_tp
 from .user import User
-
-
-class AppStatus(enum.Enum):
-    APPLIED = "applied"
-    INTERVIEW = "interview"
-    OFFER = "offer"
-    REJECTED = "rejected"
-
-
-class WorkType(enum.Enum):
-    FULL_TIME = "full_time"
-    PART_TIME = "part_time"
-    INTERNSHIP = "internship"
-    CONTRACT = "contract"
-    OTHER = "other"
-
-
-class WorkLocation(enum.Enum):
-    ON_SITE = "on_site"
-    REMOTE = "remote"
-    HYBRID = "hybrid"
 
 
 class Application(Base):

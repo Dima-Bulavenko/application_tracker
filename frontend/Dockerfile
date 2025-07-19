@@ -9,22 +9,6 @@ RUN npm install
 COPY . .
 
 
-
-FROM install AS dev_development
-
-COPY ../ ./
-
-WORKDIR /code/frontend
-
-CMD ["sleep", "infinity"]
-
-
-# Commands for development
-FROM install AS development
-
-CMD ["npm", "run", "dev"]
-
-
 # Commands for build
 FROM install AS build
 
