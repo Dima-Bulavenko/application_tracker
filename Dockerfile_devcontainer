@@ -11,7 +11,7 @@ WORKDIR /code
 # create .venv in project directory
 ENV POETRY_VIRTUALENVS_IN_PROJECT=1 \
     # Ensure pipx is available in the PATH
-    PATH="/root/.local/bin:$PATH"
+    PATH="/root/.local/bin:/code/backend/.venv/bin:$PATH"
 
 
 # Install additional software
