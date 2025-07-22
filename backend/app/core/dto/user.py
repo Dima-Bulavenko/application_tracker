@@ -16,15 +16,19 @@ UserPasswordField = Annotated[
     ),
 ]
 
+UserEmailField = Annotated[
+    EmailStr, Field(alias="username", description="User's email address")
+]
+
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: UserEmailField
     password: UserPasswordField
 
 
 class UserRead(BaseModel):
     id: int
-    email: EmailStr
+    email: UserEmailField
     first_name: str | None = Field(max_length=40, default=None)
     second_name: str | None = Field(max_length=40, default=None)
     time_create: datetime
@@ -33,5 +37,5 @@ class UserRead(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: UserEmailField
     password: UserPasswordField
