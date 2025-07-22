@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import EmailStr, Field
+from pydantic import AliasChoices, EmailStr, Field
 
 from .config import Model as BaseModel
 
@@ -17,7 +17,12 @@ UserPasswordField = Annotated[
 ]
 
 UserEmailField = Annotated[
-    EmailStr, Field(alias="username", description="User's email address")
+    EmailStr,
+    Field(
+        validation_alias=AliasChoices("username", "email"),
+        serialization_alias="username",
+        description="User's email address",
+    ),
 ]
 
 
