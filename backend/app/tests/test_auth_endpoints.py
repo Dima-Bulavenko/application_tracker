@@ -36,23 +36,38 @@ async def get_async_client():
         yield ac
 
 
-class TestLoginEndpoint:
-    @pytest.fixture(autouse=True, scope="class")
-    @classmethod
-    def init_class(cls):
-        cls.token_provider: ITokenProvider = JWTTokenProvider()
-        cls.password_hasher: IPasswordHasher = PasslibHasher()
+@pytest.fixture(scope="session")
+def token_provider() -> ITokenProvider:
+    return JWTTokenProvider()
+
+
+@pytest.fixture(scope="session")
+def password_hasher() -> IPasswordHasher:
+    return PasslibHasher()
+
+
+class BaseAuthTest:
+    """Base class for auth endpoint tests with common setup and utilities."""
 
     @pytest.fixture(autouse=True)
-    def init_method(self, session: AsyncSession):
+    def setup(
+        self,
+        session: AsyncSession,
+        token_provider: ITokenProvider,
+        password_hasher: IPasswordHasher,
+    ):
         self.session = session
-        self.user_counter: int = 0
+        self.token_provider = token_provider
+        self.password_hasher = password_hasher
+        self.user_counter = 0
 
     async def create_user(self, **kwargs) -> User:
+        """Create a test user with auto-incremented counter and valid password."""
         self.user_counter += 1
         password = (
             f"Test{self.user_counter}Pass"  # Valid password: uppercase, digit, 8+ chars
         )
+
         user = UserModel(
             email=f"test{self.user_counter}@gmail.com",
             password=self.password_hasher.hash(password),
@@ -63,15 +78,18 @@ class TestLoginEndpoint:
         await self.session.refresh(user)
         return User(**{f: getattr(user, f) for f in User.__dataclass_fields__})
 
+    def get_user_password(self) -> str:
+        """Get the password for the most recently created user."""
+        return f"Test{self.user_counter}Pass"
+
+
+class TestLoginEndpoint(BaseAuthTest):
     async def test_with_valid_credentials(self, client: AsyncClient):
         user = await self.create_user()
 
         response = await client.post(
             "/auth/login",
-            data={
-                "username": user.email,
-                "password": f"Test{self.user_counter}Pass",
-            },
+            data={"username": user.email, "password": self.get_user_password()},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -89,10 +107,7 @@ class TestLoginEndpoint:
     async def test_with_not_existent_user(self, client: AsyncClient):
         response = await client.post(
             "/auth/login",
-            data={
-                "username": "nonexistent@example.com",
-                "password": "ValidPass123",  # Valid password format
-            },
+            data={"username": "nonexistent@example.com", "password": "ValidPass123"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -106,10 +121,7 @@ class TestLoginEndpoint:
     async def test_with_invalid_email(self, invalid_email: str, client: AsyncClient):
         response = await client.post(
             "/auth/login",
-            data={
-                "username": invalid_email,
-                "password": "ValidPass123",  # Valid password format
-            },
+            data={"username": invalid_email, "password": "ValidPass123"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -129,10 +141,7 @@ class TestLoginEndpoint:
 
         response = await client.post(
             "/auth/login",
-            data={
-                "username": user.email,
-                "password": invalid_password,  # Invalid password format
-            },
+            data={"username": user.email, "password": invalid_password},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -147,10 +156,7 @@ class TestLoginEndpoint:
 
         response = await client.post(
             "/auth/login",
-            data={
-                "username": user.email,
-                "password": "WrongPass123",  # Valid format but wrong password
-            },
+            data={"username": user.email, "password": "WrongPass123"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -160,35 +166,10 @@ class TestLoginEndpoint:
 
     async def test_with_missing_credentials(self, client: AsyncClient):
         response = await client.post("/auth/login")
+        assert response.status_code == 422
 
-        assert response.status_code == 422  # Unprocessable Entity for missing form data
 
-
-class TestLogoutEndpoint:
-    @pytest.fixture(autouse=True, scope="class")
-    @classmethod
-    def init_class(cls):
-        cls.token_provider: ITokenProvider = JWTTokenProvider()
-        cls.password_hasher: IPasswordHasher = PasslibHasher()
-
-    @pytest.fixture(autouse=True)
-    def init_method(self, session: AsyncSession):
-        self.session = session
-        self.user_counter: int = 0
-
-    async def create_user(self, **kwargs) -> User:
-        self.user_counter += 1
-        password = f"Test{self.user_counter}Pass"
-        user = UserModel(
-            email=f"test{self.user_counter}@gmail.com",
-            password=self.password_hasher.hash(password),
-            **kwargs,
-        )
-        self.session.add(user)
-        await self.session.commit()
-        await self.session.refresh(user)
-        return User(**{f: getattr(user, f) for f in User.__dataclass_fields__})
-
+class TestLogoutEndpoint(BaseAuthTest):
     async def test_without_tokens(self, client: AsyncClient):
         response = await client.post("/auth/logout")
         assert response.status_code == 401
