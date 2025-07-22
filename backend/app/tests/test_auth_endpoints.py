@@ -50,9 +50,10 @@ class TestLogoutEndpoint:
 
     async def create_user(self, **kwargs) -> User:
         self.user_counter += 1
+        password = f"Test{self.user_counter}Pass"
         user = UserModel(
             email=f"test{self.user_counter}@gmail.com",
-            password=self.password_hasher.hash(f"test{self.user_counter}"),
+            password=self.password_hasher.hash(password),
             **kwargs,
         )
         self.session.add(user)
