@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from app.core.domain import Application, Company
-from app.core.dto import ApplicationCreate, ApplicationRead
+from app.core.dto import ApplicationCreate, ApplicationRead, ApplicationUpdate
+from app.core.exceptions import ApplicationNotFoundError, UserNotAuthorizedError
 from app.core.repositories import (
     IApplicationRepository,
     ICompanyRepository,
@@ -29,12 +32,33 @@ class ApplicationService:
     async def create(self, app: ApplicationCreate, user_id: int):
         company = await self.company_repo.get_by_name(app.company.name)
         if company is None:
-            company = await self.company_repo.create(
-                Company.model_validate(app.company, from_attributes=True)
-            )
+            company = await self.company_repo.create(Company.model_validate(app.company, from_attributes=True))
         app_dict = app.model_dump()
         app_dict.update({"company_id": company.id})
         app_dict.update({"user_id": user_id})
         application = await self.app_repo.create(Application.model_validate(app_dict))
 
         return ApplicationRead.model_validate(application, from_attributes=True)
+
+    async def update(self, application_id: int, app: ApplicationUpdate, user_id: int) -> ApplicationRead:
+        existing_app = await self.app_repo.get_by_id(application_id)
+        if not existing_app:
+            raise ApplicationNotFoundError(f"Application with {application_id} id is not found")
+
+        if existing_app.user_id != user_id:
+            raise UserNotAuthorizedError(f"User with {user_id} id is not authorized to update this application")
+        update_data = app.model_dump(exclude_unset=True)
+        if not update_data:
+            return ApplicationRead.model_validate(existing_app, from_attributes=True)
+
+        if update_data.get("company"):
+            company = await self.company_repo.get_by_name(update_data["company"]["name"])
+            if company is None:
+                company = await self.company_repo.create(Company(name=update_data["company"]["name"]))
+            update_data["company_id"] = company.id
+            update_data.pop("company")
+        update_data["time_update"] = datetime.now()
+
+        updated_app = await self.app_repo.update(application_id, **update_data)
+
+        return ApplicationRead.model_validate(updated_app, from_attributes=True)

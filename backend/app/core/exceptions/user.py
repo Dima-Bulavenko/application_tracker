@@ -1,4 +1,4 @@
-from .generic import AlreadyExistError, NotFoundError
+from .generic import AlreadyExistError, BaseExceptionError, NotFoundError
 
 
 class UserNotFoundError(NotFoundError):
@@ -6,4 +6,8 @@ class UserNotFoundError(NotFoundError):
 
 
 class UserAlreadyExistError(AlreadyExistError):
+    pass
+
+
+class UserNotAuthorizedError(BaseExceptionError):
     pass
