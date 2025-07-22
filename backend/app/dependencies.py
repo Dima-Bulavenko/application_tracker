@@ -74,9 +74,8 @@ async def get_user(
         user = await user_service.get_by_email(email=payload.user_email)
     except UserNotFoundError as e:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_404_NOT_FOUND,
             f"User with {payload.user_email} email was not found",
-            headers={"WWW-Authenticate": "Bearer"},
         ) from e
     return user
 
