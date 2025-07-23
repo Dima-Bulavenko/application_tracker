@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.core.domain import Application
 from app.core.repositories import IApplicationRepository
@@ -33,3 +33,18 @@ class ApplicationSQLAlchemyRepository(
         )
         apps = await self.session.scalars(statement)
         return [Application.model_validate(app, from_attributes=True) for app in apps]
+
+    async def get_by_id(self, application_id: int) -> Application | None:
+        statement = select(self.model).where(self.model.id == application_id)
+        app = await self.session.scalar(statement)
+        return Application.model_validate(app, from_attributes=True) if app else None
+
+    async def update(self, application_id: int, **update_data) -> Application:
+        statement = (
+            update(self.model)
+            .where(self.model.id == application_id)
+            .values(update_data)
+            .returning(self.model)
+        )
+        updated_app = await self.session.scalar(statement)
+        return Application.model_validate(updated_app, from_attributes=True)

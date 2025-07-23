@@ -21,22 +21,16 @@ class Application(Base):
     )
     status: Mapped["AppStatus"] = mapped_column(server_default=AppStatus.APPLIED.value)
     company: Mapped["Company"] = relationship(back_populates="applications")
-    company_id: Mapped[int] = mapped_column(
-        ForeignKey("company.id", ondelete="CASCADE")
-    )
+    company_id: Mapped[int] = mapped_column(ForeignKey("company.id", ondelete="CASCADE"))
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     user: Mapped["User"] = relationship(back_populates="applications")
     time_create: Mapped[time_create_tp]
     time_update: Mapped[time_update_tp]
     interview_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    notes: Mapped[str | None]
+    note: Mapped[str | None]
     application_url: Mapped[str | None]
-    work_type: Mapped["WorkType"] = mapped_column(
-        index=True, server_default=WorkType.FULL_TIME.value
-    )
-    work_location: Mapped["WorkLocation"] = mapped_column(
-        index=True, server_default=WorkLocation.ON_SITE.value
-    )
+    work_type: Mapped["WorkType"] = mapped_column(index=True, server_default=WorkType.FULL_TIME.value)
+    work_location: Mapped["WorkLocation"] = mapped_column(index=True, server_default=WorkLocation.ON_SITE.value)
 
 
 class Company(Base):

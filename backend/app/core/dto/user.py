@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import EmailStr, Field
+from pydantic import AliasChoices, EmailStr, Field
 
 from .config import Model as BaseModel
 
@@ -16,15 +16,24 @@ UserPasswordField = Annotated[
     ),
 ]
 
+UserEmailField = Annotated[
+    EmailStr,
+    Field(
+        validation_alias=AliasChoices("username", "email"),
+        serialization_alias="username",
+        description="User's email address",
+    ),
+]
+
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    email: UserEmailField
     password: UserPasswordField
 
 
 class UserRead(BaseModel):
     id: int
-    email: EmailStr
+    email: UserEmailField
     first_name: str | None = Field(max_length=40, default=None)
     second_name: str | None = Field(max_length=40, default=None)
     time_create: datetime
@@ -33,5 +42,5 @@ class UserRead(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: UserEmailField
     password: UserPasswordField

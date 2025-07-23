@@ -36,3 +36,14 @@ class ApplicationCreate(Model):
     time_create: datetime = Field(datetime.now(UTC))
     time_update: datetime = Field(datetime.now(UTC))
     interview_date: datetime | None = None
+
+
+class ApplicationUpdate(Model):
+    role: str | None = None
+    company: "CompanyCreate | None" = None
+    status: AppStatus | None = None
+    work_type: WorkType | None = None
+    work_location: WorkLocation | None = None
+    note: str | None = None
+    application_url: str | None = None
+    interview_date: datetime | None = None

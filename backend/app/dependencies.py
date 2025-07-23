@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends, Form, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dto import AuthTokenPair, AuthTokenPayload, Token, UserLogin, UserRead
@@ -54,12 +54,10 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
 
 
 async def login_user(
-    auth_service: AuthServiceDep, form_data: LoginFormDep
+    auth_service: AuthServiceDep, user_data: Annotated[UserLogin, Form()]
 ) -> AuthTokenPair:
     try:
-        tokens = await auth_service.login_with_credentials(
-            UserLogin(email=form_data.username, password=form_data.password)
-        )
+        tokens = await auth_service.login_with_credentials(user_data)
     except (UserNotFoundError, InvalidPasswordError) as exp:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -76,9 +74,8 @@ async def get_user(
         user = await user_service.get_by_email(email=payload.user_email)
     except UserNotFoundError as e:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_404_NOT_FOUND,
             f"User with {payload.user_email} email was not found",
-            headers={"WWW-Authenticate": "Bearer"},
         ) from e
     return user
 
@@ -130,7 +127,6 @@ ActiveUserDep = Annotated[UserRead, Depends(get_active_user)]
 
 LoginUserDep = Annotated[AuthTokenPair, Depends(login_user)]
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-LoginFormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]

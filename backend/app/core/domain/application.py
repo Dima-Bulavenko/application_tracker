@@ -35,7 +35,7 @@ class Application(BaseModel):
     status: AppStatus = AppStatus.APPLIED
     work_type: WorkType = WorkType.FULL_TIME
     work_location: WorkLocation = WorkLocation.ON_SITE
-    notes: str | None = None
+    note: str | None = None
     application_url: str | None = None
     time_create: datetime = Field(datetime.now(UTC))
     time_update: datetime = Field(datetime.now(UTC))
