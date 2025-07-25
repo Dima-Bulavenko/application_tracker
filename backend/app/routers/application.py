@@ -47,3 +47,25 @@ async def update_application(
     except UserNotAuthorizedError as e:
         raise HTTPException(status_code=403, detail=str(e))
     return application
+
+
+@router.delete(
+    "/{application_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Access token is invalid", "model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"description": "Application not found", "model": ErrorResponse},
+        status.HTTP_403_FORBIDDEN: {
+            "description": "User is not authorized to delete this application",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def delete_application(application_id: int, app_service: ApplicationServiceDep, user: ActiveUserDep) -> None:
+    try:
+        await app_service.delete(application_id, user.id)
+    except ApplicationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except UserNotAuthorizedError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    return None
