@@ -170,3 +170,134 @@ class TestApplicationUpdate(BaseTest):
         assert response.status_code == 200
         response_data = response.json()
         assert response_data["company_id"] == company.id
+
+
+class TestApplicationDelete(BaseTest):
+    async def test_delete_application_success(self, client: AsyncClient):
+        """Test successful application deletion."""
+        user = await self.create_user()
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(user)
+        assert application.id is not None
+
+        response = await client.delete(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 204
+        assert response.content == b""
+
+        # Verify application was actually deleted
+        database_entity = await self.get_application(application.id)
+        assert database_entity is None
+
+    async def test_delete_with_non_existent_application(self, client: AsyncClient):
+        """Test delete with non-existent application ID."""
+        user = await self.create_user()
+        access_token = self.token_provider.create_access_token(user)
+
+        response = await client.delete(
+            "/applications/999999",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Application with 999999 id is not found"}
+
+    @pytest.mark.parametrize(
+        "header, error_message",
+        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+    )
+    async def test_delete_with_not_authenticated_user(
+        self, header: dict | None, error_message: str, client: AsyncClient
+    ):
+        """Test delete without proper authentication."""
+        application = await self.create_application()
+
+        response = await client.delete(f"/applications/{application.id}", headers=header)
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": f"{error_message}"}
+
+    async def test_delete_with_non_active_user(self, client: AsyncClient):
+        """Test delete with inactive user account."""
+        user = await self.create_user(is_active=False)
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(user)
+
+        response = await client.delete(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {"detail": "User account is not activated"}
+
+    async def test_delete_with_non_authorized_user(self, client: AsyncClient):
+        """Test delete by user who doesn't own the application."""
+        user = await self.create_user()
+        another_user = await self.create_user()
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(another_user)
+
+        response = await client.delete(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {
+            "detail": f"User with {another_user.id} id is not authorized to delete this application"
+        }
+
+    async def test_delete_multiple_applications(self, client: AsyncClient):
+        """Test deleting multiple applications owned by the same user."""
+        user = await self.create_user()
+        application1 = await self.create_application(user.id)
+        application2 = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(user)
+        assert application1.id is not None
+        assert application2.id is not None
+
+        # Delete first application
+        response1 = await client.delete(
+            f"/applications/{application1.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+        assert response1.status_code == 204
+
+        # Delete second application
+        response2 = await client.delete(
+            f"/applications/{application2.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+        assert response2.status_code == 204
+
+        # Verify both applications were deleted
+        database_entity1 = await self.get_application(application1.id)
+        database_entity2 = await self.get_application(application2.id)
+        assert database_entity1 is None
+        assert database_entity2 is None
+
+    async def test_delete_application_twice(self, client: AsyncClient):
+        """Test attempting to delete the same application twice."""
+        user = await self.create_user()
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(user)
+
+        # First deletion should succeed
+        response1 = await client.delete(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+        assert response1.status_code == 204
+
+        # Second deletion should fail with 404
+        response2 = await client.delete(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+        assert response2.status_code == 404
+        assert response2.json() == {"detail": f"Application with {application.id} id is not found"}
