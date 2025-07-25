@@ -19,3 +19,6 @@ class IApplicationRepository(ABC):
 
     @abstractmethod
     async def update(self, application_id: int, **update_data) -> Application: ...
+
+    @abstractmethod
+    async def delete(self, application_id: int) -> None: ...

@@ -62,3 +62,13 @@ class ApplicationService:
         updated_app = await self.app_repo.update(application_id, **update_data)
 
         return ApplicationRead.model_validate(updated_app, from_attributes=True)
+
+    async def delete(self, application_id: int, user_id: int) -> None:
+        existing_app = await self.app_repo.get_by_id(application_id)
+        if not existing_app:
+            raise ApplicationNotFoundError(f"Application with {application_id} id is not found")
+
+        if existing_app.user_id != user_id:
+            raise UserNotAuthorizedError(f"User with {user_id} id is not authorized to delete this application")
+
+        await self.app_repo.delete(application_id)
