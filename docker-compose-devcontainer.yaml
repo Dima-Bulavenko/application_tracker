@@ -8,7 +8,9 @@ services:
         POETRY_VERSION: ${POETRY_VERSION}
         NODE_VERSION: ${NODE_VERSION}
     volumes:
-      - source_vol:/code
+      - .:/code:cached
+      - node-modules:/code/frontend/node_modules
+      - python-venv:/code/backend/.venv
       - /home/dima/.zsh_history:/root/.zsh_history
     ports:
       - 8000:8000
@@ -61,5 +63,7 @@ volumes:
     name: postgres_data_volume
   pgadmin-data:
     name: pgadmin-data
-  source_vol:
-    name: source_vol
+  node-modules:
+    name: node_modules
+  python-venv:
+    name: python-venv
