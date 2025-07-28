@@ -301,3 +301,82 @@ class TestApplicationDelete(BaseTest):
         )
         assert response2.status_code == 404
         assert response2.json() == {"detail": f"Application with {application.id} id is not found"}
+
+
+class TestApplicationGetById(BaseTest):
+    async def test_get_application_success(self, client: AsyncClient):
+        """Test successful retrieval of application by ID."""
+        user = await self.create_user()
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(user)
+        assert application.id is not None
+
+        response = await client.get(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 200
+        response_data = response.json()
+        assert response_data["id"] == application.id
+        assert response_data["role"] == application.role
+        assert response_data["user_id"] == user.id
+        assert response_data["company_id"] == application.company_id
+
+    async def test_get_with_non_existent_application(self, client: AsyncClient):
+        """Test get with non-existent application ID."""
+        user = await self.create_user()
+        access_token = self.token_provider.create_access_token(user)
+
+        response = await client.get(
+            "/applications/999999",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Application with 999999 id is not found"}
+
+    @pytest.mark.parametrize(
+        "header, error_message",
+        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+    )
+    async def test_get_with_not_authenticated_user(self, header: dict | None, error_message: str, client: AsyncClient):
+        """Test get without proper authentication."""
+        application = await self.create_application()
+
+        response = await client.get(f"/applications/{application.id}", headers=header)
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": f"{error_message}"}
+
+    async def test_get_with_non_active_user(self, client: AsyncClient):
+        """Test get with inactive user account."""
+        user = await self.create_user(is_active=False)
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(user)
+
+        response = await client.get(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {"detail": "User account is not activated"}
+
+    async def test_get_with_non_authorized_user(self, client: AsyncClient):
+        """Test get by user who doesn't own the application."""
+        user = await self.create_user()
+        another_user = await self.create_user()
+        application = await self.create_application(user.id)
+        access_token = self.token_provider.create_access_token(another_user)
+
+        response = await client.get(
+            f"/applications/{application.id}",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {
+            "detail": f"User with {another_user.id} id is not authorized to access this application"
+        }
