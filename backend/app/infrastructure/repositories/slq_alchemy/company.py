@@ -9,9 +9,7 @@ from app.db.models import Company as CompanyModel
 from .config import SQLAlchemyRepository
 
 
-class CompanySQLAlchemyRepository(
-    SQLAlchemyRepository[CompanyModel], ICompanyRepository
-):
+class CompanySQLAlchemyRepository(SQLAlchemyRepository[CompanyModel], ICompanyRepository):
     model = CompanyModel
 
     async def create(self, company: Company) -> Company:
@@ -23,11 +21,7 @@ class CompanySQLAlchemyRepository(
     async def get_by_name(self, name: str) -> Company | None:
         statement = select(self.model).where(self.model.name == name)
         company_model = await self.session.scalar(statement)
-        return (
-            Company.model_validate(company_model, from_attributes=True)
-            if company_model
-            else None
-        )
+        return Company.model_validate(company_model, from_attributes=True) if company_model else None
 
     async def get_companies(
         self,

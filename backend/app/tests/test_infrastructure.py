@@ -21,9 +21,7 @@ class TestCompanySQLAlchemyRepository:
             (2, {"offset": 4, "limit": 4}),
         ],
     )
-    async def test_get_companies(
-        self, res, params, repo: CompanySQLAlchemyRepository, session: AsyncSession
-    ):
+    async def test_get_companies(self, res, params, repo: CompanySQLAlchemyRepository, session: AsyncSession):
         company_names = ["test1", "test2", "test3", "test4", "test5", "test6"]
         session.add_all(CompanyModel(name=n) for n in company_names)
         await session.commit()
