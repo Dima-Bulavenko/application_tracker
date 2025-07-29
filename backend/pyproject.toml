@@ -28,6 +28,7 @@ debugpy = "^1.8.12"
 ruff = "^0.11.12"
 pytest-asyncio = "^1.0.0"
 freezegun = "^1.5.3"
+types-passlib = "^1.7.7.20250602"
 
 [build-system]
 requires = ["poetry-core"]
