@@ -32,9 +32,7 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
 
 
 async def get_user_service(session: SessionDep) -> UserService:
-    return UserService(
-        user_repo=UserSQLAlchemyRepository(session), password_hasher=PasslibHasher()
-    )
+    return UserService(user_repo=UserSQLAlchemyRepository(session), password_hasher=PasslibHasher())
 
 
 async def get_auth_service(session: SessionDep) -> AuthService:
@@ -53,9 +51,7 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
     )
 
 
-async def login_user(
-    auth_service: AuthServiceDep, user_data: Annotated[UserLogin, Form()]
-) -> AuthTokenPair:
+async def login_user(auth_service: AuthServiceDep, user_data: Annotated[UserLogin, Form()]) -> AuthTokenPair:
     try:
         tokens = await auth_service.login_with_credentials(user_data)
     except (UserNotFoundError, InvalidPasswordError) as exp:
@@ -67,9 +63,7 @@ async def login_user(
     return tokens
 
 
-async def get_user(
-    user_service: UserServiceDep, payload: AccessTokenPayloadDep
-) -> UserRead:
+async def get_user(user_service: UserServiceDep, payload: AccessTokenPayloadDep) -> UserRead:
     try:
         user = await user_service.get_by_email(email=payload.user_email)
     except UserNotFoundError as e:
@@ -104,9 +98,7 @@ def get_access_token(
 
 
 def get_access_token_payload(token: AccessTokenDep):
-    exp = HTTPException(
-        status.HTTP_401_UNAUTHORIZED, headers={"WWW-Authenticate": "Bearer"}
-    )
+    exp = HTTPException(status.HTTP_401_UNAUTHORIZED, headers={"WWW-Authenticate": "Bearer"})
     try:
         payload = JWTTokenProvider().verify_access_token(token)
     except TokenExpireError as e:

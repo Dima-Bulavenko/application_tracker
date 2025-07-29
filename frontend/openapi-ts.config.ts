@@ -1,6 +1,5 @@
-import { defineConfig } from "./plugins/zod/config"
+import { defineConfig } from './plugins/zod/config';
 import { defaultPlugins } from '@hey-api/openapi-ts';
-
 
 export default {
   input: './openapi.json',
@@ -11,9 +10,9 @@ export default {
   plugins: [
     ...defaultPlugins,
     {
-    name: '@hey-api/client-axios',
-    runtimeConfigPath: './src/client_config.ts',
-  },
-  defineConfig(),
-  ]
+      name: '@hey-api/client-axios',
+      runtimeConfigPath: './src/client_config.ts',
+    },
+    defineConfig(),
+  ],
 };

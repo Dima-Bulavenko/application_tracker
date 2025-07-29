@@ -30,9 +30,7 @@ async def login(tokens: LoginUserDep, response: Response) -> AccessToken:
 
 
 @router.get("/refresh", status_code=status.HTTP_200_OK)
-async def refresh_token(
-    auth_service: AuthServiceDep, refresh_token: RefreshTokenDep, response: Response
-) -> Token:
+async def refresh_token(auth_service: AuthServiceDep, refresh_token: RefreshTokenDep, response: Response) -> Token:
     new_tokens = await auth_service.refresh_token(refresh_token)
     set_refresh_token(response, new_tokens.refresh.token)
     return new_tokens.access

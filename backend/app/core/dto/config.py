@@ -9,11 +9,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 def remove_tdo_suffix(class_obj: type):
     suffix = "dto"
     class_name = class_obj.__name__
-    return (
-        class_name[: -len(suffix)]
-        if class_name.lower().endswith(suffix)
-        else class_name
-    )
+    return class_name[: -len(suffix)] if class_name.lower().endswith(suffix) else class_name
 
 
 class Model(BaseModel):

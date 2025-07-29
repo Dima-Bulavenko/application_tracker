@@ -24,9 +24,7 @@ pk_tp = Annotated[int, mapped_column(primary_key=True)]
 
 
 class Base(AsyncAttrs, DeclarativeBase):
-    type_annotation_map = {
-        enum.Enum: Enum(values_callable=lambda x: [e.value for e in x])
-    }
+    type_annotation_map = {enum.Enum: Enum(values_callable=lambda x: [e.value for e in x])}
 
     repr_num_cols = 2
     repr_additional_cols = ()
@@ -36,4 +34,4 @@ class Base(AsyncAttrs, DeclarativeBase):
         for inx, col in enumerate(self.__table__.columns.keys()):
             if col in self.repr_additional_cols or inx < self.repr_num_cols:
                 cols.append(f"{col}={getattr(self, col)}")
-        return f"<{self.__class__.__name__} {", ".join(cols)}>"
+        return f"<{self.__class__.__name__} {', '.join(cols)}>"

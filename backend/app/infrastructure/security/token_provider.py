@@ -22,30 +22,20 @@ class JWTTokenProvider(ITokenProvider):
         return token
 
     def create_refresh_token(self, user: User) -> Token:
-        exp = datetime.now(timezone.utc) + timedelta(
-            minutes=REFRESH_TOKEN_EXPIRE_MINUTES
-        )
-        payload = AuthTokenPayload(
-            user_email=user.email, exp=exp, type=TokenType.refresh
-        )
+        exp = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+        payload = AuthTokenPayload(user_email=user.email, exp=exp, type=TokenType.refresh)
 
         return Token(token=self.__create_token(payload))
 
     def create_access_token(self, user: User) -> Token:
-        exp = datetime.now(timezone.utc) + timedelta(
-            minutes=ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-        payload = AuthTokenPayload(
-            user_email=user.email, exp=exp, type=TokenType.access
-        )
+        exp = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        payload = AuthTokenPayload(user_email=user.email, exp=exp, type=TokenType.access)
 
         return Token(token=self.__create_token(payload))
 
     def __verify(self, token: Token, token_type: TokenType) -> AuthTokenPayload:
         try:
-            dict_payload: dict = jwt.decode(
-                token.token, SECRET_KEY, [ALGORITHM], options={"require": ["exp"]}
-            )
+            dict_payload: dict = jwt.decode(token.token, SECRET_KEY, [ALGORITHM], options={"require": ["exp"]})
         except jwt.exceptions.ExpiredSignatureError as exp:
             raise TokenExpireError("Token is expired") from exp
         except jwt.exceptions.InvalidTokenError as exp:

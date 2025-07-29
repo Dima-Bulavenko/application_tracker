@@ -12,9 +12,7 @@ router = APIRouter(prefix="/users", tags=[Tags.USER])
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_user(
-    credentials: Annotated[UserCreate, Form()], service: UserServiceDep
-) -> MessageResponse:
+async def create_user(credentials: Annotated[UserCreate, Form()], service: UserServiceDep) -> MessageResponse:
     """
     **Create** a user with provided email and password.
 

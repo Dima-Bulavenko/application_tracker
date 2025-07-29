@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import enum
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String

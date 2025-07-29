@@ -14,9 +14,7 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
     model = UserModel
 
     async def __get_one(self, **kwargs):
-        error_message = (
-            f"User with {', '.join((f'{k} = {v}' for k, v in kwargs.items()))}"
-        )
+        error_message = f"User with {', '.join((f'{k} = {v}' for k, v in kwargs.items()))}"
         item = await super()._get_one(error_message, UserNotFoundError, **kwargs)
         return item
 
@@ -30,7 +28,5 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
 
     async def save(self, user: User) -> User:
         error_massage = f"User with {user.email} already exist"
-        user_model = await self._save(
-            mapper.to_repo(user), error_massage, UserAlreadyExistError
-        )
+        user_model = await self._save(mapper.to_repo(user), error_massage, UserAlreadyExistError)
         return mapper.to_domain(user_model)

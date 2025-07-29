@@ -5,9 +5,7 @@ from app.core.security import IPasswordHasher
 
 
 class UserService:
-    def __init__(
-        self, user_repo: IUserRepository, password_hasher: IPasswordHasher
-    ) -> None:
+    def __init__(self, user_repo: IUserRepository, password_hasher: IPasswordHasher) -> None:
         self.user_repo = user_repo
         self.password_hasher = password_hasher
 
