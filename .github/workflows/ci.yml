@@ -1,5 +1,9 @@
 name: CI Pipeline
 
+permissions:
+  contents: read
+  security-events: write
+
 on:
   push:
     branches: [main, dev]
@@ -75,13 +79,16 @@ jobs:
 
     env:
       POSTGRES_HOST_TEST: localhost
-      POSTGRES_PORT_TEST: 5432
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
       POSTGRES_USER_TEST: test_user
-      POSTGRES_PASSWORD_TEST: test_password
+      POSTGRES_PASSWORD: test_password
       POSTGRES_DB_TEST: test_db
       SECRET_KEY: test-secret-key-for-ci
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_MINUTES: 43200
+      ALLOWED_HOSTS: http://localhost:5173,http://127.0.0.1:5173
 
     steps:
       - uses: actions/checkout@v4
