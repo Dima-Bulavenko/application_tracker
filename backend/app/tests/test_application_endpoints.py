@@ -72,7 +72,7 @@ class TestApplicationUpdate(BaseTest):
 
     @pytest.mark.parametrize(
         "header, error_message",
-        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_with_not_authenticated_user(self, header: dict | None, error_message: str, client: AsyncClient):
         application = await self.create_application()
@@ -207,7 +207,7 @@ class TestApplicationDelete(BaseTest):
 
     @pytest.mark.parametrize(
         "header, error_message",
-        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_delete_with_not_authenticated_user(
         self, header: dict | None, error_message: str, client: AsyncClient
@@ -338,7 +338,7 @@ class TestApplicationGetById(BaseTest):
 
     @pytest.mark.parametrize(
         "header, error_message",
-        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_get_with_not_authenticated_user(self, header: dict | None, error_message: str, client: AsyncClient):
         """Test get without proper authentication."""
