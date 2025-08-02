@@ -12,7 +12,7 @@ def remove_tdo_suffix(class_obj: type):
     return class_name[: -len(suffix)] if class_name.lower().endswith(suffix) else class_name
 
 
-class Model(BaseModel):
+class BaseModelDTO(BaseModel):
     model_config = ConfigDict(
         model_title_generator=remove_tdo_suffix,
         from_attributes=True,

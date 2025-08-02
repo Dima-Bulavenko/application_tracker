@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
+from typing import Literal
 
-from .config import Model
+from .config import BaseModelDTO
 
 
 class TokenType(StrEnum):
@@ -12,44 +13,30 @@ class TokenType(StrEnum):
     verification = "verification"
 
 
-class Token(Model):
+class Token[PayloadT: BaseModelDTO](BaseModelDTO):
     token: str
     type: TokenType
+    payload: PayloadT
 
 
-class AccessTokenPayload(Model):
+class AccessTokenPayload(BaseModelDTO):
     user_email: str
     exp: int | datetime
-    type: TokenType
+    type: Literal[TokenType.access] = TokenType.access
 
 
-class RefreshTokenPayload(Model):
+class RefreshTokenPayload(BaseModelDTO):
     user_email: str
     exp: int | datetime
-    type: TokenType = TokenType.refresh
+    type: Literal[TokenType.refresh] = TokenType.refresh
 
 
-class VerificationTokenPayload(Model):
+class VerificationTokenPayload(BaseModelDTO):
     email: str
     exp: int | datetime
-    type: TokenType = TokenType.verification
+    type: Literal[TokenType.verification] = TokenType.verification
 
 
-class AccessToken(Token):
-    type: TokenType = TokenType.access
-    payload: AccessTokenPayload
-
-
-class RefreshToken(Token):
-    type: TokenType = TokenType.refresh
-    payload: RefreshTokenPayload
-
-
-class VerificationToken(Token):
-    type: TokenType = TokenType.verification
-    payload: VerificationTokenPayload
-
-
-class AccessTokenResponse(Model):
+class AccessTokenResponse(BaseModelDTO):
     access_token: str
     token_type: str = "bearer"

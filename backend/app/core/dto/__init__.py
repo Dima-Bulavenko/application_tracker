@@ -8,16 +8,10 @@ from .application import (
     ApplicationUpdate as ApplicationUpdate,
 )
 from .auth import (
-    AccessToken as AccessToken,
-)
-from .auth import (
     AccessTokenPayload as AccessTokenPayload,
 )
 from .auth import (
     AccessTokenResponse as AccessTokenResponse,
-)
-from .auth import (
-    RefreshToken as RefreshToken,
 )
 from .auth import (
     RefreshTokenPayload as RefreshTokenPayload,
@@ -29,13 +23,10 @@ from .auth import (
     TokenType as TokenType,
 )
 from .auth import (
-    VerificationToken as VerificationToken,
-)
-from .auth import (
     VerificationTokenPayload as VerificationTokenPayload,
 )
 from .company import CompanyCreate as CompanyCreate
-from .config import Model as BaseModelDTO
+from .config import BaseModelDTO as BaseModelDTO
 from .user import (
     UserCreate as UserCreate,
 )
