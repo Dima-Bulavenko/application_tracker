@@ -21,19 +21,22 @@ class Token[PayloadT: BaseModelDTO](BaseModelDTO):
 
 class AccessTokenPayload(BaseModelDTO):
     user_email: str
-    exp: int | datetime
+    user_id: int
+    exp: datetime | None = None
     type: Literal[TokenType.access] = TokenType.access
 
 
 class RefreshTokenPayload(BaseModelDTO):
     user_email: str
-    exp: int | datetime
+    user_id: int
+    exp: datetime | None = None
     type: Literal[TokenType.refresh] = TokenType.refresh
 
 
 class VerificationTokenPayload(BaseModelDTO):
-    email: str
-    exp: int | datetime
+    user_email: str
+    user_id: int
+    exp: datetime | None = None
     type: Literal[TokenType.verification] = TokenType.verification
 
 
