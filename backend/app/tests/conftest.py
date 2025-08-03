@@ -3,11 +3,11 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app import env
-from app.core.security import IPasswordHasher, ITokenProvider
+from app.core.security import IPasswordHasher
 from app.db import url_object
 from app.db.models import Base
 from app.dependencies import get_session
-from app.infrastructure.security import JWTTokenProvider, PasslibHasher
+from app.infrastructure.security import AccessTokenStrategy, PasslibHasher, RefreshTokenStrategy
 from app.main import app
 
 
@@ -50,8 +50,13 @@ async def get_async_client():
 
 
 @pytest.fixture(scope="session")
-def token_provider() -> ITokenProvider:
-    return JWTTokenProvider()
+def access_token_strategy() -> AccessTokenStrategy:
+    return AccessTokenStrategy()
+
+
+@pytest.fixture(scope="session")
+def refresh_token_strategy() -> RefreshTokenStrategy:
+    return RefreshTokenStrategy()
 
 
 @pytest.fixture(scope="session")

@@ -20,7 +20,12 @@ from app.infrastructure.repositories import (
     CompanySQLAlchemyRepository,
     UserSQLAlchemyRepository,
 )
-from app.infrastructure.security import JWTTokenProvider, PasslibHasher
+from app.infrastructure.security import (
+    AccessTokenStrategy,
+    PasslibHasher,
+    RefreshTokenStrategy,
+    VerificationTokenStrategy,
+)
 
 from .db import Session as SessionMaker
 
@@ -39,7 +44,8 @@ async def get_auth_service(session: SessionDep) -> AuthService:
     return AuthService(
         user_repo=UserSQLAlchemyRepository(session),
         password_hasher=PasslibHasher(),
-        token_provider=JWTTokenProvider(),
+        access_strategy=AccessTokenStrategy(),
+        refresh_strategy=RefreshTokenStrategy(),
     )
 
 
@@ -54,7 +60,7 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
 async def get_user_email_service() -> UserEmailService:
     return UserEmailService(
         email_service=DevelopmentEmailService(),
-        token_provider=JWTTokenProvider(),
+        token_handler=VerificationTokenStrategy(),
     )
 
 
@@ -88,7 +94,7 @@ def get_access_token(
 def get_access_token_payload(token: AccessTokenDep) -> AccessTokenPayload:
     exp = HTTPException(status.HTTP_401_UNAUTHORIZED, headers={"WWW-Authenticate": "Bearer"})
     try:
-        access = JWTTokenProvider().verify_access_token(token)
+        access = AccessTokenStrategy().verify_token(token)
     except TokenExpireError as e:
         exp.detail = str(e)
         raise exp from e

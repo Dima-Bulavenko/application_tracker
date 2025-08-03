@@ -99,8 +99,8 @@ class TestLogoutEndpoint(BaseTest):
 
     async def test_with_valid_tokens(self, client: AsyncClient):
         user = await self.create_user()
-        access_token = self.token_provider.create_access_token(user)
-        refresh_token = self.token_provider.create_refresh_token(user)
+        access_token = self.create_access_token(user)
+        refresh_token = self.create_refresh_token(user)
 
         response = await client.post(
             "/auth/logout",
@@ -113,7 +113,7 @@ class TestLogoutEndpoint(BaseTest):
 
     async def test_with_invalid_access_token(self, client: AsyncClient):
         user = await self.create_user()
-        refresh_token = self.token_provider.create_refresh_token(user)
+        refresh_token = self.create_refresh_token(user)
 
         response = await client.post(
             "/auth/logout",
@@ -126,7 +126,7 @@ class TestLogoutEndpoint(BaseTest):
 
     async def test_with_invalid_refresh_token(self, client: AsyncClient):
         user = await self.create_user()
-        access_token = self.token_provider.create_refresh_token(user)
+        access_token = self.create_refresh_token(user)
 
         response = await client.post(
             "/auth/logout",
@@ -139,8 +139,8 @@ class TestLogoutEndpoint(BaseTest):
 
     async def test_user_does_not_exits(self, client: AsyncClient):
         user = User(id=1, email="notexistinguser@gmail.com", password="password")
-        access_token = self.token_provider.create_access_token(user)
-        refresh_token = self.token_provider.create_refresh_token(user)
+        access_token = self.create_access_token(user)
+        refresh_token = self.create_refresh_token(user)
 
         response = await client.post(
             "/auth/logout",
@@ -157,8 +157,8 @@ class TestLogoutEndpoint(BaseTest):
     )
     async def test_access_token_expired(self, token_live_duration: int, client: AsyncClient):
         user = await self.create_user()
-        access_token = self.token_provider.create_access_token(user)
-        refresh_token = self.token_provider.create_refresh_token(user)
+        access_token = self.create_access_token(user)
+        refresh_token = self.create_refresh_token(user)
 
         with freeze_time(datetime.now() + timedelta(minutes=token_live_duration + 5)):
             response = await client.post(

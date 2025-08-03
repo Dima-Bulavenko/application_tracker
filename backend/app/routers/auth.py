@@ -5,15 +5,12 @@ from typing_extensions import Annotated
 
 from app import Tags
 from app.base_schemas import ErrorResponse
-from app.core.dto import AccessTokenResponse, RefreshToken, UserLogin
+from app.core.dto import AccessTokenResponse, RefreshTokenPayload, Token, UserLogin
 from app.core.exceptions import InvalidPasswordError, TokenExpireError, TokenInvalidError, UserNotFoundError
 from app.dependencies import AccessTokenDep, AuthServiceDep, RefreshTokenDep
 
 
-def set_refresh_token(
-    response: Response,
-    token: RefreshToken,
-) -> None:
+def set_refresh_token(response: Response, token: Token[RefreshTokenPayload]) -> None:
     response.set_cookie(
         key="refresh",
         value=token.token,

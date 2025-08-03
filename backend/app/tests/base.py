@@ -3,7 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.domain import Application, Company, User
-from app.core.security import IPasswordHasher, ITokenProvider
+from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token
+from app.core.security import IPasswordHasher, ITokenStrategy
 from app.db.models import Application as ApplicationModel
 from app.db.models import Company as CompanyModel
 from app.db.models import User as UserModel
@@ -16,12 +17,14 @@ class BaseTest:
     def setup(
         self,
         session: AsyncSession,
-        token_provider: ITokenProvider,
         password_hasher: IPasswordHasher,
+        access_token_strategy: ITokenStrategy[AccessTokenPayload],
+        refresh_token_strategy: ITokenStrategy[RefreshTokenPayload],
     ):
         """Set up common test dependencies and counters."""
         self.session = session
-        self.token_provider = token_provider
+        self.access_token_strategy = access_token_strategy
+        self.refresh_token_strategy = refresh_token_strategy
         self.password_hasher = password_hasher
 
         # Initialize counters for unique test data
@@ -143,3 +146,13 @@ class BaseTest:
         statement = select(CompanyModel).where(CompanyModel.id == company_id)
         company = await self.session.scalar(statement)
         return company
+
+    def create_access_token(self, user: User) -> Token[AccessTokenPayload]:
+        assert user.id is not None, "User ID must be set to create access token"
+        payload = AccessTokenPayload(user_email=user.email, user_id=user.id)
+        return self.access_token_strategy.create_token(payload)
+
+    def create_refresh_token(self, user: User) -> Token[RefreshTokenPayload]:
+        assert user.id is not None, "User ID must be set to create refresh token"
+        payload = RefreshTokenPayload(user_email=user.email, user_id=user.id)
+        return self.refresh_token_strategy.create_token(payload)

@@ -30,8 +30,7 @@ async def create_user(
         # Send verification email in background
         background_tasks.add_task(
             email_service.send_verification_email,
-            user.email,
-            user_name=user.first_name,
+            user,
         )
     except UserAlreadyExistError as exp:  #  noqa: F841
         print("user already exist")
