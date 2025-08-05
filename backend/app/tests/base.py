@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.domain import Application, Company, User
-from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token
+from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, VerificationTokenPayload
 from app.core.security import IPasswordHasher, ITokenStrategy
 from app.db.models import Application as ApplicationModel
 from app.db.models import Company as CompanyModel
@@ -20,11 +22,13 @@ class BaseTest:
         password_hasher: IPasswordHasher,
         access_token_strategy: ITokenStrategy[AccessTokenPayload],
         refresh_token_strategy: ITokenStrategy[RefreshTokenPayload],
+        verification_token_strategy: ITokenStrategy[VerificationTokenPayload],
     ):
         """Set up common test dependencies and counters."""
         self.session = session
         self.access_token_strategy = access_token_strategy
         self.refresh_token_strategy = refresh_token_strategy
+        self.verification_token_strategy = verification_token_strategy
         self.password_hasher = password_hasher
 
         # Initialize counters for unique test data
@@ -147,6 +151,11 @@ class BaseTest:
         company = await self.session.scalar(statement)
         return company
 
+    async def get_user(self, user_id: int) -> UserModel | None:
+        statement = select(UserModel).where(UserModel.id == user_id)
+        user = await self.session.scalar(statement)
+        return user
+
     def create_access_token(self, user: User) -> Token[AccessTokenPayload]:
         assert user.id is not None, "User ID must be set to create access token"
         payload = AccessTokenPayload(user_email=user.email, user_id=user.id)
@@ -156,3 +165,26 @@ class BaseTest:
         assert user.id is not None, "User ID must be set to create refresh token"
         payload = RefreshTokenPayload(user_email=user.email, user_id=user.id)
         return self.refresh_token_strategy.create_token(payload)
+
+    def create_verification_token(self, user: User, exp: datetime | None = None) -> str:
+        """Create a verification token for testing."""
+        assert user.id is not None, "User ID must be set to create verification token"
+        payload = VerificationTokenPayload(
+            user_email=user.email,
+            user_id=user.id,
+            exp=exp or datetime.now(timezone.utc) + timedelta(minutes=10),
+        )
+        token = self.verification_token_strategy.create_token(payload)
+        return token.token
+
+    def create_verification_token_for_user_data(
+        self, user_email: str, user_id: int, exp: datetime | None = None
+    ) -> str:
+        """Create a verification token for testing with explicit user data."""
+        payload = VerificationTokenPayload(
+            user_email=user_email,
+            user_id=user_id,
+            exp=exp or datetime.now(timezone.utc) + timedelta(minutes=10),
+        )
+        token = self.verification_token_strategy.create_token(payload)
+        return token.token

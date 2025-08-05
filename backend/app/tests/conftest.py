@@ -7,7 +7,12 @@ from app.core.security import IPasswordHasher
 from app.db import url_object
 from app.db.models import Base
 from app.dependencies import get_session
-from app.infrastructure.security import AccessTokenStrategy, PasslibHasher, RefreshTokenStrategy
+from app.infrastructure.security import (
+    AccessTokenStrategy,
+    PasslibHasher,
+    RefreshTokenStrategy,
+    VerificationTokenStrategy,
+)
 from app.main import app
 
 
@@ -57,6 +62,11 @@ def access_token_strategy() -> AccessTokenStrategy:
 @pytest.fixture(scope="session")
 def refresh_token_strategy() -> RefreshTokenStrategy:
     return RefreshTokenStrategy()
+
+
+@pytest.fixture(scope="session")
+def verification_token_strategy() -> VerificationTokenStrategy:
+    return VerificationTokenStrategy()
 
 
 @pytest.fixture(scope="session")
