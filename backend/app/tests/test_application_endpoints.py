@@ -28,7 +28,7 @@ class TestApplicationUpdate(BaseTest):
     async def test_update_application(self, field: str, value: str, client: AsyncClient):
         user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         assert application.id is not None
 
         response = await client.patch(
@@ -47,7 +47,7 @@ class TestApplicationUpdate(BaseTest):
     async def test_update_with_empty_body(self, client: AsyncClient):
         user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         assert application.id is not None
 
         response = await client.patch(
@@ -72,7 +72,7 @@ class TestApplicationUpdate(BaseTest):
 
     @pytest.mark.parametrize(
         "header, error_message",
-        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_with_not_authenticated_user(self, header: dict | None, error_message: str, client: AsyncClient):
         application = await self.create_application()
@@ -83,7 +83,7 @@ class TestApplicationUpdate(BaseTest):
 
     async def test_with_non_existent_application(self, client: AsyncClient):
         user = await self.create_user()
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         response = await client.patch(
             "/applications/999999",
             json={"role": "Updated Role"},
@@ -95,7 +95,7 @@ class TestApplicationUpdate(BaseTest):
     async def test_with_non_active_user(self, client: AsyncClient):
         user = await self.create_user(is_active=False)
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.patch(
             f"/applications/{application.id}",
@@ -109,7 +109,7 @@ class TestApplicationUpdate(BaseTest):
         user = await self.create_user()
         another_user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(another_user)
+        access_token = self.create_access_token(another_user)
 
         response = await client.patch(
             f"/applications/{application.id}",
@@ -125,7 +125,7 @@ class TestApplicationUpdate(BaseTest):
         user = await self.create_user()
         company = await self.create_company()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.patch(
             f"/applications/{application.id}",
@@ -140,7 +140,7 @@ class TestApplicationUpdate(BaseTest):
     async def test_with_non_existent_company(self, client: AsyncClient):
         user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         company_name = "NonExistentCompany"
 
         response = await client.patch(
@@ -159,7 +159,7 @@ class TestApplicationUpdate(BaseTest):
         user = await self.create_user()
         company = await self.create_company()
         application = await self.create_application(user.id, company_id=company.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.patch(
             f"/applications/{application.id}",
@@ -177,7 +177,7 @@ class TestApplicationDelete(BaseTest):
         """Test successful application deletion."""
         user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         assert application.id is not None
 
         response = await client.delete(
@@ -195,7 +195,7 @@ class TestApplicationDelete(BaseTest):
     async def test_delete_with_non_existent_application(self, client: AsyncClient):
         """Test delete with non-existent application ID."""
         user = await self.create_user()
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.delete(
             "/applications/999999",
@@ -207,7 +207,7 @@ class TestApplicationDelete(BaseTest):
 
     @pytest.mark.parametrize(
         "header, error_message",
-        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_delete_with_not_authenticated_user(
         self, header: dict | None, error_message: str, client: AsyncClient
@@ -225,7 +225,7 @@ class TestApplicationDelete(BaseTest):
         """Test delete with inactive user account."""
         user = await self.create_user(is_active=False)
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.delete(
             f"/applications/{application.id}",
@@ -240,7 +240,7 @@ class TestApplicationDelete(BaseTest):
         user = await self.create_user()
         another_user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(another_user)
+        access_token = self.create_access_token(another_user)
 
         response = await client.delete(
             f"/applications/{application.id}",
@@ -257,7 +257,7 @@ class TestApplicationDelete(BaseTest):
         user = await self.create_user()
         application1 = await self.create_application(user.id)
         application2 = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         assert application1.id is not None
         assert application2.id is not None
 
@@ -285,7 +285,7 @@ class TestApplicationDelete(BaseTest):
         """Test attempting to delete the same application twice."""
         user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         # First deletion should succeed
         response1 = await client.delete(
@@ -308,7 +308,7 @@ class TestApplicationGetById(BaseTest):
         """Test successful retrieval of application by ID."""
         user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
         assert application.id is not None
 
         response = await client.get(
@@ -326,7 +326,7 @@ class TestApplicationGetById(BaseTest):
     async def test_get_with_non_existent_application(self, client: AsyncClient):
         """Test get with non-existent application ID."""
         user = await self.create_user()
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.get(
             "/applications/999999",
@@ -338,7 +338,7 @@ class TestApplicationGetById(BaseTest):
 
     @pytest.mark.parametrize(
         "header, error_message",
-        [({"Authorization": "Bearer invalid_token"}, "Token invalid"), (None, "Not authenticated")],
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_get_with_not_authenticated_user(self, header: dict | None, error_message: str, client: AsyncClient):
         """Test get without proper authentication."""
@@ -354,7 +354,7 @@ class TestApplicationGetById(BaseTest):
         """Test get with inactive user account."""
         user = await self.create_user(is_active=False)
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(user)
+        access_token = self.create_access_token(user)
 
         response = await client.get(
             f"/applications/{application.id}",
@@ -369,7 +369,7 @@ class TestApplicationGetById(BaseTest):
         user = await self.create_user()
         another_user = await self.create_user()
         application = await self.create_application(user.id)
-        access_token = self.token_provider.create_access_token(another_user)
+        access_token = self.create_access_token(another_user)
 
         response = await client.get(
             f"/applications/{application.id}",

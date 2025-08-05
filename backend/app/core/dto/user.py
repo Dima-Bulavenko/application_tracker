@@ -6,7 +6,7 @@ from typing import Annotated
 
 from pydantic import AliasChoices, EmailStr, Field
 
-from .config import Model as BaseModel
+from .config import BaseModelDTO
 
 UserPasswordField = Annotated[
     str,
@@ -26,12 +26,12 @@ UserEmailField = Annotated[
 ]
 
 
-class UserCreate(BaseModel):
+class UserCreate(BaseModelDTO):
     email: UserEmailField
     password: UserPasswordField
 
 
-class UserRead(BaseModel):
+class UserRead(BaseModelDTO):
     id: int
     email: UserEmailField
     first_name: str | None = Field(max_length=40, default=None)
@@ -41,6 +41,6 @@ class UserRead(BaseModel):
     is_active: bool = True
 
 
-class UserLogin(BaseModel):
+class UserLogin(BaseModelDTO):
     email: UserEmailField
     password: UserPasswordField

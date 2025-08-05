@@ -7,10 +7,10 @@ from pydantic import Field
 from app.core.domain import AppStatus, WorkLocation, WorkType
 
 from .company import CompanyCreate
-from .config import Model
+from .config import BaseModelDTO
 
 
-class ApplicationRead(Model):
+class ApplicationRead(BaseModelDTO):
     role: str
     company_id: int
     user_id: int
@@ -25,7 +25,7 @@ class ApplicationRead(Model):
     interview_date: datetime | None = None
 
 
-class ApplicationCreate(Model):
+class ApplicationCreate(BaseModelDTO):
     role: str
     company: "CompanyCreate"
     status: AppStatus = AppStatus.APPLIED
@@ -38,7 +38,7 @@ class ApplicationCreate(Model):
     interview_date: datetime | None = None
 
 
-class ApplicationUpdate(Model):
+class ApplicationUpdate(BaseModelDTO):
     role: str | None = None
     company: "CompanyCreate | None" = None
     status: AppStatus | None = None

@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
-from app.core.domain import User
-from app.core.dto import AuthTokenPayload, Token
+from app.core.dto import BaseModelDTO, Token
 
 
 class IPasswordHasher(ABC):
@@ -12,15 +11,9 @@ class IPasswordHasher(ABC):
     def verify(self, raw_password: str, hashed_password: str) -> bool: ...
 
 
-class ITokenProvider(ABC):
+class ITokenStrategy[PayloadT: BaseModelDTO](ABC):
     @abstractmethod
-    def create_access_token(self, user: User) -> Token: ...
+    def create_token(self, payload: PayloadT) -> Token[PayloadT]: ...
 
     @abstractmethod
-    def create_refresh_token(self, user: User) -> Token: ...
-
-    @abstractmethod
-    def verify_refresh_token(self, token: Token) -> AuthTokenPayload: ...
-
-    @abstractmethod
-    def verify_access_token(self, token: Token) -> AuthTokenPayload: ...
+    def verify_token(self, token: str) -> Token[PayloadT]: ...

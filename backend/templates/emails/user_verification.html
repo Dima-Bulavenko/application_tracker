@@ -1,0 +1,27 @@
+{% extends "emails/base.html" %} {% block title %}Verify Your Account -
+Application Tracker{% endblock %} {% block header_title %}Welcome to Application
+Tracker!{% endblock %} {% block content %}
+<h2>Please verify your email address</h2>
+
+<p>Hello{% if user_name %}, {{ user_name }}{% endif %},</p>
+
+<p>
+  Thank you for signing up for Application Tracker! To complete your
+  registration, please verify your email address by clicking the button below:
+</p>
+
+<a href="{{ verification_url }}" class="button">Verify Email Address</a>
+
+<p>
+  If the button doesn't work, you can also copy and paste this link into your
+  browser:
+</p>
+<p><a href="{{ verification_url }}">{{ verification_url }}</a></p>
+
+<div class="alert alert-warning">
+  <strong>⏰ Important:</strong> This verification link will expire in 24 hours
+  for security reasons.
+</div>
+
+<p>If you didn't create an account with us, please ignore this email.</p>
+{% endblock %}

@@ -8,49 +8,105 @@ from app import (
     REFRESH_TOKEN_EXPIRE_MINUTES,
     SECRET_KEY,
 )
-from app.core.domain import User
-from app.core.dto import AuthTokenPayload, Token, TokenType
+from app.core.dto import (
+    AccessTokenPayload,
+    BaseModelDTO,
+    RefreshTokenPayload,
+    Token,
+    TokenType,
+    VerificationTokenPayload,
+)
 from app.core.exceptions import TokenExpireError, TokenInvalidError
-from app.core.security import ITokenProvider
+from app.core.security import ITokenStrategy
 
 
-class JWTTokenProvider(ITokenProvider):
-    @staticmethod
-    def __create_token(payload: AuthTokenPayload) -> str:
-        dict_payload = payload.model_dump()
-        token = jwt.encode(dict_payload, SECRET_KEY, ALGORITHM)
+class JWTProvider:
+    def __init__(self, secret_key: str | None, algorithm: str = ALGORITHM) -> None:
+        self.secret_key = secret_key
+        self.algorithm = algorithm
+
+    def create(self, payload: BaseModelDTO) -> str:
+        token = jwt.encode(payload.model_dump(), self.secret_key, self.algorithm)
         return token
 
-    def create_refresh_token(self, user: User) -> Token:
-        exp = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
-        payload = AuthTokenPayload(user_email=user.email, exp=exp, type=TokenType.refresh)
-
-        return Token(token=self.__create_token(payload))
-
-    def create_access_token(self, user: User) -> Token:
-        exp = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        payload = AuthTokenPayload(user_email=user.email, exp=exp, type=TokenType.access)
-
-        return Token(token=self.__create_token(payload))
-
-    def __verify(self, token: Token, token_type: TokenType) -> AuthTokenPayload:
+    def verify(self, token: str) -> dict:
         try:
-            dict_payload: dict = jwt.decode(token.token, SECRET_KEY, [ALGORITHM], options={"require": ["exp"]})
+            dict_payload: dict = jwt.decode(token, self.secret_key, [self.algorithm], options={"require": ["exp"]})
         except jwt.exceptions.ExpiredSignatureError as exp:
             raise TokenExpireError("Token is expired") from exp
         except jwt.exceptions.InvalidTokenError as exp:
             raise TokenInvalidError("Token is not valid") from exp
 
-        token_payload = AuthTokenPayload(**dict_payload)
-        if token_payload.type != token_type:
+        return dict_payload
+
+
+class AccessTokenStrategy(ITokenStrategy[AccessTokenPayload]):
+    def __init__(
+        self,
+        secret_key: str = SECRET_KEY,
+        algorithm: str = ALGORITHM,
+        expires_in_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES,
+    ) -> None:
+        self.provider = JWTProvider(secret_key, algorithm)
+        self.expires_in_minutes = expires_in_minutes
+
+    def create_token(self, payload: AccessTokenPayload) -> Token[AccessTokenPayload]:
+        if payload.exp is None:
+            payload.exp = datetime.now(timezone.utc) + timedelta(minutes=self.expires_in_minutes)
+        token = self.provider.create(payload)
+        return Token(token=token, type=payload.type, payload=payload)
+
+    def verify_token(self, token: str) -> Token[AccessTokenPayload]:
+        dict_payload = self.provider.verify(token)
+        if dict_payload.get("type") != TokenType.access:
             raise TokenInvalidError("Token is not valid")
+        payload = AccessTokenPayload(**dict_payload)
+        return Token(token=token, type=payload.type, payload=payload)
 
-        return token_payload
 
-    def verify_refresh_token(self, token: Token) -> AuthTokenPayload:
-        token_payload = self.__verify(token, TokenType.refresh)
-        return token_payload
+class RefreshTokenStrategy(ITokenStrategy[RefreshTokenPayload]):
+    def __init__(
+        self,
+        secret_key: str = SECRET_KEY,
+        algorithm: str = ALGORITHM,
+        expires_in_minutes: int = REFRESH_TOKEN_EXPIRE_MINUTES,
+    ) -> None:
+        self.provider = JWTProvider(secret_key, algorithm)
+        self.expires_in_minutes = expires_in_minutes
 
-    def verify_access_token(self, token: Token) -> AuthTokenPayload:
-        token_payload = self.__verify(token, TokenType.access)
-        return token_payload
+    def create_token(self, payload: RefreshTokenPayload) -> Token[RefreshTokenPayload]:
+        if payload.exp is None:
+            payload.exp = datetime.now(timezone.utc) + timedelta(minutes=self.expires_in_minutes)
+        token = self.provider.create(payload)
+        return Token(token=token, type=payload.type, payload=payload)
+
+    def verify_token(self, token: str) -> Token[RefreshTokenPayload]:
+        dict_payload = self.provider.verify(token)
+        if dict_payload.get("type") != TokenType.refresh:
+            raise TokenInvalidError("Token is not valid")
+        payload = RefreshTokenPayload(**dict_payload)
+        return Token(token=token, type=payload.type, payload=payload)
+
+
+class VerificationTokenStrategy(ITokenStrategy[VerificationTokenPayload]):
+    def __init__(
+        self,
+        secret_key: str = SECRET_KEY,
+        algorithm: str = ALGORITHM,
+        expires_in_minutes: int = 10,
+    ) -> None:
+        self.provider = JWTProvider(secret_key, algorithm)
+        self.expires_in_minutes = expires_in_minutes
+
+    def create_token(self, payload: VerificationTokenPayload) -> Token[VerificationTokenPayload]:
+        if payload.exp is None:
+            payload.exp = datetime.now(timezone.utc) + timedelta(minutes=self.expires_in_minutes)
+        token = self.provider.create(payload)
+        return Token(token=token, type=payload.type, payload=payload)
+
+    def verify_token(self, token: str) -> Token[VerificationTokenPayload]:
+        dict_payload = self.provider.verify(token)
+        if dict_payload.get("type") != TokenType.verification:
+            raise TokenInvalidError("Token is not valid")
+        payload = VerificationTokenPayload(**dict_payload)
+        return Token(token=token, type=payload.type, payload=payload)

@@ -28,6 +28,45 @@ This is an **Application Tracker** web application built with:
 - **Type safety**: Use strict typing throughout
 - **Error handling**: Comprehensive exception handling with custom exceptions
 
+## Pre-commit Compliance Rules
+
+### File Formatting Standards
+- **No trailing whitespace**: Remove all trailing spaces and tabs from lines
+- **End-of-file newline**: Always end files with a single newline character
+- **No large files**: Avoid committing files larger than reasonable size limits
+
+### Python Code Standards
+- **Ruff compliance**: All Python code must pass `ruff check` and `ruff format`
+- **MyPy compliance**: All Python code must pass type checking with `mypy`
+- **Import sorting**: Use ruff's import sorting (`--select I --fix`)
+
+### Frontend Code Standards
+- **ESLint compliance**: All TypeScript/JavaScript code must pass ESLint rules
+- **Prettier formatting**: All frontend code must be formatted with Prettier
+- **Supported file types**: Apply formatting to `.js`, `.ts`, `.tsx`, `.jsx`, `.json`, `.yaml`, `.html`, `.css`
+
+### Code Generation Guidelines
+When generating code, ensure:
+
+1. **Python files**:
+   - No trailing whitespace on any line
+   - End file with exactly one newline
+   - Follow ruff formatting standards
+   - Include proper type hints for mypy compliance
+   - Use proper import ordering
+
+2. **Template files** (HTML/Jinja2):
+   - No trailing whitespace
+   - End file with exactly one newline
+   - Apply Prettier formatting for HTML structure
+   - Use consistent indentation (2 spaces for HTML)
+
+3. **Configuration files** (JSON/YAML):
+   - No trailing whitespace
+   - End file with exactly one newline
+   - Apply Prettier formatting
+   - Use consistent indentation
+
 ## Architecture Guidelines
 
 ### Onion Architecture Layers
@@ -55,3 +94,47 @@ This is an **Application Tracker** web application built with:
 - Organize tests by feature: `TestApplicationUpdate`, `TestApplicationDelete`
 - Use **pytest fixtures** with proper dependency injection
 - Follow **AAA pattern**: Arrange, Act, Assert
+
+## Commit Message Standards
+
+### Conventional Commits
+All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification:
+
+**Format:**
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Required Types:**
+- `feat:` - A new feature for the user
+- `fix:` - A bug fix for the user
+- `docs:` - Documentation changes
+- `style:` - Code formatting (no logic changes)
+- `refactor:` - Code restructuring (no new features or bug fixes)
+- `perf:` - Performance improvements
+- `test:` - Adding or updating tests
+- `build:` - Build system or dependency changes
+- `ci:` - CI/CD configuration changes
+- `chore:` - Maintenance tasks
+
+**Optional Scope:**
+- Use parentheses to specify the area of change: `feat(auth):`, `fix(db):`, `docs(api):`
+
+**Breaking Changes:**
+- Add `!` after type/scope: `feat!:` or `feat(api)!:`
+- Or use footer: `BREAKING CHANGE: description`
+
+**Examples:**
+```
+feat(auth): add JWT token refresh functionality
+fix(db): resolve connection pool timeout issue
+docs: update API documentation for user endpoints
+test(auth): add unit tests for login validation
+refactor!: restructure user service architecture
+
+BREAKING CHANGE: User service constructor now requires logger parameter
+```

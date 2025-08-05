@@ -36,6 +36,21 @@ This project uses a script to automatically generate a TypeScript client for the
 
 **Note**: The client generation requires the backend dependencies to be installed (Poetry) and is automatically run during dev container setup.
 
+## Contributing
+
+### Commit Message Convention
+
+This project follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification for commit messages. This ensures consistent, readable commit history and enables automated changelog generation.
+
+**Format**: `<type>[optional scope]: <description>`
+
+**Examples**:
+- `feat(auth): add JWT token refresh functionality`
+- `fix(db): resolve connection pool timeout issue`
+- `docs: update API documentation for user endpoints`
+
+See the full specification at: https://www.conventionalcommits.org/en/v1.0.0/
+
 ## Option 1: Dev Container Setup (Recommended)
 
 **Requirements:**

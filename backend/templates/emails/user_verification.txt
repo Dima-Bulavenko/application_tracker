@@ -1,0 +1,19 @@
+Welcome to Application Tracker!
+
+Please verify your email address
+
+Hello{% if user_name %}, {{ user_name }}{% endif %},
+
+Thank you for signing up for Application Tracker! To complete your registration, please verify your email address by visiting the following link:
+
+{{ verification_url }}
+
+⏰ IMPORTANT: This verification link will expire in 24 hours for security reasons.
+
+If you didn't create an account with us, please ignore this email.
+
+Best regards,
+The Application Tracker Team
+
+---
+This is an automated email. Please do not reply to this message.
