@@ -1,7 +1,7 @@
 from .application import ApplicationNotFoundError
 from .auth import TokenError, TokenExpireError, TokenInvalidError
 from .generic import InvalidPasswordError
-from .user import UserAlreadyExistError, UserNotAuthorizedError, UserNotFoundError
+from .user import UserAlreadyActivatedError, UserAlreadyExistError, UserNotAuthorizedError, UserNotFoundError
 
 __all__ = [
     "UserNotAuthorizedError",
@@ -11,5 +11,6 @@ __all__ = [
     "TokenExpireError",
     "TokenInvalidError",
     "UserAlreadyExistError",
+    "UserAlreadyActivatedError",
     "UserNotFoundError",
 ]

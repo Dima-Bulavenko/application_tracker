@@ -11,3 +11,7 @@ class UserAlreadyExistError(AlreadyExistError):
 
 class UserNotAuthorizedError(BaseExceptionError):
     pass
+
+
+class UserAlreadyActivatedError(BaseExceptionError):
+    pass
