@@ -1,12 +1,19 @@
 from app.core.domain import User
-from app.core.dto.user import UserCreate, UserRead
+from app.core.dto import UserCreate, UserRead, VerificationTokenPayload
+from app.core.exceptions import UserAlreadyActivatedError, UserNotFoundError
 from app.core.repositories import IUserRepository
-from app.core.security import IPasswordHasher
+from app.core.security import IPasswordHasher, ITokenStrategy
 
 
 class UserService:
-    def __init__(self, user_repo: IUserRepository, password_hasher: IPasswordHasher) -> None:
+    def __init__(
+        self,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+        verification_strategy: ITokenStrategy[VerificationTokenPayload],
+    ) -> None:
         self.user_repo = user_repo
+        self.verification_strategy = verification_strategy
         self.password_hasher = password_hasher
 
     async def create(self, user_data: UserCreate) -> UserRead:
@@ -17,3 +24,17 @@ class UserService:
     async def get_by_email(self, email: str) -> UserRead:
         user = await self.user_repo.get_by_email(email)
         return UserRead.model_validate(user, from_attributes=True)
+
+    async def activate_with_token(self, token: str) -> UserRead:
+        token_object = self.verification_strategy.verify_token(token)
+        user = await self.user_repo.get_by_email(token_object.payload.user_email)
+
+        # FIXME: user.id check only for typechecking, refactor User domain to fix it
+        if not user or user.id is None:
+            raise UserNotFoundError("User does not exist")
+
+        if user.is_active:
+            raise UserAlreadyActivatedError("User is already activated")
+
+        updated_user = await self.user_repo.update(user.id, is_active=True)
+        return UserRead.model_validate(updated_user, from_attributes=True)

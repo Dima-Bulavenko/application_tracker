@@ -37,7 +37,11 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
 
 
 async def get_user_service(session: SessionDep) -> UserService:
-    return UserService(user_repo=UserSQLAlchemyRepository(session), password_hasher=PasslibHasher())
+    return UserService(
+        user_repo=UserSQLAlchemyRepository(session),
+        password_hasher=PasslibHasher(),
+        verification_strategy=VerificationTokenStrategy(),
+    )
 
 
 async def get_auth_service(session: SessionDep) -> AuthService:
