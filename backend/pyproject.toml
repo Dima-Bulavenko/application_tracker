@@ -37,10 +37,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*"=["S106", "S101"]
-
+[tool.ruff.lint]
+extend-select = ["I"]
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.lint.isort]
+combine-as-imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
