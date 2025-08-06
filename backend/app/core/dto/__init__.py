@@ -28,6 +28,9 @@ from .auth import (
 from .company import CompanyCreate as CompanyCreate
 from .config import BaseModelDTO as BaseModelDTO
 from .user import (
+    UserChangePassword as UserChangePassword,
+)
+from .user import (
     UserCreate as UserCreate,
 )
 from .user import (

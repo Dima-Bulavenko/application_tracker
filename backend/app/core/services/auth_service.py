@@ -37,7 +37,7 @@ class AuthService:
 
         user = await self.user_repo.get_by_email(refresh_token.payload.user_email)
         if not user or user.id is None:
-            raise UserNotFoundError(f"User with {user.email} email does not exist")  # noqa: EM102
+            raise UserNotFoundError(f"User with {refresh_token.payload.user_email} email does not exist")  # noqa: EM102
 
         new_access_token = self.access_strategy.create_token(AccessTokenPayload(user_email=user.email, user_id=user.id))
         new_refresh_token = self.refresh_strategy.create_token(
