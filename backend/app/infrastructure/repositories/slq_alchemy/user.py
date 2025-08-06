@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from app.core.domain import User
 from app.core.exceptions.user import UserAlreadyExistError, UserNotFoundError
@@ -20,13 +20,15 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
         item = await super()._get_one(error_message, UserNotFoundError, **kwargs)
         return item
 
-    async def get_by_email(self, email: str) -> User:
-        user = await self.__get_one(email=email)
-        return mapper.to_domain(user)
+    async def get_by_email(self, email: str) -> User | None:
+        statement = select(self.model).where(self.model.email == email)
+        user = await self.session.scalar(statement)
+        return mapper.to_domain(user) if user else None
 
-    async def get_by_id(self, user_id: int) -> User:
-        user = await self.__get_one(id=user_id)
-        return mapper.to_domain(user)
+    async def get_by_id(self, user_id: int) -> User | None:
+        statement = select(self.model).where(self.model.id == user_id)
+        user = await self.session.scalar(statement)
+        return mapper.to_domain(user) if user else None
 
     async def update(self, user_id: int, **update_data) -> User | None:
         statement = update(self.model).where(self.model.id == user_id).values(update_data).returning(self.model)
