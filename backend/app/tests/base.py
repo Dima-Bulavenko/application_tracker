@@ -7,9 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.domain import Application, Company, User
 from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, VerificationTokenPayload
 from app.core.security import IPasswordHasher, ITokenStrategy
-from app.db.models import Application as ApplicationModel
-from app.db.models import Company as CompanyModel
-from app.db.models import User as UserModel
+from app.db.models import Application as ApplicationModel, Company as CompanyModel, User as UserModel
 
 
 class BaseTest:

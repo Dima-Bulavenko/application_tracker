@@ -41,6 +41,7 @@ async def get_user_service(session: SessionDep) -> UserService:
         user_repo=UserSQLAlchemyRepository(session),
         password_hasher=PasslibHasher(),
         verification_strategy=VerificationTokenStrategy(),
+        access_token_strategy=AccessTokenStrategy(),
     )
 
 

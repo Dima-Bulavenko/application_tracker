@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AliasChoices, EmailStr, Field
+from pydantic import AliasChoices, EmailStr, Field, ValidationInfo, field_validator
 
 from .config import BaseModelDTO
 
@@ -44,3 +44,16 @@ class UserRead(BaseModelDTO):
 class UserLogin(BaseModelDTO):
     email: UserEmailField
     password: UserPasswordField
+
+
+class UserChangePassword(BaseModelDTO):
+    old_password: UserPasswordField
+    new_password: UserPasswordField
+    confirm_new_password: UserPasswordField
+
+    @field_validator("confirm_new_password", mode="after")
+    @classmethod
+    def validate_confirm_password(cls, value: str, info: ValidationInfo) -> str:
+        if value != info.data.get("new_password"):
+            raise ValueError("New password and confirmation do not match")
+        return value

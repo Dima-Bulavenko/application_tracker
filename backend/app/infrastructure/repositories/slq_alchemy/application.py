@@ -4,8 +4,7 @@ from sqlalchemy import delete, select, update
 
 from app.core.domain import Application
 from app.core.repositories import IApplicationRepository
-from app.db.models import Application as ApplicationModel
-from app.db.models import User
+from app.db.models import Application as ApplicationModel, User
 
 from .config import SQLAlchemyRepository
 
