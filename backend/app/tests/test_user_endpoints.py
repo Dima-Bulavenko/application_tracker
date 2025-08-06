@@ -56,7 +56,7 @@ class TestUserActivation(BaseTest):
         response = await client.patch(f"/users/activate?token={token}")
 
         assert response.status_code == 404
-        assert response.json() == {"detail": f"User with email = {non_existent_email}"}
+        assert response.json() == {"detail": "User does not exist"}
 
     async def test_activate_already_active_user(self, client: AsyncClient):
         """Test activation of user who is already activated."""
