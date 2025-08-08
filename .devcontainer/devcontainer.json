@@ -3,6 +3,7 @@
 
   "service": "development",
   "workspaceFolder": "/code",
+  "postCreateCommand": "cd backend && poetry install && cd ../frontend && npm install && cd .. && bash scripts/generate-client.sh",
   "customizations": {
     "vscode": {
       "settings": { "terminal.integrated.defaultProfile.linux": "zsh" },
