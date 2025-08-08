@@ -27,7 +27,8 @@
         "esbenp.prettier-vscode",
         "bierner.color-info",
         "dsznajder.es7-react-js-snippets",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "samuelcolvin.jinjahtml"
       ]
     }
   }
