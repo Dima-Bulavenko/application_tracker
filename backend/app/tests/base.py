@@ -63,7 +63,7 @@ class BaseTest:
         self.session.add(user)
         await self.session.commit()
         await self.session.refresh(user)
-        return User(**{f: getattr(user, f) for f in User.__dataclass_fields__})
+        return User.model_validate(user, from_attributes=True)
 
     async def create_company(self, **kwargs) -> Company:
         """

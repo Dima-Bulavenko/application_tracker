@@ -19,12 +19,17 @@ class UserService:
         self.password_hasher = password_hasher
 
     async def create(self, user_data: UserCreate) -> UserRead:
-        user_data.password = self.password_hasher.hash(user_data.password)
-        user = await self.user_repo.save(User(user_data.email, user_data.password))
+        existing_user = await self.user_repo.get_by_email(user_data.email)
+        if existing_user is not None:
+            raise UserAlreadyActivatedError("User already exists")
+        hashed_password = self.password_hasher.hash(user_data.password)
+        user = await self.user_repo.create(User(email=user_data.email, password=hashed_password))
         return UserRead.model_validate(user, from_attributes=True)
 
     async def get_by_email(self, email: str) -> UserRead:
         user = await self.user_repo.get_by_email(email)
+        if user is None:
+            raise UserNotFoundError("User does not exist")
         return UserRead.model_validate(user, from_attributes=True)
 
     async def activate_with_token(self, token: str) -> UserRead:
@@ -39,6 +44,8 @@ class UserService:
             raise UserAlreadyActivatedError("User is already activated")
 
         updated_user = await self.user_repo.update(user.id, is_active=True)
+        if updated_user is None:
+            raise UserNotFoundError("Failed to update user")
         return UserRead.model_validate(updated_user, from_attributes=True)
 
     async def change_password_with_token(self, access_token: str, passwords: UserChangePassword) -> UserRead:
@@ -54,4 +61,6 @@ class UserService:
 
         new_hashed_password = self.password_hasher.hash(passwords.new_password)
         updated_user = await self.user_repo.update(user.id, password=new_hashed_password)
+        if updated_user is None:
+            raise UserNotFoundError("Failed to update user")
         return UserRead.model_validate(updated_user, from_attributes=True)
