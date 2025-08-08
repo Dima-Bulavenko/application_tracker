@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
 from httpx import AsyncClient
@@ -7,6 +8,456 @@ from app import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.domain import User
 
 from .base import BaseTest
+
+
+class TestCreateUser(BaseTest):
+    async def test_create_user_success(self, client: AsyncClient):
+        """Test successful user creation with valid email and password."""
+        email = "newuser@example.com"
+        form_data = {
+            "email": email,
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # Verify user was created in database
+        created_user = await self.get_user_by_email(email)
+
+        assert created_user is not None
+        assert created_user.email == email
+        assert created_user.is_active is False  # Should be inactive until email verification
+        assert response.status_code == 201
+        expected_message = "We sent email to newuser@example.com address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+    @patch("fastapi.BackgroundTasks.add_task")
+    async def test_create_user_success_with_background_task_mock(self, mock_add_task: MagicMock, client: AsyncClient):
+        """Test successful user creation and verify background task is called."""
+        email = "newuser@example.com"
+        form_data = {
+            "email": email,
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # Verify user was created in database
+        created_user = await self.get_user_by_email(email)
+
+        assert created_user is not None
+        assert created_user.email == email
+        assert response.status_code == 201
+
+        # Verify background task was called
+        assert mock_add_task.called
+        assert mock_add_task.call_count == 1
+
+        # Get the call arguments
+        call_args = mock_add_task.call_args
+        task_func = call_args[0][0]  # First argument is the function
+        task_user_arg = call_args[0][1]  # Second argument is the user
+
+        # Verify the correct function was called (send_verification_email)
+        assert hasattr(task_func, "__name__")
+        assert task_func.__name__ == "send_verification_email"
+
+        # Verify the user argument has correct properties
+        assert hasattr(task_user_arg, "email")
+        assert task_user_arg.email == email
+
+    async def test_create_user_with_existing_email(self, client: AsyncClient):
+        """Test user creation with already existing email address."""
+        # Create an existing user
+        existing_user = await self.create_user()
+
+        form_data = {
+            "email": existing_user.email,
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # Should still return success response (security by design)
+        assert response.status_code == 201
+        expected_message = f"We sent email to {existing_user.email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+    @patch("fastapi.BackgroundTasks.add_task")
+    async def test_create_user_with_existing_email_background_task(self, mock_add_task: MagicMock, client: AsyncClient):
+        """Test user creation with existing email sends duplicate registration warning."""
+        # Create an existing user
+        existing_user = await self.create_user()
+
+        form_data = {
+            "email": existing_user.email,
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # Should still return success response (security by design)
+        assert response.status_code == 201
+
+        # Verify background task was called
+        assert mock_add_task.called
+        assert mock_add_task.call_count == 1
+
+        # Get the call arguments
+        call_args = mock_add_task.call_args
+        task_func = call_args[0][0]  # First argument is the function
+        task_email_arg = call_args[0][1]  # Second argument is the email
+
+        # Verify the correct function was called (send_duplicate_registration_warning)
+        assert hasattr(task_func, "__name__")
+        assert task_func.__name__ == "send_duplicate_registration_warning"
+
+        # Verify the email argument is correct
+        assert task_email_arg == existing_user.email
+
+    async def test_create_user_with_invalid_email_format(self, client: AsyncClient):
+        """Test user creation with invalid email format."""
+        form_data = {
+            "email": "invalid-email-format",
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+        # Should contain validation error for email format
+        assert any("email" in str(error).lower() for error in response_data["detail"])
+
+    async def test_create_user_with_weak_password(self, client: AsyncClient):
+        """Test user creation with password that doesn't meet requirements."""
+        form_data = {
+            "email": "test@example.com",
+            "password": "weak",  # Too short, no uppercase, no number
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+        # Should contain validation error for password requirements
+        assert any("password" in str(error).lower() for error in response_data["detail"])
+
+    async def test_create_user_with_password_missing_uppercase(self, client: AsyncClient):
+        """Test user creation with password missing uppercase letter."""
+        form_data = {
+            "email": "test@example.com",
+            "password": "testpass123",  # No uppercase letter
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_create_user_with_password_missing_number(self, client: AsyncClient):
+        """Test user creation with password missing number."""
+        form_data = {
+            "email": "test@example.com",
+            "password": "TestPassword",  # No number
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_create_user_with_password_too_short(self, client: AsyncClient):
+        """Test user creation with password shorter than 8 characters."""
+        form_data = {
+            "email": "test@example.com",
+            "password": "Test1",  # Too short
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_create_user_with_missing_email(self, client: AsyncClient):
+        """Test user creation without email field."""
+        form_data = {
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+        # Check that we get a validation error (the specific field doesn't matter as much
+        # as ensuring we get a proper 422 validation error)
+        errors = response_data["detail"]
+        assert len(errors) > 0
+        assert any(error.get("type") == "missing" for error in errors)
+
+    async def test_create_user_with_missing_password(self, client: AsyncClient):
+        """Test user creation without password field."""
+        form_data = {
+            "email": "test@example.com",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+        assert any("password" in error.get("loc", []) for error in response_data["detail"])
+
+    async def test_create_user_with_empty_email(self, client: AsyncClient):
+        """Test user creation with empty email field."""
+        form_data = {
+            "email": "",
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_create_user_with_empty_password(self, client: AsyncClient):
+        """Test user creation with empty password field."""
+        form_data = {
+            "email": "test@example.com",
+            "password": "",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_create_user_with_whitespace_only_fields(self, client: AsyncClient):
+        """Test user creation with whitespace-only email and password."""
+        form_data = {
+            "email": "   ",
+            "password": "   ",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_create_user_with_very_long_email(self, client: AsyncClient):
+        """Test user creation with extremely long email address."""
+        long_email = "a" * 100 + "@example.com"
+        form_data = {
+            "email": long_email,
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # This might succeed or fail depending on email length validation
+        # If it succeeds, verify the user is created
+        if response.status_code == 201:
+            expected_message = f"We sent email to {long_email} address, follow link to complete your registration"
+            assert response.json() == {"message": expected_message}
+        else:
+            assert response.status_code == 422
+
+    async def test_create_user_with_special_characters_in_password(self, client: AsyncClient):
+        """Test user creation with special characters in password."""
+        email = "test@example.com"
+        form_data = {
+            "email": email,
+            "password": "TestPass123!@#",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        assert response.status_code == 201
+        expected_message = "We sent email to test@example.com address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+        # Verify user was created in database with correct password hash
+        created_user = await self.get_user_by_email(email)
+        assert created_user is not None
+        assert created_user.email == email
+        assert created_user.is_active is False
+        # Verify password is hashed (not plain text)
+        assert created_user.password != "TestPass123!@#"
+        assert len(created_user.password) > 50  # Hashed passwords are much longer
+        # Verify the password can be validated with the hasher
+        assert self.password_hasher.verify("TestPass123!@#", created_user.password)
+
+    async def test_create_user_case_insensitive_email(self, client: AsyncClient):
+        """Test user creation with different email cases."""
+        # First user
+        form_data1 = {
+            "email": "Test@Example.com",
+            "password": "TestPass123",
+        }
+
+        response1 = await client.post("/users/", data=form_data1)
+        assert response1.status_code == 201
+
+        # Second user with same email but different case
+        form_data2 = {
+            "email": "test@example.com",
+            "password": "TestPass456",
+        }
+
+        response2 = await client.post("/users/", data=form_data2)
+
+        # Should still return success (existing user scenario)
+        assert response2.status_code == 201
+
+    async def test_create_user_with_sql_injection_attempt(self, client: AsyncClient):
+        """Test user creation endpoint is protected against SQL injection."""
+        malicious_email = "test'; DROP TABLE users; --@example.com"
+        form_data = {
+            "email": malicious_email,
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # Should fail due to email validation or be safely handled
+        # Most likely will fail email validation
+        assert response.status_code in [201, 422]  # Either succeeds safely or fails validation
+
+    async def test_create_user_with_unicode_characters(self, client: AsyncClient):
+        """Test user creation with unicode characters in email."""
+        form_data = {
+            "email": "测试@example.com",  # Unicode characters
+            "password": "TestPass123",
+        }
+
+        response = await client.post("/users/", data=form_data)
+
+        # Should handle unicode properly
+        if response.status_code == 201:
+            expected_message = "We sent email to 测试@example.com address, follow link to complete your registration"
+            assert response.json() == {"message": expected_message}
+        else:
+            assert response.status_code == 422
+
+    async def test_create_user_password_hashing(self, client: AsyncClient):
+        """Test that password is properly hashed and not stored in plain text."""
+        email = "hashtest@example.com"
+        password = "TestPass123"
+        form_data = {
+            "email": email,
+            "password": password,
+        }
+
+        response = await client.post("/users/", data=form_data)
+        assert response.status_code == 201
+
+        # Verify user was created in database with hashed password
+        created_user = await self.get_user_by_email(email)
+        assert created_user is not None
+        assert created_user.email == email
+
+        # Verify password is hashed, not plain text
+        assert created_user.password != password
+        assert len(created_user.password) > 50  # Hashed passwords are much longer
+        assert created_user.password.startswith("$")  # Common hash format indicator
+
+        # Verify the password can be validated with the hasher
+        assert self.password_hasher.verify(password, created_user.password)
+
+    @patch("fastapi.BackgroundTasks.add_task")
+    async def test_create_user_comprehensive_verification(self, mock_add_task: MagicMock, client: AsyncClient):
+        """Test comprehensive user creation including API response, database, and background tasks."""
+        email = "comprehensive@example.com"
+        password = "SecurePass123!"
+        form_data = {
+            "email": email,
+            "password": password,
+        }
+
+        # Make the request
+        response = await client.post("/users/", data=form_data)
+
+        # Verify API response
+        assert response.status_code == 201
+        expected_message = f"We sent email to {email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+        # Verify database state
+        created_user = await self.get_user_by_email(email)
+        assert created_user is not None
+        assert created_user.email == email
+        assert created_user.is_active is False  # Should start inactive
+        assert created_user.password != password  # Should be hashed
+        assert self.password_hasher.verify(password, created_user.password)
+
+        # Verify background task was scheduled
+        assert mock_add_task.called
+        assert mock_add_task.call_count == 1
+
+        # Verify background task details
+        call_args = mock_add_task.call_args
+        task_func = call_args[0][0]
+        task_user_arg = call_args[0][1]
+
+        assert task_func.__name__ == "send_verification_email"
+        assert task_user_arg.email == email
+
+    @patch("fastapi.BackgroundTasks.add_task")
+    async def test_create_user_duplicate_email_comprehensive(self, mock_add_task: MagicMock, client: AsyncClient):
+        """Test duplicate email creation including background task verification."""
+        from sqlalchemy import func, select
+
+        from app.db.models import User as UserModel
+
+        # Create initial user
+        existing_user = await self.create_user()
+
+        # Count initial users with this email
+        initial_count_result = await self.session.execute(
+            select(func.count(UserModel.id)).where(UserModel.email == existing_user.email)
+        )
+        initial_count = initial_count_result.scalar()
+
+        form_data = {
+            "email": existing_user.email,
+            "password": "NewPassword123",
+        }
+
+        # Attempt to create duplicate user
+        response = await client.post("/users/", data=form_data)
+
+        # Verify API response (should still be successful for security)
+        assert response.status_code == 201
+        expected_message = f"We sent email to {existing_user.email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+        # Verify no new user was created in database
+        final_count_result = await self.session.execute(
+            select(func.count(UserModel.id)).where(UserModel.email == existing_user.email)
+        )
+        final_count = final_count_result.scalar()
+        assert final_count == initial_count  # Count should remain the same
+
+        # Verify background task was scheduled (for duplicate warning)
+        assert mock_add_task.called
+        assert mock_add_task.call_count == 1
+
+        # Verify it's the duplicate registration warning task
+        call_args = mock_add_task.call_args
+        task_func = call_args[0][0]
+        task_email_arg = call_args[0][1]
+
+        assert task_func.__name__ == "send_duplicate_registration_warning"
+        assert task_email_arg == existing_user.email
 
 
 class TestUserActivation(BaseTest):

@@ -154,6 +154,11 @@ class BaseTest:
         user = await self.session.scalar(statement)
         return user
 
+    async def get_user_by_email(self, email: str) -> UserModel | None:
+        statement = select(UserModel).where(UserModel.email == email)
+        user = await self.session.scalar(statement)
+        return user
+
     def create_access_token(self, user: User) -> Token[AccessTokenPayload]:
         assert user.id is not None, "User ID must be set to create access token"
         payload = AccessTokenPayload(user_email=user.email, user_id=user.id)
