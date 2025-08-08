@@ -34,18 +34,9 @@ async def create_user(
     """
     try:
         user = await user_service.create(credentials)
-        # Send verification email in background
-        background_tasks.add_task(
-            email_service.send_verification_email,
-            user,
-        )
-    except UserAlreadyExistError as exp:  #  noqa: F841
-        print("user already exist")
-        # TODO send user email that someone tried to use his email
-        # background_tasks.add_task(
-        #     email_service.send_duplicate_registration_warning,
-        #     credentials.email
-        # )
+        background_tasks.add_task(email_service.send_verification_email, user)
+    except UserAlreadyExistError:
+        background_tasks.add_task(email_service.send_duplicate_registration_warning, credentials.email)
 
     return MessageResponse(
         message=f"We sent email to {credentials.email} address, follow link to complete your registration"

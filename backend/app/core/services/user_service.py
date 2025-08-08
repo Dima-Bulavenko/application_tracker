@@ -1,6 +1,11 @@
 from app.core.domain import User
 from app.core.dto import AccessTokenPayload, UserChangePassword, UserCreate, UserRead, VerificationTokenPayload
-from app.core.exceptions import InvalidPasswordError, UserAlreadyActivatedError, UserNotFoundError
+from app.core.exceptions import (
+    InvalidPasswordError,
+    UserAlreadyActivatedError,
+    UserAlreadyExistError,
+    UserNotFoundError,
+)
 from app.core.repositories import IUserRepository
 from app.core.security import IPasswordHasher, ITokenStrategy
 
@@ -21,7 +26,7 @@ class UserService:
     async def create(self, user_data: UserCreate) -> UserRead:
         existing_user = await self.user_repo.get_by_email(user_data.email)
         if existing_user is not None:
-            raise UserAlreadyActivatedError("User already exists")
+            raise UserAlreadyExistError("User already exists")
         hashed_password = self.password_hasher.hash(user_data.password)
         user = await self.user_repo.create(User(email=user_data.email, password=hashed_password))
         return UserRead.model_validate(user, from_attributes=True)

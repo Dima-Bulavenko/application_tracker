@@ -1,0 +1,40 @@
+{% extends "emails/base.html" %} {% block title %}Account Security Alert -
+Application Tracker{% endblock %} {% block header_title %}Security Alert{%
+endblock %} {% block content %}
+<h2>Someone tried to register with your email</h2>
+
+<p>Hello,</p>
+
+<p>
+  We received a request to create a new account using your email address ({{
+  email }}) on Application Tracker. Since you already have an account with us,
+  we wanted to let you know about this attempt.
+</p>
+
+<div class="alert alert-warning">
+  <strong>🔒 Your account is secure</strong><br />
+  No changes have been made to your existing account. If this was you, you can
+  simply log in using your existing credentials.
+</div>
+
+<p>If you didn't attempt to create a new account, please consider:</p>
+<ul>
+  <li>Someone may have accidentally used your email address</li>
+  <li>Checking if your password is strong and unique</li>
+  <li>Contacting us if you have security concerns</li>
+</ul>
+
+<p>
+  If you forgot your password, you can reset it using the password reset feature
+  on our login page.
+</p>
+
+<div class="text-center">
+  <a href="{{ login_url }}" class="button">Go to Login Page</a>
+</div>
+
+<p class="text-muted mt-0">
+  If you have any questions or concerns about your account security, please
+  don't hesitate to contact our support team.
+</p>
+{% endblock %}

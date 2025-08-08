@@ -62,3 +62,31 @@ class UserEmailService:
         )
 
         return await self.email_service.send_email(message)
+
+    async def send_duplicate_registration_warning(self, email: str) -> bool:
+        """Send warning email when someone tries to register with an existing email.
+
+        Args:
+            email: Email address that someone tried to register with
+
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        login_url = f"{self.base_url}/login"
+
+        context = {
+            "email": email,
+            "login_url": login_url,
+        }
+
+        html_body = self.template_loader.render_template("emails/duplicate_registration_warning.html", context)
+        text_body = self.template_loader.render_template("emails/duplicate_registration_warning.txt", context)
+
+        message = EmailMessage(
+            to_emails=[email],
+            subject="Account Security Alert - Application Tracker",
+            body=text_body,
+            html_body=html_body,
+        )
+
+        return await self.email_service.send_email(message)
