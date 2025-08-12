@@ -1,10 +1,22 @@
 # GitHub Copilot Instructions
 
 ## Project Overview
-This is an **Application Tracker** web application built with:
+This is an **Application Tracker** web application that helps users track and manage their job applications throughout the entire application process.
+
+### Purpose & Functionality
+The application enables users to:
+- **Add Applications**: Users can create new job application records with comprehensive details
+- **Track Progress**: Monitor application status changes from initial submission through final outcome
+- **Manage Information**: Store and update application details, company information, and personal notes
+- **Organize & Filter**: View all applications with sorting and filtering capabilities by various parameters
+- **Detailed Tracking**: Access comprehensive application information including interview dates and application URLs
+
+
+### Technical Stack
 - **Backend**: FastAPI with Python 3.12, SQLAlchemy (async), PostgreSQL
 - **Frontend**: React with TypeScript, Vite
-- **Architecture**: Onion Architecture with clean separation of concerns
+- **Backend Architecture**: Onion Architecture with clean separation of concerns
+- **Frontend Architecture**: Feature-Sliced Design (FSD) for scalable component organization
 - **Deployment**: Docker containers with dev container support
 
 ## Code Style & Standards
@@ -69,11 +81,30 @@ When generating code, ensure:
 
 ## Architecture Guidelines
 
-### Onion Architecture Layers
+### Backend: Onion Architecture Layers
+The backend follows **Onion Architecture** principles with clean separation of concerns:
+
 1. **Domain Layer** (`core/domain/`): Pure business entities and enums
 2. **Application Layer** (`core/services/`): Business logic and orchestration
 3. **Infrastructure Layer** (`infrastructure/`): External concerns (DB, auth, etc.)
 4. **Presentation Layer** (`routers/`): HTTP endpoints and API contracts
+
+### Frontend: Feature-Sliced Design (FSD)
+The frontend follows **Feature-Sliced Design** methodology for scalable architecture:
+
+**FSD Layers (from top to bottom):**
+- **App** (`src/app/`): Application initialization, providers, global configuration
+- **Pages** (`src/pages/`): Route-level components and page logic
+- **Features** (`src/features/`): User-facing functionality and business features
+- **Entities** (`src/entities/`): Business entities and their representations
+- **Shared** (`src/shared/`): Reusable infrastructure code, UI kit, utilities
+
+**FSD Segments within each layer:**
+- `ui/` - User interface components
+- `api/` - API calls and data fetching logic
+- `model/` - Business logic, stores, types
+- `lib/` - Infrastructure utilities
+- `config/` - Configuration and constants
 
 ### Key Patterns
 - **Repository Pattern**: Abstract data access with interfaces
