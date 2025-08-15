@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
-from app.core.dto import UserChangePassword, UserCreate
+from app.core.dto import UserChangePassword, UserCreate, UserRead
 from app.core.exceptions import (
     InvalidPasswordError,
     TokenExpireError,
@@ -95,11 +95,11 @@ async def activate_user(
     status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_400_BAD_REQUEST: {
-            "description": "Invalid access token or old password",
+            "description": "Old password is incorrect",
             "model": ErrorResponse,
         },
         status.HTTP_401_UNAUTHORIZED: {
-            "description": "Missing access token",
+            "description": "Missing, invalid, or expired access token",
             "model": ErrorResponse,
         },
         status.HTTP_404_NOT_FOUND: {
@@ -121,8 +121,9 @@ async def change_password(
         return MessageResponse(message="Password changed successfully")
     except (TokenExpireError, TokenInvalidError) as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid access token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
         ) from e
     except UserNotFoundError as e:
         raise HTTPException(
@@ -132,5 +133,41 @@ async def change_password(
     except InvalidPasswordError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+
+@router.get(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing, invalid, or expired access token",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def get_current_user(access_token: AccessTokenDep, user_service: UserServiceDep) -> UserRead:
+    """
+    **Get** current user information.
+
+    Requires valid access token for authentication.
+    """
+    try:
+        user = await user_service.get_by_access_token(access_token)
+        return user
+    except (TokenExpireError, TokenInvalidError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid access token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e

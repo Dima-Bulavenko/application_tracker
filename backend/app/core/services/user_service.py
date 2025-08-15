@@ -69,3 +69,10 @@ class UserService:
         if updated_user is None:
             raise UserNotFoundError("Failed to update user")
         return UserRead.model_validate(updated_user, from_attributes=True)
+
+    async def get_by_access_token(self, access_token: str) -> UserRead:
+        access_token_object = self.access_token_strategy.verify_token(access_token)
+        user = await self.user_repo.get_by_email(access_token_object.payload.user_email)
+        if user is None:
+            raise UserNotFoundError("User does not exist")
+        return UserRead.model_validate(user, from_attributes=True)
