@@ -639,7 +639,7 @@ class TestUserChangePassword(BaseTest):
             data=form_data,
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
     async def test_change_password_with_expired_access_token(self, client: AsyncClient):
@@ -661,7 +661,7 @@ class TestUserChangePassword(BaseTest):
                 data=form_data,
             )
 
-        assert response.status_code == 400
+        assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
     async def test_change_password_with_missing_access_token(self, client: AsyncClient):
@@ -836,7 +836,7 @@ class TestUserChangePassword(BaseTest):
             data=form_data,
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
     async def test_change_password_with_inactive_user(self, client: AsyncClient):
@@ -891,3 +891,72 @@ class TestUserChangePassword(BaseTest):
         # (if the first one completes before the second one starts)
         success_count = sum(1 for r in responses if r.status_code == 200)
         assert success_count >= 1
+
+
+class TestGetCurrentUser(BaseTest):
+    async def test_get_me_success(self, client: AsyncClient):
+        """Should return current user info with valid access token."""
+        user = await self.create_user(is_active=True)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+
+        response = await client.get(
+            "/users/me",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Minimal shape checks
+        assert data["id"] == user.id
+        assert data["username"] == user.email
+        assert isinstance(data["is_active"], bool)
+        # Presence of timestamps
+        assert "time_create" in data and "time_update" in data
+
+    async def test_get_me_missing_token(self, client: AsyncClient):
+        """Should return 401 when Authorization header is missing."""
+        response = await client.get("/users/me")
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+
+    async def test_get_me_invalid_token(self, client: AsyncClient):
+        """Should return 401 with Bearer header for invalid token."""
+        response = await client.get(
+            "/users/me",
+            headers={"Authorization": "Bearer invalid.token.here"},
+        )
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert "Invalid access token" in response.json()["detail"]
+
+    async def test_get_me_expired_token(self, client: AsyncClient):
+        """Should return 401 for expired token."""
+        user = await self.create_user(is_active=True)
+        access_token = self.create_access_token(user)
+
+        with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
+            response = await client.get(
+                "/users/me",
+                headers={"Authorization": f"Bearer {access_token.token}"},
+            )
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert "Invalid access token" in response.json()["detail"]
+
+    async def test_get_me_user_not_found(self, client: AsyncClient):
+        """Should return 404 when token refers to a non-existent user."""
+        non_existent_email = "nonexistent@example.com"
+        non_existent_id = 99999
+        ghost = User(id=non_existent_id, email=non_existent_email, password="x")
+        token = self.create_access_token(ghost)
+
+        response = await client.get(
+            "/users/me",
+            headers={"Authorization": f"Bearer {token.token}"},
+        )
+
+        assert response.status_code == 404
+        # Service raises UserNotFoundError; message typically includes 'User does not exist'
+        assert "User" in response.json()["detail"]
