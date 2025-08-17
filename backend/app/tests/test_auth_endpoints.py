@@ -169,3 +169,58 @@ class TestLogoutEndpoint(BaseTest):
 
         assert response.status_code == 401
         assert response.json() == {"detail": "Token is expired"}
+
+
+class TestRefreshEndpoint(BaseTest):
+    async def test_with_valid_refresh_token(self, client: AsyncClient):
+        user = await self.create_user()
+        refresh_token = self.create_refresh_token(user)
+
+        response = await client.post(
+            "/auth/refresh",
+            cookies={"refresh": refresh_token.token},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["access_token"] is not None
+        # new refresh cookie should be set
+        assert "refresh" in response.cookies
+        assert response.cookies["refresh"] not in (None, "")
+
+    async def test_with_invalid_refresh_token(self, client: AsyncClient):
+        response = await client.post(
+            "/auth/refresh",
+            cookies={"refresh": "invalid_refresh_token"},
+        )
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": "Token is not valid"}
+
+    async def test_refresh_token_expired(self, client: AsyncClient):
+        user = await self.create_user()
+        refresh_token = self.create_refresh_token(user)
+
+        with freeze_time(datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES + 5)):
+            response = await client.post(
+                "/auth/refresh",
+                cookies={"refresh": refresh_token.token},
+            )
+
+        assert response.status_code == 401
+        assert response.json() == {"detail": "Token is expired"}
+
+    async def test_user_does_not_exist(self, client: AsyncClient):
+        # create token for a non-existent user
+        ghost_user = User(id=9999, email="ghost@example.com", password="irrelevant")
+        refresh_token = self.create_refresh_token(ghost_user)
+
+        response = await client.post(
+            "/auth/refresh",
+            cookies={"refresh": refresh_token.token},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": f"User with {ghost_user.email} email does not exist"}

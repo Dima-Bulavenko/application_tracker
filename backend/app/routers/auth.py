@@ -24,7 +24,16 @@ def set_refresh_token(response: Response, token: Token[RefreshTokenPayload]) -> 
 router = APIRouter(prefix="/auth", tags=[Tags.AUTHENTICATION])
 
 
-@router.post("/login", status_code=status.HTTP_200_OK)
+@router.post(
+    "/login",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Invalid credentials",
+            "model": ErrorResponse,
+        },
+    },
+)
 async def login(
     auth_service: AuthServiceDep, user_data: Annotated[UserLogin, Form()], response: Response
 ) -> AccessTokenResponse:
