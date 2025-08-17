@@ -47,11 +47,36 @@ async def login(
     return AccessTokenResponse(access_token=access.token)
 
 
-@router.get("/refresh", status_code=status.HTTP_200_OK)
+@router.get(
+    "/refresh",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Refresh token is not valid or expired",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found",
+            "model": ErrorResponse,
+        },
+    },
+)
 async def refresh_token(
     auth_service: AuthServiceDep, refresh_token: RefreshTokenDep, response: Response
 ) -> AccessTokenResponse:
-    access, refresh = await auth_service.refresh_token(refresh_token)
+    try:
+        access, refresh = await auth_service.refresh_token(refresh_token)
+    except (TokenExpireError, TokenInvalidError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
     set_refresh_token(response, refresh)
     return AccessTokenResponse(access_token=access.token)
 
