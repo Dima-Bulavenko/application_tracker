@@ -47,7 +47,7 @@ async def login(
     return AccessTokenResponse(access_token=access.token)
 
 
-@router.get(
+@router.post(
     "/refresh",
     status_code=status.HTTP_200_OK,
     responses={
