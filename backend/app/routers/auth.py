@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+
 from fastapi import APIRouter, Form, HTTPException, Response, status
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Literal
 
 from app import Tags
 from app.base_schemas import ErrorResponse
-from app.core.dto import AccessTokenResponse, RefreshTokenPayload, Token, UserLogin
+from app.core.dto import AccessTokenResponse, UserLogin
 from app.core.exceptions import InvalidPasswordError, TokenExpireError, TokenInvalidError, UserNotFoundError
 from app.dependencies import AccessTokenDep, AuthServiceDep, RefreshTokenDep
 
 
-def set_refresh_token(response: Response, token: Token[RefreshTokenPayload]) -> None:
-    response.set_cookie(
-        key="refresh",
-        value=token.token,
-        expires=token.payload.exp,
-        path="auth/refresh",
-        secure=True,
-        httponly=True,
-    )
+@dataclass
+class RefreshTokenSettings:
+    key: str = "refresh"
+    path: str = "/auth"
+    secure: bool = True
+    httponly: bool = True
+    samesite: Literal["lax", "strict", "none"] = "none"
 
 
 router = APIRouter(prefix="/auth", tags=[Tags.AUTHENTICATION])
@@ -52,7 +52,7 @@ async def login(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exp
-    set_refresh_token(response, refresh)
+    response.set_cookie(**asdict(RefreshTokenSettings()), value=refresh.token, expires=refresh.payload.exp)
     return AccessTokenResponse(access_token=access.token)
 
 
@@ -86,10 +86,11 @@ async def refresh_token(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e
-    set_refresh_token(response, refresh)
+    response.set_cookie(**asdict(RefreshTokenSettings()), value=refresh.token, expires=refresh.payload.exp)
     return AccessTokenResponse(access_token=access.token)
 
 
+# FIXME: Review logout logic, because it don't has refresh token rotation, and I need to delete refresh token even if access token is not valid
 @router.post(
     "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -123,9 +124,4 @@ async def logout(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e
-    response.delete_cookie(
-        key="refresh",
-        path="auth/refresh",
-        secure=True,
-        httponly=True,
-    )
+    response.delete_cookie(**asdict(RefreshTokenSettings()))
