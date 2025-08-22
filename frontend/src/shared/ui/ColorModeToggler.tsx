@@ -1,47 +1,64 @@
 import { useColorScheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import LightModeIcon from '@mui/icons-material/LightMode';
-import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness';
 import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
-import SpeedDial from '@mui/material/SpeedDial';
-import SpeedDialAction from '@mui/material/SpeedDialAction';
-import React from 'react';
+import IconButton from '@mui/material/IconButton';
 
-const modes = [
-  { name: 'system', icon: <SettingsBrightnessIcon /> },
-  { name: 'dark', icon: <NightlightRoundIcon /> },
-  { name: 'light', icon: <LightModeIcon /> },
-];
+type Mode = 'light' | 'dark' | 'system' | undefined;
 
 export function ColorModeToggler() {
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const { mode, setMode } = useColorScheme();
-  const handleChangeMode = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setMode(
-      (event.currentTarget?.ariaLabel as Exclude<typeof mode, undefined>) ||
-        null
-    );
+  // Compute effective mode when current is 'system'
+
+  const isDarkActive = (m: Mode) =>
+    m === 'dark' || (m === 'system' && prefersDarkMode);
+
+  const handleToggle = () => {
+    console.log(mode);
+    if (!mode) return; // avoid hydration mismatch
+    if (mode === 'system') {
+      // On first visit, system is active. Toggle to the opposite of effective mode.
+      setMode(prefersDarkMode ? 'light' : 'dark');
+    } else {
+      setMode(mode === 'light' ? 'dark' : 'light');
+    }
   };
 
   if (!mode) return null;
 
   return (
-    <SpeedDial
-      direction='down'
-      ariaLabel='Toggle color mode'
-      icon={modes.find((value) => value.name === mode)?.icon}>
-      {modes
-        .filter((value) => value.name !== mode)
-        .map((action) => (
-          <SpeedDialAction
-            key={action.name}
-            icon={action.icon}
-            slotProps={{
-              tooltip: { title: action.name },
-              fab: {
-                onClick: handleChangeMode,
-              },
-            }}
-          />
-        ))}
-    </SpeedDial>
+    <IconButton
+      aria-label='Toggle color mode'
+      onClick={handleToggle}
+      size='small'
+      sx={{
+        position: 'fixed',
+        top: 16,
+        right: 16,
+        zIndex: 1400,
+        width: 36,
+        height: 36,
+        borderRadius: '50%',
+        border: '2px solid',
+        borderColor: 'primary.main',
+        bgcolor: (theme) =>
+          theme.palette.mode === 'light'
+            ? theme.palette.grey[200]
+            : theme.palette.grey[900],
+        color: 'text.primary',
+        '&:hover': {
+          bgcolor: (theme) =>
+            theme.palette.mode === 'light'
+              ? theme.palette.grey[300]
+              : theme.palette.grey[800],
+        },
+      }}>
+      {isDarkActive(mode) ? (
+        <NightlightRoundIcon fontSize='small' />
+      ) : (
+        <LightModeIcon fontSize='small' />
+      )}
+    </IconButton>
   );
 }
