@@ -11,7 +11,9 @@ from .auth import (
     TokenType as TokenType,
     VerificationTokenPayload as VerificationTokenPayload,
 )
-from .company import CompanyCreate as CompanyCreate
+from .company import (
+    CompanyCreate as CompanyCreate,
+)
 from .config import BaseModelDTO as BaseModelDTO
 from .user import (
     UserChangePassword as UserChangePassword,
