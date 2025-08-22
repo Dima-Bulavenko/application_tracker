@@ -13,7 +13,7 @@ from app.core.exceptions import (
     TokenInvalidError,
     UserNotFoundError,
 )
-from app.core.services import ApplicationService, AuthService, UserEmailService, UserService
+from app.core.services import ApplicationService, AuthService, CompanyService, UserEmailService, UserService
 from app.infrastructure.email import DevelopmentEmailService
 from app.infrastructure.repositories import (
     ApplicationSQLAlchemyRepository,
@@ -66,6 +66,12 @@ async def get_user_email_service() -> UserEmailService:
     return UserEmailService(
         email_service=DevelopmentEmailService(),
         token_handler=VerificationTokenStrategy(),
+    )
+
+
+async def get_company_service(session: SessionDep) -> CompanyService:
+    return CompanyService(
+        company_repo=CompanySQLAlchemyRepository(session),
     )
 
 
@@ -122,3 +128,4 @@ UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 ApplicationServiceDep = Annotated[ApplicationService, Depends(get_application_service)]
 UserEmailServiceDep = Annotated[UserEmailService, Depends(get_user_email_service)]
+CompanyServiceDep = Annotated[CompanyService, Depends(get_company_service)]

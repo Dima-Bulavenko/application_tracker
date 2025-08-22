@@ -23,6 +23,11 @@ class CompanySQLAlchemyRepository(SQLAlchemyRepository[CompanyModel], ICompanyRe
         company_model = await self.session.scalar(statement)
         return Company.model_validate(company_model, from_attributes=True) if company_model else None
 
+    async def get_by_id(self, company_id: int) -> Company | None:
+        statement = select(self.model).where(self.model.id == company_id)
+        company_model = await self.session.scalar(statement)
+        return Company.model_validate(company_model, from_attributes=True) if company_model else None
+
     async def get_companies(
         self,
         limit: int | None = None,

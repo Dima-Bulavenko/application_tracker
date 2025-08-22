@@ -13,6 +13,9 @@ class ICompanyRepository(ABC):
     async def get_by_name(self, name: str) -> Company | None: ...
 
     @abstractmethod
+    async def get_by_id(self, company_id: int) -> Company | None: ...
+
+    @abstractmethod
     async def get_companies(
         self,
         limit: int | None = None,

@@ -13,6 +13,7 @@ from .auth import (
 )
 from .company import (
     CompanyCreate as CompanyCreate,
+    CompanyRead as CompanyRead,
 )
 from .config import BaseModelDTO as BaseModelDTO
 from .user import (
