@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def remove_tdo_suffix(class_obj: type):
@@ -25,3 +25,8 @@ class BaseModelDTO(BaseModel):
         if isinstance(v, str):
             return cast(T, v.strip()) or None
         return v
+
+
+class GenericFilterParams(BaseModelDTO):
+    limit: int = Field(10, ge=1, le=50, description="Number of items to return")
+    offset: int = Field(0, ge=0, description="Number of items to skip before starting to collect the result set")

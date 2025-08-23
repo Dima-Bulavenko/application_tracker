@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 from sqlalchemy import select
 
 from app.core.domain import Company
@@ -27,6 +29,11 @@ class CompanySQLAlchemyRepository(SQLAlchemyRepository[CompanyModel], ICompanyRe
         statement = select(self.model).where(self.model.id == company_id)
         company_model = await self.session.scalar(statement)
         return Company.model_validate(company_model, from_attributes=True) if company_model else None
+
+    async def get_by_ids(self, company_ids: Iterable[int]) -> list[Company]:
+        statement = select(self.model).where(self.model.id.in_(company_ids))
+        company_model = await self.session.scalars(statement)
+        return [Company.model_validate(c, from_attributes=True) for c in company_model]
 
     async def get_companies(
         self,

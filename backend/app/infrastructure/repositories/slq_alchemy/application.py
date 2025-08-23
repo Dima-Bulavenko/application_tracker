@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import asc, delete, desc, select, update
 
 from app.core.domain import Application
+from app.core.dto import ApplicationFilterParams
 from app.core.repositories import IApplicationRepository
 from app.db.models import Application as ApplicationModel, User
 
@@ -18,10 +19,17 @@ class ApplicationSQLAlchemyRepository(SQLAlchemyRepository[ApplicationModel], IA
         await self.session.flush()
         return Application.model_validate(app_model, from_attributes=True)
 
-    async def get_by_user_email(
-        self, email: str, limit: int | None = None, offset: int | None = None
-    ) -> list[Application]:
-        statement = select(self.model).join(User).where(User.email == email).limit(limit).offset(offset)
+    async def get_by_user_email(self, email: str, filter_param: ApplicationFilterParams) -> list[Application]:
+        order_by_clause = getattr(self.model, filter_param.order_by)
+        order_direction = asc if filter_param.order_direction == "asc" else desc
+        statement = (
+            select(self.model)
+            .join(User)
+            .where(User.email == email)
+            .limit(filter_param.limit)
+            .offset(filter_param.offset)
+            .order_by(order_direction(order_by_clause))
+        )
         apps = await self.session.scalars(statement)
         return [Application.model_validate(app, from_attributes=True) for app in apps]
 

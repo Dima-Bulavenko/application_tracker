@@ -3,7 +3,14 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.core.domain import Application, Company
-from app.core.dto import ApplicationCreate, ApplicationRead, ApplicationUpdate
+from app.core.dto import (
+    ApplicationCreate,
+    ApplicationFilterParams,
+    ApplicationRead,
+    ApplicationReadWithCompany,
+    ApplicationUpdate,
+    CompanyRead,
+)
 from app.core.exceptions import ApplicationNotFoundError, UserNotAuthorizedError
 from app.core.repositories import (
     IApplicationRepository,
@@ -24,10 +31,21 @@ class ApplicationService:
         self.company_repo = company_repo
 
     async def get_applications_by_user_email(
-        self, email: str, limit: int | None = None, offset: int | None = None
-    ) -> list[ApplicationRead]:
-        applications = await self.app_repo.get_by_user_email(email, limit, offset)
-        return [ApplicationRead.model_validate(app) for app in applications]
+        self, email: str, filter_param: ApplicationFilterParams
+    ) -> list[ApplicationReadWithCompany]:
+        applications = await self.app_repo.get_by_user_email(email, filter_param)
+        if not applications:
+            return []
+        companies_ids = {app.company_id for app in applications}
+        companies = await self.company_repo.get_by_ids(companies_ids)
+        companies_dict = {company.id: company for company in companies}
+        return [
+            ApplicationReadWithCompany(
+                **app.model_dump(),
+                company=CompanyRead.model_validate(companies_dict[app.company_id]),
+            )
+            for app in applications
+        ]
 
     async def create(self, app: ApplicationCreate, user_id: int):
         company = await self.company_repo.get_by_name(app.company.name)

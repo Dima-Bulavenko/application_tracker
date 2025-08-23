@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Iterable
 
 from app.core.domain import Company
 
@@ -14,6 +15,9 @@ class ICompanyRepository(ABC):
 
     @abstractmethod
     async def get_by_id(self, company_id: int) -> Company | None: ...
+
+    @abstractmethod
+    async def get_by_ids(self, company_ids: Iterable[int]) -> list[Company]: ...
 
     @abstractmethod
     async def get_companies(

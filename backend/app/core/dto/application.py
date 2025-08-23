@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from enum import StrEnum
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from app.core.domain import AppStatus, WorkLocation, WorkType
 
-from .company import CompanyCreate
-from .config import BaseModelDTO
+from .company import CompanyCreate, CompanyRead
+from .config import BaseModelDTO, GenericFilterParams
 
 
 class ApplicationRead(BaseModelDTO):
@@ -23,6 +25,10 @@ class ApplicationRead(BaseModelDTO):
     time_create: datetime = Field(datetime.now(UTC))
     time_update: datetime = Field(datetime.now(UTC))
     interview_date: datetime | None = None
+
+
+class ApplicationReadWithCompany(ApplicationRead):
+    company: "CompanyRead"
 
 
 class ApplicationCreate(BaseModelDTO):
@@ -47,3 +53,13 @@ class ApplicationUpdate(BaseModelDTO):
     note: str | None = None
     application_url: str | None = None
     interview_date: datetime | None = None
+
+
+class ApplicationOrderBy(StrEnum):
+    time_create = "time_create"
+    time_update = "time_update"
+
+
+class ApplicationFilterParams(GenericFilterParams):
+    order_by: ApplicationOrderBy = Field(ApplicationOrderBy.time_create)
+    order_direction: Literal["asc", "desc"] = "desc"
