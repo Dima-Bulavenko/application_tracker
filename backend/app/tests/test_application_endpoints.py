@@ -380,3 +380,110 @@ class TestApplicationGetById(BaseTest):
         assert response.json() == {
             "detail": f"User with {another_user.id} id is not authorized to access this application"
         }
+
+
+class TestApplicationList(BaseTest):
+    async def test_list_applications_basic(self, client: AsyncClient):
+        user = await self.create_user()
+        other = await self.create_user()
+        # Create apps for both users
+        companies = [await self.create_company() for _ in range(3)]
+        for c in companies:
+            await self.create_application(user_id=user.id, company_id=c.id)
+        for _ in range(2):
+            await self.create_application(user_id=other.id)
+
+        access = self.create_access_token(user)
+        resp = await client.get(
+            "/applications/",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        # Should return only user's apps
+        assert isinstance(data, list)
+        assert len(data) == 3
+        # Each item should include nested company
+        for item in data:
+            assert "company" in item and isinstance(item["company"], dict)
+            assert item["user_id"] == user.id
+
+    async def test_list_applications_pagination(self, client: AsyncClient):
+        user = await self.create_user()
+        # Create 15 apps
+        for _ in range(15):
+            await self.create_application(user_id=user.id)
+        access = self.create_access_token(user)
+
+        # Page 1
+        resp1 = await client.get(
+            "/applications/?limit=5&offset=0",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp1.status_code == 200
+        assert len(resp1.json()) == 5
+
+        # Last page
+        resp3 = await client.get(
+            "/applications/?limit=5&offset=10",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp3.status_code == 200
+        assert len(resp3.json()) == 5
+
+    async def test_list_applications_ordering(self, client: AsyncClient):
+        user = await self.create_user()
+        # Create apps with known timestamps
+        base = datetime(2025, 1, 1, 12, 0, 0)
+        ids: list[int] = []
+        for i in range(3):
+            app = await self.create_application(user_id=user.id, time_create=base.replace(minute=base.minute + i))
+            assert app.id is not None
+            ids.append(app.id)
+        access = self.create_access_token(user)
+
+        # Desc by default -> newest first -> last created id should appear first by time_create
+        resp_desc = await client.get(
+            "/applications/?order_by=time_create&order_direction=desc",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        data_desc = resp_desc.json()
+        assert [d["id"] for d in data_desc] == ids[::-1]
+
+        # Asc -> oldest first
+        resp_asc = await client.get(
+            "/applications/?order_by=time_create&order_direction=asc",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        data_asc = resp_asc.json()
+        assert [d["id"] for d in data_asc] == ids
+
+    @pytest.mark.parametrize(
+        "header, error_message",
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
+    )
+    async def test_list_not_authenticated(self, header: dict | None, error_message: str, client: AsyncClient):
+        resp = await client.get("/applications/", headers=header)
+        assert resp.status_code == 401
+        assert resp.headers.get("www-authenticate") == "Bearer"
+        assert resp.json() == {"detail": f"{error_message}"}
+
+    async def test_list_inactive_user(self, client: AsyncClient):
+        user = await self.create_user(is_active=False)
+        access = self.create_access_token(user)
+        resp = await client.get(
+            "/applications/",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 403
+        assert resp.json() == {"detail": "User account is not activated"}
+
+    async def test_list_empty(self, client: AsyncClient):
+        user = await self.create_user()
+        access = self.create_access_token(user)
+        resp = await client.get(
+            "/applications/",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
