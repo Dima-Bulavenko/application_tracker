@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-from fastapi import APIRouter, Form, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Form, HTTPException, Response, status
 from typing_extensions import Annotated, Literal
 
 from app import Tags
 from app.base_schemas import ErrorResponse
 from app.core.dto import AccessTokenResponse, UserLogin
 from app.core.exceptions import InvalidPasswordError, TokenExpireError, TokenInvalidError, UserNotFoundError
-from app.dependencies import AccessTokenDep, AuthServiceDep, RefreshTokenDep
+from app.dependencies import AuthServiceDep, RefreshTokenDep
 
 
 @dataclass
@@ -94,34 +94,12 @@ async def refresh_token(
 @router.post(
     "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
-    responses={
-        status.HTTP_401_UNAUTHORIZED: {
-            "description": "Access or Refresh token is not valid",
-            "model": ErrorResponse,
-        },
-        status.HTTP_404_NOT_FOUND: {
-            "description": "User not found",
-            "model": ErrorResponse,
-        },
-    },
 )
 async def logout(
     response: Response,
-    access_token: AccessTokenDep,
-    refresh_token: RefreshTokenDep,
     auth_service: AuthServiceDep,
+    refresh: Annotated[str | None, Cookie()] = None,
 ):
-    try:
-        await auth_service.logout(access_token, refresh_token)
-    except (TokenExpireError, TokenInvalidError) as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
-    except UserNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
-        ) from e
+    if refresh:
+        auth_service.logout(refresh)
     response.delete_cookie(**asdict(RefreshTokenSettings()))
