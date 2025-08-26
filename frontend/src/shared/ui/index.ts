@@ -6,3 +6,4 @@ export { PasswordInput } from './PasswordInput';
 export { ColorModeToggler } from './ColorModeToggler';
 export { LinkButton } from './LinkButton';
 export { FormError } from './FormError';
+export { LogoutButton } from './LogoutButton';

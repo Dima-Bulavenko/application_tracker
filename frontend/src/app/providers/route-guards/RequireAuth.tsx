@@ -3,9 +3,9 @@ import { useContext } from 'react';
 import { SessionContext } from 'shared/context/SessionContext';
 
 export function RequireAuth({ children }: { children: JSX.Element }) {
-  const { isAuthenticated } = useContext(SessionContext);
+  const { token } = useContext(SessionContext);
   const location = useLocation();
-  return isAuthenticated ? (
+  return token ? (
     children
   ) : (
     <Navigate to='/sign-in' replace state={{ from: location }} />

@@ -1,10 +1,10 @@
 import { Form, TextInput, PasswordInput, FormError } from 'shared/ui';
-import { UserLogin, zUserLogin } from 'shared/api';
+import { UserLogin, zUserLogin, login } from 'shared/api';
 import { Button, Stack } from '@mui/material';
 import { useSession } from 'shared/hooks';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { customZodResolver } from 'shared/lib';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const passwordHelp = zUserLogin.shape.password._def.description;
 
@@ -18,13 +18,13 @@ export default function SignInForm() {
     resolver: customZodResolver(zUserLogin),
   });
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login } = useSession();
+  const { setToken } = useSession();
   const onSubmit: SubmitHandler<UserLogin> = async (data, event) => {
     event?.preventDefault();
-    const res = await login(data);
+    const res = await login({ body: data });
     if (res.status === 200) {
-      navigate(location.state?.from || '/dashboard', { replace: true });
+      setToken(res.data?.access_token);
+      navigate('/dashboard', { replace: true });
     }
     if (res.status === 401) {
       setError('root', { message: 'Invalid email or password' });

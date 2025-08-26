@@ -11,7 +11,8 @@
       "pages/*": ["pages/*"],
       "features/*": ["features/*"],
       "entities/*": ["entities/*"],
-      "shared/*": ["shared/*"]
+      "shared/*": ["shared/*"],
+      "widgets/*": ["widgets/*"]
     }
   }
 }

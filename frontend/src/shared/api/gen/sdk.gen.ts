@@ -19,8 +19,9 @@ import type {
   GetCurrentUserData,
   GetCurrentUserResponse,
   GetCurrentUserError,
-  GetApplicationsByEmailData,
-  GetApplicationsByEmailResponse,
+  GetApplicationsData,
+  GetApplicationsResponse,
+  GetApplicationsError,
   CreateApplicationData,
   CreateApplicationResponse,
   CreateApplicationError,
@@ -33,6 +34,9 @@ import type {
   UpdateApplicationData,
   UpdateApplicationResponse,
   UpdateApplicationError,
+  GetCompanyData,
+  GetCompanyResponse,
+  GetCompanyError,
   LoginData,
   LoginResponse,
   LoginError,
@@ -163,14 +167,14 @@ export const getCurrentUser = <ThrowOnError extends boolean = false>(
 };
 
 /**
- * Get Applications By Email
+ * Get Applications
  */
-export const getApplicationsByEmail = <ThrowOnError extends boolean = false>(
-  options?: Options<GetApplicationsByEmailData, ThrowOnError>
+export const getApplications = <ThrowOnError extends boolean = false>(
+  options?: Options<GetApplicationsData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
-    GetApplicationsByEmailResponse,
-    unknown,
+    GetApplicationsResponse,
+    GetApplicationsError,
     ThrowOnError
   >({
     security: [
@@ -281,6 +285,22 @@ export const updateApplication = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * Get Company
+ */
+export const getCompany = <ThrowOnError extends boolean = false>(
+  options: Options<GetCompanyData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetCompanyResponse,
+    GetCompanyError,
+    ThrowOnError
+  >({
+    url: '/companies/{company_id}',
+    ...options,
+  });
+};
+
+/**
  * Login
  * **Create** a user with provided email and password.
  *
@@ -326,19 +346,13 @@ export const refreshToken = <ThrowOnError extends boolean = false>(
  * Logout
  */
 export const logout = <ThrowOnError extends boolean = false>(
-  options: Options<LogoutData, ThrowOnError>
+  options?: Options<LogoutData, ThrowOnError>
 ) => {
-  return (options.client ?? _heyApiClient).post<
+  return (options?.client ?? _heyApiClient).post<
     LogoutResponse,
     LogoutError,
     ThrowOnError
   >({
-    security: [
-      {
-        scheme: 'bearer',
-        type: 'http',
-      },
-    ],
     url: '/auth/logout',
     ...options,
   });

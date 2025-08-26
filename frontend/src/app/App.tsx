@@ -5,16 +5,16 @@ import { CssBaseline } from '@mui/material';
 import { AppRouter } from './providers/AppRouter';
 import { buildTheme } from 'shared/theme';
 import { SessionProvider } from './providers/SessionProvider';
-import { ColorModeToggler } from 'shared/ui';
+import { Header } from 'widgets/header';
 
 export function App() {
   return (
     <StrictMode>
       <ThemeProvider theme={buildTheme()} defaultMode='system' noSsr>
         <CssBaseline />
-        <ColorModeToggler />
         <SessionProvider>
           <Router>
+            <Header />
             <AppRouter />
           </Router>
         </SessionProvider>

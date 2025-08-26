@@ -1,84 +1,57 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  login as apiLogin,
-  logout as apiLogout,
   refreshToken,
   getCurrentUser,
   type UserRead,
-  UserLogin,
+  client,
+  setResponseInterceptor,
 } from 'shared/api';
-
 import { SessionContext } from 'shared/context/SessionContext';
 
 export function SessionProvider({ children }: React.PropsWithChildren<object>) {
   const [token, setToken] = useState<string | undefined>();
   const [user, setUser] = useState<UserRead | undefined>();
 
-  const isAuthenticated = !!token;
-
-  const fetchMe = useCallback(async (t: string) => {
-    const res = await getCurrentUser({
-      headers: { Authorization: `Bearer ${t}` },
-    });
-    if (res.status === 200 && res.data) {
-      setUser(res.data);
-    }
-  }, []);
-
-  const login = useCallback(
-    async (data: UserLogin) => {
-      const res = await apiLogin({ body: data });
-      if (res.status === 200 && res.data?.access_token) {
-        const t = res.data.access_token;
-        setToken(t);
-        await fetchMe(t);
-      }
-      return res;
-    },
-    [fetchMe]
-  );
-
-  const refresh = useCallback(async () => {
-    const res = await refreshToken({});
-    if (res.status === 200 && res.data?.access_token) {
-      const t = res.data.access_token;
-      setToken(t);
-      await fetchMe(t);
-    } else {
-      setUser(undefined);
-      setToken(undefined);
-    }
-    return res;
-  }, [fetchMe]);
-
-  const logout = useCallback(async () => {
-    try {
-      const res = await apiLogout(
-        token ? { headers: { Authorization: `Bearer ${token}` } } : {}
-      );
-      return res;
-    } finally {
-      setUser(undefined);
-      setToken(undefined);
-    }
+  useEffect(() => {
+    client.setConfig({ auth: token });
   }, [token]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    refreshToken({}).then((response) => {
+      if (response.status === 200) {
+        setToken(response.data?.access_token);
+      }
+    });
+  }, []);
 
-  const value = useMemo(
-    () => ({
-      isAuthenticated,
-      token,
+  useEffect(() => {
+    if (!token) {
+      setUser(undefined);
+      return;
+    }
+    if (token && !user) {
+      getCurrentUser().then((response) => {
+        if (response.status === 200) {
+          setUser(response.data);
+        }
+      });
+    }
+  }, [token, user]);
+
+  useEffect(() => {
+    const responseIntId = setResponseInterceptor(setToken);
+    return () => {
+      client.instance.interceptors.response.eject(responseIntId);
+    };
+  }, []);
+  const value = useMemo(() => {
+    return {
       user,
-      login,
-      logout,
-      refresh,
-    }),
-    [isAuthenticated, token, user, login, logout, refresh]
-  );
-
+      token,
+      setToken,
+      setUser,
+    };
+  }, [user, token, setToken, setUser]);
   return (
     <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
   );

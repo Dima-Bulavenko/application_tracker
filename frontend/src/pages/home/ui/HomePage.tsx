@@ -2,11 +2,8 @@ import { useContext } from 'react';
 import { Box, Typography, Stack, Paper } from '@mui/material';
 import { SessionContext } from 'shared/context/SessionContext';
 import { LinkButton } from 'shared/ui';
-
 export function HomePage() {
-  const ctx = useContext(SessionContext);
-  const isAuthenticated = ctx?.isAuthenticated;
-  // Using shared/ui LinkButton to avoid repeating component={RouterLink}
+  const { token } = useContext(SessionContext);
   return (
     <Stack spacing={8} sx={{ py: 6 }}>
       {/* Hero Section */}
@@ -23,7 +20,7 @@ export function HomePage() {
           Stay on top of every stage—from submission to interviews and offers.
         </Typography>
         <Stack direction='row' spacing={2} justifyContent='center' mt={4}>
-          {isAuthenticated ? (
+          {token ? (
             <LinkButton to='/dashboard' variant='contained' color='primary'>
               Go to Dashboard
             </LinkButton>
@@ -39,8 +36,6 @@ export function HomePage() {
           )}
         </Stack>
       </Box>
-
-      {/* Features Overview (replaced Grid with CSS grid Box) */}
       <Box component='section' maxWidth='lg' mx='auto' px={2}>
         <Box
           sx={{
@@ -82,7 +77,7 @@ export function HomePage() {
       </Box>
 
       {/* Auth Prompt */}
-      {!isAuthenticated && (
+      {!token && (
         <Box component='section' textAlign='center'>
           <Typography variant='subtitle1' gutterBottom>
             Create a free account to start organizing your applications.

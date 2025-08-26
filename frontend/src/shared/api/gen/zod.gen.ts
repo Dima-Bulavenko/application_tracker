@@ -24,15 +24,17 @@ export const zApplicationCreate = z.object({
   time_create: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-20T02:30:50.855889Z'),
+    .default('2025-08-26T18:27:25.836464Z'),
   time_update: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-20T02:30:50.855950Z'),
+    .default('2025-08-26T18:27:25.836512Z'),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),
 });
+
+export const zApplicationOrderBy = z.enum(['time_create', 'time_update']);
 
 export const zApplicationRead = z.object({
   role: z.string(),
@@ -51,14 +53,42 @@ export const zApplicationRead = z.object({
   time_create: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-20T02:30:50.852000Z'),
+    .default('2025-08-26T18:27:25.830246Z'),
   time_update: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-20T02:30:50.852048Z'),
+    .default('2025-08-26T18:27:25.830284Z'),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),
+});
+
+export const zApplicationReadWithCompany = z.object({
+  role: z.string(),
+  company_id: z.number().int(),
+  user_id: z.number().int(),
+  id: z.number().int(),
+  status: z
+    .enum(['applied', 'interview', 'offer', 'rejected'])
+    .default('applied'),
+  work_type: z
+    .enum(['full_time', 'part_time', 'internship', 'contract', 'other'])
+    .default('full_time'),
+  work_location: z.enum(['on_site', 'remote', 'hybrid']).default('on_site'),
+  note: z.union([z.string(), z.null()]).optional(),
+  application_url: z.union([z.string(), z.null()]).optional(),
+  time_create: z
+    .string()
+    .datetime({ offset: true })
+    .default('2025-08-26T18:27:25.830246Z'),
+  time_update: z
+    .string()
+    .datetime({ offset: true })
+    .default('2025-08-26T18:27:25.830284Z'),
+  interview_date: z
+    .union([z.string().datetime({ offset: true }), z.null()])
+    .optional(),
+  company: z.object({ id: z.number().int().gt(0), name: z.string().max(40) }),
 });
 
 export const zApplicationUpdate = z.object({
@@ -86,6 +116,11 @@ export const zApplicationUpdate = z.object({
 });
 
 export const zCompanyCreate = z.object({ name: z.string().max(40) });
+
+export const zCompanyRead = z.object({
+  id: z.number().int().gt(0),
+  name: z.string().max(40),
+});
 
 export const zErrorResponse = z.object({ detail: z.string() });
 

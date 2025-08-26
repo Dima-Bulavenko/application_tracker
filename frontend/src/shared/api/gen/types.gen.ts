@@ -20,6 +20,8 @@ export type ApplicationCreate = {
   interview_date?: string | null;
 };
 
+export type ApplicationOrderBy = 'time_create' | 'time_update';
+
 export type ApplicationRead = {
   role: string;
   company_id: number;
@@ -35,6 +37,22 @@ export type ApplicationRead = {
   interview_date?: string | null;
 };
 
+export type ApplicationReadWithCompany = {
+  role: string;
+  company_id: number;
+  user_id: number;
+  id: number;
+  status?: AppStatus;
+  work_type?: WorkType;
+  work_location?: WorkLocation;
+  note?: string | null;
+  application_url?: string | null;
+  time_create?: string;
+  time_update?: string;
+  interview_date?: string | null;
+  company: CompanyRead;
+};
+
 export type ApplicationUpdate = {
   role?: string | null;
   company?: CompanyCreate | null;
@@ -47,6 +65,11 @@ export type ApplicationUpdate = {
 };
 
 export type CompanyCreate = {
+  name: string;
+};
+
+export type CompanyRead = {
+  id: number;
   name: string;
 };
 
@@ -262,22 +285,47 @@ export type GetCurrentUserResponses = {
 export type GetCurrentUserResponse =
   GetCurrentUserResponses[keyof GetCurrentUserResponses];
 
-export type GetApplicationsByEmailData = {
+export type GetApplicationsData = {
   body?: never;
   path?: never;
-  query?: never;
+  query?: {
+    /**
+     * Number of items to return
+     */
+    limit?: number;
+    /**
+     * Number of items to skip before starting to collect the result set
+     */
+    offset?: number;
+    order_by?: ApplicationOrderBy;
+    order_direction?: 'asc' | 'desc';
+  };
   url: '/applications/';
 };
 
-export type GetApplicationsByEmailResponses = {
+export type GetApplicationsErrors = {
+  /**
+   * Access token is invalid
+   */
+  401: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetApplicationsError =
+  GetApplicationsErrors[keyof GetApplicationsErrors];
+
+export type GetApplicationsResponses = {
   /**
    * Successful Response
    */
-  200: Array<ApplicationRead>;
+  200: Array<ApplicationReadWithCompany>;
 };
 
-export type GetApplicationsByEmailResponse =
-  GetApplicationsByEmailResponses[keyof GetApplicationsByEmailResponses];
+export type GetApplicationsResponse =
+  GetApplicationsResponses[keyof GetApplicationsResponses];
 
 export type CreateApplicationData = {
   body: ApplicationCreate;
@@ -429,6 +477,37 @@ export type UpdateApplicationResponses = {
 export type UpdateApplicationResponse =
   UpdateApplicationResponses[keyof UpdateApplicationResponses];
 
+export type GetCompanyData = {
+  body?: never;
+  path: {
+    company_id: number;
+  };
+  query?: never;
+  url: '/companies/{company_id}';
+};
+
+export type GetCompanyErrors = {
+  /**
+   * Application not found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetCompanyError = GetCompanyErrors[keyof GetCompanyErrors];
+
+export type GetCompanyResponses = {
+  /**
+   * Successful Response
+   */
+  200: CompanyRead;
+};
+
+export type GetCompanyResponse = GetCompanyResponses[keyof GetCompanyResponses];
+
 export type LoginData = {
   body: UserLogin;
   path?: never;
@@ -500,14 +579,6 @@ export type LogoutData = {
 };
 
 export type LogoutErrors = {
-  /**
-   * Access or Refresh token is not valid
-   */
-  401: ErrorResponse;
-  /**
-   * User not found
-   */
-  404: ErrorResponse;
   /**
    * Validation Error
    */

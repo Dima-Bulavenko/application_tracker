@@ -15,7 +15,6 @@ export function ColorModeToggler() {
     m === 'dark' || (m === 'system' && prefersDarkMode);
 
   const handleToggle = () => {
-    console.log(mode);
     if (!mode) return; // avoid hydration mismatch
     if (mode === 'system') {
       // On first visit, system is active. Toggle to the opposite of effective mode.
@@ -33,10 +32,7 @@ export function ColorModeToggler() {
       onClick={handleToggle}
       size='small'
       sx={{
-        position: 'fixed',
-        top: 16,
-        right: 16,
-        zIndex: 1400,
+        ml: 1,
         width: 36,
         height: 36,
         borderRadius: '50%',
