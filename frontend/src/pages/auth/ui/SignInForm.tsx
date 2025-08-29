@@ -51,7 +51,7 @@ export default function SignInForm() {
           helperText={passwordHelp}
         />
       </Stack>
-      <FormError sx={{ mt: 1 }} message={errors.root?.message} />
+      <FormError message={errors.root?.message} />
       <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>
         Sign In
       </Button>

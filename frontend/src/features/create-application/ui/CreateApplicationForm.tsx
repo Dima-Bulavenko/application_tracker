@@ -57,7 +57,7 @@ export default function CreateApplicationForm() {
         <InterviewDateField name='interview_date' control={control} />
         <ApplicationURLField name='application_url' control={control} />
       </Stack>
-      <FormError sx={{ mt: 1 }} message={errors.root?.message} />
+      <FormError message={errors.root?.message} />
       <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>
         Create Application
       </Button>

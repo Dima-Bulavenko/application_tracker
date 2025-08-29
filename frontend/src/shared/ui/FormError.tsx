@@ -9,7 +9,7 @@ type FormErrorProps = PropsWithChildren<
 >;
 
 // A compact, inline form error message (smaller than MUI Alert)
-export function FormError({ message, children, sx, ...props }: FormErrorProps) {
+export function FormError({ message, children, ...props }: FormErrorProps) {
   const content = message ?? children;
   if (!content) return null;
   return (
@@ -20,7 +20,7 @@ export function FormError({ message, children, sx, ...props }: FormErrorProps) {
       alignItems='center'
       gap={1}
       color={(theme) => theme.palette.error.main}
-      sx={sx}
+      sx={{ mt: 1 }}
       {...props}>
       <ErrorOutlineIcon fontSize='medium' />
       <Typography variant='caption' sx={{ m: 0 }}>
