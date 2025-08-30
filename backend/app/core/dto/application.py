@@ -39,8 +39,6 @@ class ApplicationCreate(BaseModelDTO):
     work_location: WorkLocation = WorkLocation.ON_SITE
     note: str | None = None
     application_url: str | None = None
-    time_create: datetime = Field(datetime.now(UTC))
-    time_update: datetime = Field(datetime.now(UTC))
     interview_date: datetime | None = None
 
 
