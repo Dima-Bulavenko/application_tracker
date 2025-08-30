@@ -1,34 +1,15 @@
-import { TextField } from '@mui/material';
-import {
-  FieldPath,
-  FieldValues,
-  UseControllerProps,
-  useController,
-} from 'react-hook-form';
-
-type Props<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> = UseControllerProps<TFieldValues, TName> & {
-  control: NonNullable<UseControllerProps<TFieldValues, TName>['control']>;
-  label?: string;
-};
+import { useController } from 'react-hook-form';
+import { FieldComponent } from 'shared/types';
+import { TextInput } from 'shared/ui';
 
 /**
  * Application status select field integrated with react-hook-form.
  * Values are sourced from generated zod enum to stay in sync with API.
  */
-export function ApplicationURLField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({ label = 'Application URL', ...props }: Props<TFieldValues, TName>) {
-  const { field, fieldState } = useController(props);
-  return (
-    <TextField
-      label={label}
-      {...field}
-      error={!!fieldState.error}
-      helperText={fieldState.error?.message ?? ''}
-    />
-  );
-}
+export const ApplicationURLField: FieldComponent = ({
+  label = 'Application URL',
+  ...props
+}) => {
+  const controller = useController(props);
+  return <TextInput label={label} {...controller} />;
+};

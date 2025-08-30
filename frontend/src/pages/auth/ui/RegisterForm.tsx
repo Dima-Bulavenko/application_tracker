@@ -1,18 +1,17 @@
-import { Form, TextInput, PasswordInput, FormError } from 'shared/ui';
+import { Form, FormError } from 'shared/ui';
 import { zUserCreate, type UserCreate, createUser } from 'shared/api';
 import { Button, Stack } from '@mui/material';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { customZodResolver } from 'shared/lib';
 import { useNavigate } from 'react-router-dom';
-
-const passwordHelp = zUserCreate.shape.password._def.description;
+import { EmailField, PasswordField } from 'entities/user/ui';
 
 export default function RegisterForm() {
   const {
     control,
     handleSubmit,
     setError,
-    formState: { isSubmitting, errors },
+    formState: { errors },
   } = useForm<UserCreate>({ resolver: customZodResolver(zUserCreate) });
 
   const navigate = useNavigate();
@@ -30,23 +29,8 @@ export default function RegisterForm() {
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={5}>
-        <TextInput
-          name='username'
-          type='email'
-          label='Email'
-          control={control}
-          required
-          rules={{ required: true }}
-          disabled={isSubmitting}
-        />
-        <PasswordInput
-          name='password'
-          control={control}
-          required
-          disabled={isSubmitting}
-          rules={{ required: true }}
-          helperText={passwordHelp}
-        />
+        <EmailField name='username' control={control} />
+        <PasswordField name='password' control={control} />
       </Stack>
       <FormError message={errors.root?.message} />
       <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>

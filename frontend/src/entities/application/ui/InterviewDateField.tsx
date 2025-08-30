@@ -1,29 +1,26 @@
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import {
-  FieldPath,
-  FieldValues,
-  useController,
-  UseControllerProps,
-} from 'react-hook-form';
+import { useController } from 'react-hook-form';
+import { FieldComponent } from 'shared/types';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 
-type Props<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> = UseControllerProps<TFieldValues, TName> & {
-  control: NonNullable<UseControllerProps<TFieldValues, TName>['control']>;
-  label?: string;
-};
-
-export default function InterviewDateField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({ label = 'Interview date', ...props }: Props<TFieldValues, TName>) {
+const InterviewDateField: FieldComponent = ({
+  label = 'Interview date',
+  ...props
+}) => {
   const { field } = useController(props);
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <DateTimePicker label={label} {...field} />
+      <DateTimePicker
+        label={label}
+        name={field.name}
+        ref={field.ref}
+        onChange={(value) => {
+          field.onChange(value?.toISOString());
+        }}
+      />
     </LocalizationProvider>
   );
-}
+};
+
+export default InterviewDateField;

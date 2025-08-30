@@ -15,8 +15,6 @@ export type ApplicationCreate = {
   work_location?: WorkLocation;
   note?: string | null;
   application_url?: string | null;
-  time_create?: string;
-  time_update?: string;
   interview_date?: string | null;
 };
 

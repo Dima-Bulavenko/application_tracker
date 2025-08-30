@@ -5,16 +5,14 @@ import {
   WorkLocationField,
   NoteField,
   InterviewDateField,
+  RoleField,
+  CompanyField,
 } from 'entities/application/ui';
 import { ApplicationURLField } from 'entities/application/ui/ApplicationURLField';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import {
-  createApplication,
-  zApplicationCreate,
-  type ApplicationCreate,
-} from 'shared/api';
+import { zApplicationCreate, type ApplicationCreate } from 'shared/api';
 import { customZodResolver } from 'shared/lib';
-import { Form, FormError, TextInput } from 'shared/ui';
+import { Form, FormError } from 'shared/ui';
 
 export default function CreateApplicationForm() {
   const {
@@ -31,25 +29,16 @@ export default function CreateApplicationForm() {
   });
   const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
     event?.preventDefault();
-    createApplication({ body: data }).then((response) => {
-      console.log(response);
-    });
+    console.log(data);
+    // createApplication({ body: data }).then((response) => {
+    //   console.log(response);
+    // });
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={5}>
-        <TextInput
-          name='role'
-          required
-          control={control}
-          rules={{ required: true }}
-        />
-        <TextInput
-          name='company'
-          required
-          control={control}
-          rules={{ required: true }}
-        />
+        <RoleField name='role' control={control} />
+        <CompanyField name='company' control={control} />
         <ApplicationStatusField name='status' control={control} />
         <WorkTypeField name='work_type' control={control} />
         <WorkLocationField name='work_location' control={control} />

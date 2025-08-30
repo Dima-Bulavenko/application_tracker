@@ -21,14 +21,6 @@ export const zApplicationCreate = z.object({
   work_location: z.enum(['on_site', 'remote', 'hybrid']).default('on_site'),
   note: z.union([z.string(), z.null()]).optional(),
   application_url: z.union([z.string(), z.null()]).optional(),
-  time_create: z
-    .string()
-    .datetime({ offset: true })
-    .default('2025-08-26T18:27:25.836464Z'),
-  time_update: z
-    .string()
-    .datetime({ offset: true })
-    .default('2025-08-26T18:27:25.836512Z'),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),
@@ -53,11 +45,11 @@ export const zApplicationRead = z.object({
   time_create: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-26T18:27:25.830246Z'),
+    .default('2025-08-30T18:36:33.238871Z'),
   time_update: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-26T18:27:25.830284Z'),
+    .default('2025-08-30T18:36:33.238931Z'),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),
@@ -80,11 +72,11 @@ export const zApplicationReadWithCompany = z.object({
   time_create: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-26T18:27:25.830246Z'),
+    .default('2025-08-30T18:36:33.238871Z'),
   time_update: z
     .string()
     .datetime({ offset: true })
-    .default('2025-08-26T18:27:25.830284Z'),
+    .default('2025-08-30T18:36:33.238931Z'),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),

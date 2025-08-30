@@ -1,31 +1,22 @@
-import { TextField } from '@mui/material';
-import {
-  FieldPath,
-  FieldValues,
-  UseControllerProps,
-  useController,
-} from 'react-hook-form';
+import { type ChangeEvent } from 'react';
+import { useController } from 'react-hook-form';
+import { type FieldComponent } from 'shared/types';
+import { TextInput } from 'shared/ui';
 
-type Props<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> = UseControllerProps<TFieldValues, TName> & {
-  control: NonNullable<UseControllerProps<TFieldValues, TName>['control']>;
-  label?: string;
-};
-
-export default function CompanyField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({ label = 'Company', ...props }: Props<TFieldValues, TName>) {
-  const { field, fieldState } = useController(props);
+const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
+  const { field, fieldState, formState } = useController(props);
+  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
+    field.onChange({ name: event.target.value });
+  };
   return (
-    <TextField
+    <TextInput
       label={label}
-      {...field}
-      error={!!fieldState.error}
-      helperText={fieldState.error?.message ?? ''}
-      required
+      field={field}
+      fieldState={fieldState}
+      formState={formState}
+      onChange={onChange}
     />
   );
-}
+};
+
+export default CompanyField;

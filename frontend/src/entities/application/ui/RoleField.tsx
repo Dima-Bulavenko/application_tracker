@@ -1,31 +1,10 @@
-import { TextField } from '@mui/material';
-import {
-  FieldPath,
-  FieldValues,
-  UseControllerProps,
-  useController,
-} from 'react-hook-form';
+import { useController } from 'react-hook-form';
+import { FieldComponent } from 'shared/types';
+import { TextInput } from 'shared/ui';
 
-type Props<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> = UseControllerProps<TFieldValues, TName> & {
-  control: NonNullable<UseControllerProps<TFieldValues, TName>['control']>;
-  label?: string;
+const RoleField: FieldComponent = ({ label = 'Role', ...props }) => {
+  const controller = useController(props);
+  return <TextInput label={label} {...controller} />;
 };
 
-export default function RoleField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({ label = 'Role', ...props }: Props<TFieldValues, TName>) {
-  const { field, fieldState } = useController(props);
-  return (
-    <TextField
-      label={label}
-      {...field}
-      error={!!fieldState.error}
-      helperText={fieldState.error?.message ?? ''}
-      required
-    />
-  );
-}
+export default RoleField;
