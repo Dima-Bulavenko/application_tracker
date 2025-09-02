@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import Field
@@ -17,13 +17,13 @@ class ApplicationRead(BaseModelDTO):
     company_id: int
     user_id: int
     id: int
-    status: AppStatus = AppStatus.APPLIED
-    work_type: WorkType = WorkType.FULL_TIME
-    work_location: WorkLocation = WorkLocation.ON_SITE
+    status: AppStatus
+    work_type: WorkType
+    work_location: WorkLocation
     note: str | None = None
     application_url: str | None = None
-    time_create: datetime = Field(datetime.now(UTC))
-    time_update: datetime = Field(datetime.now(UTC))
+    time_create: datetime
+    time_update: datetime
     interview_date: datetime | None = None
 
 
