@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import enum
-from datetime import UTC, datetime
+from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class AppStatus(enum.Enum):
@@ -37,6 +37,6 @@ class Application(BaseModel):
     work_location: WorkLocation = WorkLocation.ON_SITE
     note: str | None = None
     application_url: str | None = None
-    time_create: datetime = Field(datetime.now(UTC))
-    time_update: datetime = Field(datetime.now(UTC))
+    time_create: datetime | None = None
+    time_update: datetime | None = None
     interview_date: datetime | None = None

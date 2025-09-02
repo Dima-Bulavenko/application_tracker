@@ -8,15 +8,15 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 time_create_tp = Annotated[
     datetime.datetime,
-    mapped_column(DateTime(timezone=True), server_default=func.now()),
+    mapped_column(DateTime(timezone=True), server_default=func.current_timestamp()),
 ]
 
 time_update_tp = Annotated[
     datetime.datetime,
     mapped_column(
         DateTime(timezone=True),
-        server_default=func.now(),
-        server_onupdate=func.now(),
+        server_default=func.current_timestamp(),
+        server_onupdate=func.current_timestamp(),
     ),
 ]
 
