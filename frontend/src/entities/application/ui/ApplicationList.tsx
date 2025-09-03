@@ -1,36 +1,25 @@
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { useApplications } from 'entities/application/api/useApplications';
+import { Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { useApplicationsList } from 'entities/application/api';
 import ApplicationCard from 'entities/application/ui/ApplicationCard';
 
-type Props = {
-  pageSize?: number;
-};
-
-export function ApplicationList({ pageSize = 10 }: Props) {
-  const { items, loading, error, hasMore, loadMore, refetch } = useApplications(
-    { pageSize, orderBy: 'time_update', orderDirection: 'desc' }
-  );
+export function ApplicationList(
+  params: Parameters<typeof useApplicationsList>[0]
+) {
+  const { data, isFetching, error } = useApplicationsList({
+    ...params,
+  });
 
   if (error) {
     return (
       <Box display='flex' flexDirection='column' alignItems='center' gap={1}>
         <Typography color='error' variant='body2'>
-          {error}
+          {error.message}
         </Typography>
-        <Button size='small' variant='outlined' onClick={refetch}>
-          Retry
-        </Button>
       </Box>
     );
   }
 
-  if (!loading && items.length === 0) {
+  if (!isFetching && data?.length === 0) {
     return (
       <Typography variant='body2' color='text.secondary'>
         No applications yet.
@@ -40,21 +29,11 @@ export function ApplicationList({ pageSize = 10 }: Props) {
 
   return (
     <Stack spacing={2}>
-      {items.map((app) => (
-        <ApplicationCard key={app.id} application={app} />
-      ))}
+      {data?.map((app) => <ApplicationCard key={app.id} application={app} />)}
 
-      {loading && (
+      {isFetching && (
         <Box display='flex' justifyContent='center' py={1}>
           <CircularProgress size={24} />
-        </Box>
-      )}
-
-      {!loading && hasMore && (
-        <Box display='flex' justifyContent='center'>
-          <Button variant='outlined' onClick={loadMore}>
-            Load more
-          </Button>
         </Box>
       )}
     </Stack>

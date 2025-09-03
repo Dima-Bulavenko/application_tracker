@@ -1,4 +1,5 @@
 import { Button, Stack } from '@mui/material';
+import { useCreateApplication } from 'entities/application/api';
 import {
   ApplicationStatusField,
   WorkTypeField,
@@ -27,12 +28,10 @@ export default function CreateApplicationForm() {
       work_location: 'on_site',
     },
   });
+  const { mutate: createApp } = useCreateApplication();
   const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
     event?.preventDefault();
-    console.log(data);
-    // createApplication({ body: data }).then((response) => {
-    //   console.log(response);
-    // });
+    createApp(data);
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>

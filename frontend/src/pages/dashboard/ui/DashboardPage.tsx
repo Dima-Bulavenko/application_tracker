@@ -13,7 +13,7 @@ export function DashboardPage() {
       <Stack direction='row' justifyContent='flex-end' mb={2}>
         <CreateApplicationButton onClick={() => setOpen(true)} />
       </Stack>
-      <ApplicationList pageSize={10} />
+      <ApplicationList />
       <CreateApplicationDialog open={open} onClose={() => setOpen(false)} />
     </Container>
   );

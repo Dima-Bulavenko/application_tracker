@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { HomePage } from 'pages/home';
-import { SignInPage, RegisterPage } from 'pages/auth';
+import { SignInPage, RegisterPage, VerifyEmailPage } from 'pages/auth';
 import { DashboardPage } from 'pages/dashboard';
 import { PageNotFound } from 'shared/ui';
 import { PublicOnly } from './route-guards/PublicOnly';
@@ -32,6 +32,14 @@ export function AppRouter() {
           element={
             <PublicOnly>
               <RegisterPage />
+            </PublicOnly>
+          }
+        />
+        <Route
+          path='/verify-email'
+          element={
+            <PublicOnly>
+              <VerifyEmailPage />
             </PublicOnly>
           }
         />

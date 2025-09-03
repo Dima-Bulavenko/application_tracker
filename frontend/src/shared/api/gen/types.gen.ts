@@ -25,13 +25,13 @@ export type ApplicationRead = {
   company_id: number;
   user_id: number;
   id: number;
-  status?: AppStatus;
-  work_type?: WorkType;
-  work_location?: WorkLocation;
+  status: AppStatus;
+  work_type: WorkType;
+  work_location: WorkLocation;
   note?: string | null;
   application_url?: string | null;
-  time_create?: string;
-  time_update?: string;
+  time_create: string;
+  time_update: string;
   interview_date?: string | null;
 };
 
@@ -40,13 +40,13 @@ export type ApplicationReadWithCompany = {
   company_id: number;
   user_id: number;
   id: number;
-  status?: AppStatus;
-  work_type?: WorkType;
-  work_location?: WorkLocation;
+  status: AppStatus;
+  work_type: WorkType;
+  work_location: WorkLocation;
   note?: string | null;
   application_url?: string | null;
-  time_create?: string;
-  time_update?: string;
+  time_create: string;
+  time_update: string;
   interview_date?: string | null;
   company: CompanyRead;
 };

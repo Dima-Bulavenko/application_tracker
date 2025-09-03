@@ -33,23 +33,19 @@ export const zApplicationRead = z.object({
   company_id: z.number().int(),
   user_id: z.number().int(),
   id: z.number().int(),
-  status: z
-    .enum(['applied', 'interview', 'offer', 'rejected'])
-    .default('applied'),
-  work_type: z
-    .enum(['full_time', 'part_time', 'internship', 'contract', 'other'])
-    .default('full_time'),
-  work_location: z.enum(['on_site', 'remote', 'hybrid']).default('on_site'),
+  status: z.enum(['applied', 'interview', 'offer', 'rejected']),
+  work_type: z.enum([
+    'full_time',
+    'part_time',
+    'internship',
+    'contract',
+    'other',
+  ]),
+  work_location: z.enum(['on_site', 'remote', 'hybrid']),
   note: z.union([z.string(), z.null()]).optional(),
   application_url: z.union([z.string(), z.null()]).optional(),
-  time_create: z
-    .string()
-    .datetime({ offset: true })
-    .default('2025-08-30T18:36:33.238871Z'),
-  time_update: z
-    .string()
-    .datetime({ offset: true })
-    .default('2025-08-30T18:36:33.238931Z'),
+  time_create: z.string().datetime({ offset: true }),
+  time_update: z.string().datetime({ offset: true }),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),
@@ -60,23 +56,19 @@ export const zApplicationReadWithCompany = z.object({
   company_id: z.number().int(),
   user_id: z.number().int(),
   id: z.number().int(),
-  status: z
-    .enum(['applied', 'interview', 'offer', 'rejected'])
-    .default('applied'),
-  work_type: z
-    .enum(['full_time', 'part_time', 'internship', 'contract', 'other'])
-    .default('full_time'),
-  work_location: z.enum(['on_site', 'remote', 'hybrid']).default('on_site'),
+  status: z.enum(['applied', 'interview', 'offer', 'rejected']),
+  work_type: z.enum([
+    'full_time',
+    'part_time',
+    'internship',
+    'contract',
+    'other',
+  ]),
+  work_location: z.enum(['on_site', 'remote', 'hybrid']),
   note: z.union([z.string(), z.null()]).optional(),
   application_url: z.union([z.string(), z.null()]).optional(),
-  time_create: z
-    .string()
-    .datetime({ offset: true })
-    .default('2025-08-30T18:36:33.238871Z'),
-  time_update: z
-    .string()
-    .datetime({ offset: true })
-    .default('2025-08-30T18:36:33.238931Z'),
+  time_create: z.string().datetime({ offset: true }),
+  time_update: z.string().datetime({ offset: true }),
   interview_date: z
     .union([z.string().datetime({ offset: true }), z.null()])
     .optional(),
