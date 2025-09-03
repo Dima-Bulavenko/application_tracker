@@ -15,6 +15,7 @@ from .auth import (
 )
 from .company import (
     CompanyCreate as CompanyCreate,
+    CompanyFilterParams as CompanyFilterParams,
     CompanyRead as CompanyRead,
 )
 from .config import BaseModelDTO as BaseModelDTO

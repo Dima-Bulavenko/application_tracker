@@ -1,12 +1,29 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
+from typing_extensions import Annotated
 
 from app import Tags
 from app.base_schemas import ErrorResponse
-from app.core.dto import CompanyRead
+from app.core.dto import CompanyFilterParams, CompanyRead
 from app.core.exceptions import CompanyNotFoundError
-from app.dependencies import CompanyServiceDep
+from app.dependencies import AccessTokenPayloadDep, CompanyServiceDep
 
 router = APIRouter(prefix="/companies", tags=[Tags.COMPANY])
+
+
+@router.get(
+    "/user",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Access token is invalid", "model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Validation error", "model": ErrorResponse},
+    },
+)
+async def get_user_companies(
+    access_token: AccessTokenPayloadDep,
+    company_service: CompanyServiceDep,
+    filter_param: Annotated[CompanyFilterParams, Query()],
+) -> list[CompanyRead]:
+    companies = await company_service.get_companies_by_user_id(user_id=access_token.user_id, filter_param=filter_param)
+    return companies
 
 
 @router.get(

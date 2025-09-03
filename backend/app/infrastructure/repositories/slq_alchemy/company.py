@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from sqlalchemy import select
+from sqlalchemy import asc, desc, select
 
 from app.core.domain import Company
+from app.core.dto import CompanyFilterParams
 from app.core.repositories import ICompanyRepository
 from app.db.models import Company as CompanyModel
 
@@ -41,5 +42,21 @@ class CompanySQLAlchemyRepository(SQLAlchemyRepository[CompanyModel], ICompanyRe
         offset: int | None = None,
     ) -> list[Company]:
         statement = select(self.model).limit(limit).offset(offset)
+        company_model = await self.session.scalars(statement)
+        return [Company.model_validate(c, from_attributes=True) for c in company_model]
+
+    async def get_by_user_id(self, user_id: int, filter_param: CompanyFilterParams) -> list[Company]:
+        order_by_clause = getattr(self.model, filter_param.order_by)
+        order_direction = asc if filter_param.order_direction == "asc" else desc
+        # Start with companies that have at least one application by the user (uses EXISTS via .any)
+        statement = select(self.model).where(self.model.applications.any(user_id=user_id))
+
+        # Optional case-insensitive substring filter on name
+        if filter_param.name_contains:
+            statement = statement.where(self.model.name.icontains(filter_param.name_contains, autoescape=True))
+
+        statement = (
+            statement.order_by(order_direction(order_by_clause)).limit(filter_param.limit).offset(filter_param.offset)
+        )
         company_model = await self.session.scalars(statement)
         return [Company.model_validate(c, from_attributes=True) for c in company_model]

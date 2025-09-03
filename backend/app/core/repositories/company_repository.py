@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Iterable
 
 from app.core.domain import Company
+from app.core.dto import CompanyFilterParams
 
 
 class ICompanyRepository(ABC):
@@ -25,3 +26,6 @@ class ICompanyRepository(ABC):
         limit: int | None = None,
         offset: int | None = None,
     ) -> list[Company]: ...
+
+    @abstractmethod
+    async def get_by_user_id(self, user_id: int, filter_param: CompanyFilterParams) -> list[Company]: ...
