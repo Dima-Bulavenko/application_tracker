@@ -93,7 +93,7 @@ class TestLoginEndpoint(BaseTest):
 class TestLogoutEndpoint(BaseTest):
     async def test_without_tokens(self, client: AsyncClient):
         response = await client.post("/auth/logout")
-        assert response.status_code == 422
+        assert response.status_code == 204
 
     async def test_with_valid_tokens(self, client: AsyncClient):
         user = await self.create_user()

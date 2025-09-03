@@ -17,7 +17,8 @@ class UserEmailService:
         self,
         email_service: IEmailService,
         token_handler: ITokenStrategy[VerificationTokenPayload],
-        base_url: str = "http://localhost:8000",
+        # Base URL of the frontend application used in links sent via email
+        base_url: str = "http://localhost:5173",
     ) -> None:
         """Initialize the user email service.
 
@@ -72,7 +73,8 @@ class UserEmailService:
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        login_url = f"{self.base_url}/login"
+        # Link to the frontend sign-in page
+        login_url = f"{self.base_url}/sign-in"
 
         context = {
             "email": email,
