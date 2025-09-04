@@ -101,6 +101,8 @@ export const zApplicationUpdate = z.object({
 
 export const zCompanyCreate = z.object({ name: z.string().max(40) });
 
+export const zCompanyOrderBy = z.literal('name');
+
 export const zCompanyRead = z.object({
   id: z.number().int().gt(0),
   name: z.string().max(40),

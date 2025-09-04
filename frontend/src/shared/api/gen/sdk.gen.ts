@@ -34,6 +34,9 @@ import type {
   UpdateApplicationData,
   UpdateApplicationResponse,
   UpdateApplicationError,
+  GetUserCompaniesData,
+  GetUserCompaniesResponse,
+  GetUserCompaniesError,
   GetCompanyData,
   GetCompanyResponse,
   GetCompanyError,
@@ -281,6 +284,28 @@ export const updateApplication = <ThrowOnError extends boolean = false>(
       'Content-Type': 'application/json',
       ...options?.headers,
     },
+  });
+};
+
+/**
+ * Get User Companies
+ */
+export const getUserCompanies = <ThrowOnError extends boolean = false>(
+  options?: Options<GetUserCompaniesData, ThrowOnError>
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetUserCompaniesResponse,
+    GetUserCompaniesError,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: 'bearer',
+        type: 'http',
+      },
+    ],
+    url: '/companies/user',
+    ...options,
   });
 };
 

@@ -66,6 +66,8 @@ export type CompanyCreate = {
   name: string;
 };
 
+export type CompanyOrderBy = 'name';
+
 export type CompanyRead = {
   id: number;
   name: string;
@@ -474,6 +476,49 @@ export type UpdateApplicationResponses = {
 
 export type UpdateApplicationResponse =
   UpdateApplicationResponses[keyof UpdateApplicationResponses];
+
+export type GetUserCompaniesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Number of items to return
+     */
+    limit?: number;
+    /**
+     * Number of items to skip before starting to collect the result set
+     */
+    offset?: number;
+    order_by?: CompanyOrderBy;
+    order_direction?: 'asc' | 'desc';
+    name_contains?: string | null;
+  };
+  url: '/companies/user';
+};
+
+export type GetUserCompaniesErrors = {
+  /**
+   * Access token is invalid
+   */
+  401: ErrorResponse;
+  /**
+   * Validation error
+   */
+  422: ErrorResponse;
+};
+
+export type GetUserCompaniesError =
+  GetUserCompaniesErrors[keyof GetUserCompaniesErrors];
+
+export type GetUserCompaniesResponses = {
+  /**
+   * Successful Response
+   */
+  200: Array<CompanyRead>;
+};
+
+export type GetUserCompaniesResponse =
+  GetUserCompaniesResponses[keyof GetUserCompaniesResponses];
 
 export type GetCompanyData = {
   body?: never;
