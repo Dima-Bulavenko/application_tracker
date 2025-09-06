@@ -30,11 +30,12 @@ export function TextInput<
       }
       error={!!fieldState?.error}
       id={`${field.name}_id`}
-      disabled={formState.isSubmitting || formState.isLoading}
+      disabled={formState.isSubmitting || formState.isLoading || field.disabled}
       onBlur={field.onBlur}
       onChange={field.onChange}
       name={field.name}
       ref={field.ref}
+      value={field.value || ''}
       {...props}
     />
   );

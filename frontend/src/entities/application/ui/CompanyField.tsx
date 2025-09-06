@@ -33,6 +33,7 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
       loading={isFetching}
+      value={field.value.name || ''}
       renderInput={(params) => (
         <TextInput
           {...params}

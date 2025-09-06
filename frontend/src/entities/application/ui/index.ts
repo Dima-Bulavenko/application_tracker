@@ -7,4 +7,4 @@ export { default as RoleField } from './RoleField';
 export { default as CompanyField } from './CompanyField';
 export { default as NoteField } from './NoteField';
 export { default as InterviewDateField } from './InterviewDateField';
-export { default as ApplicationURL } from './InterviewDateField';
+export { default as ApplicationURLField } from './ApplicationURLField';

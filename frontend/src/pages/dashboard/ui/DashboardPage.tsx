@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   CreateApplicationButton,
   CreateApplicationDialog,
-} from 'features/create-application';
+} from 'features/application';
 
 export function DashboardPage() {
   const [open, setOpen] = useState(false);

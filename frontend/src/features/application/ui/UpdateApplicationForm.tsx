@@ -1,5 +1,5 @@
 import { Button, Stack } from '@mui/material';
-import { useCreateApplication } from 'entities/application/api';
+import { useUpdateApplication } from 'entities/application/api';
 import {
   ApplicationStatusField,
   WorkTypeField,
@@ -8,30 +8,34 @@ import {
   InterviewDateField,
   RoleField,
   CompanyField,
+  ApplicationURLField,
 } from 'entities/application/ui';
-import { ApplicationURLField } from 'entities/application/ui/ApplicationURLField';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { zApplicationCreate, type ApplicationCreate } from 'shared/api';
+import {
+  ApplicationRead,
+  getDirtyValues,
+  zApplicationUpdate,
+  type ApplicationUpdate,
+} from 'shared/api';
 import { customZodResolver } from 'shared/lib';
 import { Form, FormError } from 'shared/ui';
 
-export default function CreateApplicationForm() {
+export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
     control,
     handleSubmit,
-    formState: { errors },
-  } = useForm<ApplicationCreate>({
-    resolver: customZodResolver(zApplicationCreate),
-    defaultValues: {
-      status: 'applied',
-      work_type: 'full_time',
-      work_location: 'on_site',
-    },
+    formState: { errors, dirtyFields, isDirty },
+  } = useForm<ApplicationUpdate>({
+    resolver: customZodResolver(zApplicationUpdate),
+    defaultValues: defaultValues,
   });
-  const { mutate: createApp } = useCreateApplication();
-  const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
+  const { mutate: updateApp } = useUpdateApplication(defaultValues.id);
+  const onSubmit: SubmitHandler<ApplicationUpdate> = (data, event) => {
     event?.preventDefault();
-    createApp(data);
+    const newData = getDirtyValues(dirtyFields, data);
+    if (newData) {
+      updateApp(newData);
+    }
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
@@ -46,8 +50,13 @@ export default function CreateApplicationForm() {
         <ApplicationURLField name='application_url' control={control} />
       </Stack>
       <FormError message={errors.root?.message} />
-      <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>
-        Create Application
+      <Button
+        sx={{ mt: 5 }}
+        type='submit'
+        color='primary'
+        disabled={!isDirty}
+        variant='contained'>
+        UpdateApplicationForm Application
       </Button>
     </Form>
   );

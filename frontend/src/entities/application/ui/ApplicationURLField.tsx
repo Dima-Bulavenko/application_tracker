@@ -6,10 +6,12 @@ import { TextInput } from 'shared/ui';
  * Application status select field integrated with react-hook-form.
  * Values are sourced from generated zod enum to stay in sync with API.
  */
-export const ApplicationURLField: FieldComponent = ({
+const ApplicationURLField: FieldComponent = ({
   label = 'Application URL',
   ...props
 }) => {
   const controller = useController(props);
   return <TextInput label={label} {...controller} />;
 };
+
+export default ApplicationURLField;

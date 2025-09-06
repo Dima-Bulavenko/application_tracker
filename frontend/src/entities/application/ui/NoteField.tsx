@@ -8,7 +8,15 @@ import { FieldComponent } from 'shared/types';
  */
 export const NoteField: FieldComponent = ({ label = 'Note', ...props }) => {
   const { field } = useController(props);
-  return <TextField rows={3} multiline label={label} {...field} />;
+  return (
+    <TextField
+      rows={3}
+      multiline
+      label={label}
+      {...field}
+      value={field.value || ''}
+    />
+  );
 };
 
 export default NoteField;

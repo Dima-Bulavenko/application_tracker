@@ -14,6 +14,12 @@ import {
   humanizeWorkType,
 } from 'entities/application/lib/humanize';
 import { statusColor } from 'entities/application/lib/status';
+import { useState } from 'react';
+import {
+  UpdateApplicationButton,
+  UpdateApplicationDialog,
+} from 'features/application';
+//
 
 type Props = { application: ApplicationRead };
 
@@ -28,7 +34,7 @@ export function ApplicationCard({ application }: Props) {
     time_update,
     company,
   } = application;
-
+  const [updateOpen, setUpdateOpen] = useState(false);
   return (
     <Card variant='outlined' sx={{ maxWidth: 720 }}>
       <CardHeader
@@ -87,6 +93,12 @@ export function ApplicationCard({ application }: Props) {
             )}
           </Stack>
         )}
+        <UpdateApplicationDialog
+          open={updateOpen}
+          onClose={() => setUpdateOpen(false)}
+          application={application}
+        />
+        <UpdateApplicationButton onClick={() => setUpdateOpen(true)} />
       </CardContent>
     </Card>
   );
