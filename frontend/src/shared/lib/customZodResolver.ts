@@ -41,7 +41,7 @@ function transformValues<T extends FieldValues | unknown[]>(
     const value = values[key];
     (transformedValues as Record<string, unknown>)[key] =
       typeof value === 'string'
-        ? value.trim() || undefined
+        ? value.trim() || null
         : typeof value === 'object' && value !== null
           ? transformValues(value)
           : value;

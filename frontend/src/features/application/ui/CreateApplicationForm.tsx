@@ -37,7 +37,7 @@ export default function CreateApplicationForm() {
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={5}>
         <RoleField name='role' control={control} />
-        <CompanyField name='company' control={control} />
+        <CompanyField name='company.name' control={control} />
         <ApplicationStatusField name='status' control={control} />
         <WorkTypeField name='work_type' control={control} />
         <WorkLocationField name='work_location' control={control} />

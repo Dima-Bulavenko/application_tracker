@@ -19,7 +19,6 @@ import {
   UpdateApplicationButton,
   UpdateApplicationDialog,
 } from 'features/application';
-//
 
 type Props = { application: ApplicationRead };
 

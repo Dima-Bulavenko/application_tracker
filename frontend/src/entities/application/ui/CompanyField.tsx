@@ -12,7 +12,7 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
   const [open, setOpen] = useState(false);
 
   const { data = [], isFetching } = useQuery({
-    queryKey: ['companies', field.value?.name],
+    queryKey: ['companies', field.value],
     queryFn: async ({ queryKey }) => {
       const response = await getUserCompanies<true>({
         query: { limit: 30, name_contains: queryKey[1] },
@@ -29,11 +29,13 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
       options={data?.map((c) => c.name)}
       open={open}
       freeSolo
-      onChange={(_, value) => field.onChange({ name: value })}
+      onChange={(_, value) => {
+        field.onChange(value);
+      }}
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
       loading={isFetching}
-      value={field.value.name || ''}
+      value={field.value || ''}
       renderInput={(params) => (
         <TextInput
           {...params}
@@ -41,7 +43,7 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
           field={field}
           fieldState={fieldState}
           formState={formState}
-          onChange={(event) => field.onChange({ name: event.target.value })}
+          onChange={(event) => field.onChange(event.target.value)}
           slotProps={{
             input: {
               ...params.InputProps,

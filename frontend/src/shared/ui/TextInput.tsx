@@ -32,10 +32,13 @@ export function TextInput<
       id={`${field.name}_id`}
       disabled={formState.isSubmitting || formState.isLoading || field.disabled}
       onBlur={field.onBlur}
-      onChange={field.onChange}
+      onChange={(e) => {
+        const val = e.target.value;
+        field.onChange(val.trim() === '' ? null : val);
+      }}
       name={field.name}
-      ref={field.ref}
-      value={field.value || ''}
+      inputRef={field.ref}
+      value={field.value ?? ''}
       {...props}
     />
   );

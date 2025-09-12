@@ -8,15 +8,23 @@ const InterviewDateField: FieldComponent = ({
   label = 'Interview date',
   ...props
 }) => {
-  const { field } = useController(props);
+  const { field, fieldState } = useController(props);
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DateTimePicker
         label={label}
         name={field.name}
-        ref={field.ref}
+        inputRef={field.ref}
         onChange={(value) => {
           field.onChange(value?.toISOString());
+        }}
+        slotProps={{
+          textField: {
+            helperText: fieldState.error?.message
+              ? fieldState.error.message
+              : '',
+            error: !!fieldState.error,
+          },
         }}
       />
     </LocalizationProvider>

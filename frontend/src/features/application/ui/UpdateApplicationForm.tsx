@@ -19,18 +19,20 @@ import {
 } from 'shared/api';
 import { customZodResolver } from 'shared/lib';
 import { Form, FormError } from 'shared/ui';
+import { DevTool } from '@hookform/devtools';
 
 export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
     control,
+
     handleSubmit,
     formState: { errors, dirtyFields, isDirty },
   } = useForm<ApplicationUpdate>({
     resolver: customZodResolver(zApplicationUpdate),
-    defaultValues: defaultValues,
+    defaultValues,
   });
   const { mutate: updateApp } = useUpdateApplication(defaultValues.id);
-  const onSubmit: SubmitHandler<ApplicationUpdate> = (data, event) => {
+  const onSubmit: SubmitHandler<ApplicationUpdate> = async (data, event) => {
     event?.preventDefault();
     const newData = getDirtyValues(dirtyFields, data);
     if (newData) {
@@ -38,26 +40,29 @@ export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
     }
   };
   return (
-    <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={5}>
-        <RoleField name='role' control={control} />
-        <CompanyField name='company' control={control} />
-        <ApplicationStatusField name='status' control={control} />
-        <WorkTypeField name='work_type' control={control} />
-        <WorkLocationField name='work_location' control={control} />
-        <NoteField name='note' control={control} />
-        <InterviewDateField name='interview_date' control={control} />
-        <ApplicationURLField name='application_url' control={control} />
-      </Stack>
-      <FormError message={errors.root?.message} />
-      <Button
-        sx={{ mt: 5 }}
-        type='submit'
-        color='primary'
-        disabled={!isDirty}
-        variant='contained'>
-        UpdateApplicationForm Application
-      </Button>
-    </Form>
+    <>
+      <Form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={5}>
+          <RoleField name='role' control={control} />
+          <CompanyField name='company.name' control={control} />
+          <ApplicationStatusField name='status' control={control} />
+          <WorkTypeField name='work_type' control={control} />
+          <WorkLocationField name='work_location' control={control} />
+          <NoteField name='note' control={control} />
+          <InterviewDateField name='interview_date' control={control} />
+          <ApplicationURLField name='application_url' control={control} />
+        </Stack>
+        <FormError message={errors.root?.message} />
+        <Button
+          sx={{ mt: 5 }}
+          type='submit'
+          color='primary'
+          disabled={!isDirty}
+          variant='contained'>
+          UpdateApplicationForm Application
+        </Button>
+      </Form>
+      <DevTool control={control} />
+    </>
   );
 }
