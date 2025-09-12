@@ -1,30 +1,39 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Form, HTTPException, Response, status
-from typing_extensions import Annotated
+from dataclasses import asdict, dataclass
+
+from fastapi import APIRouter, Cookie, Form, HTTPException, Response, status
+from typing_extensions import Annotated, Literal
 
 from app import Tags
 from app.base_schemas import ErrorResponse
-from app.core.dto import AccessTokenResponse, RefreshTokenPayload, Token, UserLogin
+from app.core.dto import AccessTokenResponse, UserLogin
 from app.core.exceptions import InvalidPasswordError, TokenExpireError, TokenInvalidError, UserNotFoundError
-from app.dependencies import AccessTokenDep, AuthServiceDep, RefreshTokenDep
+from app.dependencies import AuthServiceDep, RefreshTokenDep
 
 
-def set_refresh_token(response: Response, token: Token[RefreshTokenPayload]) -> None:
-    response.set_cookie(
-        key="refresh",
-        value=token.token,
-        expires=token.payload.exp,
-        path="auth/refresh",
-        secure=True,
-        httponly=True,
-    )
+@dataclass
+class RefreshTokenSettings:
+    key: str = "refresh"
+    path: str = "/auth"
+    secure: bool = True
+    httponly: bool = True
+    samesite: Literal["lax", "strict", "none"] = "none"
 
 
 router = APIRouter(prefix="/auth", tags=[Tags.AUTHENTICATION])
 
 
-@router.post("/login", status_code=status.HTTP_200_OK)
+@router.post(
+    "/login",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Invalid credentials",
+            "model": ErrorResponse,
+        },
+    },
+)
 async def login(
     auth_service: AuthServiceDep, user_data: Annotated[UserLogin, Form()], response: Response
 ) -> AccessTokenResponse:
@@ -43,25 +52,16 @@ async def login(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exp
-    set_refresh_token(response, refresh)
-    return AccessTokenResponse(access_token=access.token)
-
-
-@router.get("/refresh", status_code=status.HTTP_200_OK)
-async def refresh_token(
-    auth_service: AuthServiceDep, refresh_token: RefreshTokenDep, response: Response
-) -> AccessTokenResponse:
-    access, refresh = await auth_service.refresh_token(refresh_token)
-    set_refresh_token(response, refresh)
+    response.set_cookie(**asdict(RefreshTokenSettings()), value=refresh.token, expires=refresh.payload.exp)
     return AccessTokenResponse(access_token=access.token)
 
 
 @router.post(
-    "/logout",
-    status_code=status.HTTP_204_NO_CONTENT,
+    "/refresh",
+    status_code=status.HTTP_200_OK,
     responses={
         status.HTTP_401_UNAUTHORIZED: {
-            "description": "Access or Refresh token is not valid",
+            "description": "Refresh token is not valid or expired",
             "model": ErrorResponse,
         },
         status.HTTP_404_NOT_FOUND: {
@@ -70,14 +70,11 @@ async def refresh_token(
         },
     },
 )
-async def logout(
-    response: Response,
-    access_token: AccessTokenDep,
-    refresh_token: RefreshTokenDep,
-    auth_service: AuthServiceDep,
-):
+async def refresh_token(
+    auth_service: AuthServiceDep, refresh_token: RefreshTokenDep, response: Response
+) -> AccessTokenResponse:
     try:
-        await auth_service.logout(access_token, refresh_token)
+        access, refresh = await auth_service.refresh_token(refresh_token)
     except (TokenExpireError, TokenInvalidError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,9 +86,20 @@ async def logout(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e
-    response.delete_cookie(
-        key="refresh",
-        path="auth/refresh",
-        secure=True,
-        httponly=True,
-    )
+    response.set_cookie(**asdict(RefreshTokenSettings()), value=refresh.token, expires=refresh.payload.exp)
+    return AccessTokenResponse(access_token=access.token)
+
+
+# FIXME: Review logout logic, because it don't has refresh token rotation, and I need to delete refresh token even if access token is not valid
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def logout(
+    response: Response,
+    auth_service: AuthServiceDep,
+    refresh: Annotated[str | None, Cookie()] = None,
+):
+    if refresh:
+        auth_service.logout(refresh)
+    response.delete_cookie(**asdict(RefreshTokenSettings()))

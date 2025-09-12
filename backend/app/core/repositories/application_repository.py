@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from app.core.domain import Application
+from app.core.dto import ApplicationFilterParams
 
 
 class IApplicationRepository(ABC):
@@ -10,9 +11,7 @@ class IApplicationRepository(ABC):
     async def create(self, application: Application) -> Application: ...
 
     @abstractmethod
-    async def get_by_user_email(
-        self, email: str, limit: int | None = None, offset: int | None = None
-    ) -> list[Application]: ...
+    async def get_by_user_email(self, email: str, filter_param: ApplicationFilterParams) -> list[Application]: ...
 
     @abstractmethod
     async def get_by_id(self, application_id: int) -> Application | None: ...

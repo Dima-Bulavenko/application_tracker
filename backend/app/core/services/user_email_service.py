@@ -17,7 +17,8 @@ class UserEmailService:
         self,
         email_service: IEmailService,
         token_handler: ITokenStrategy[VerificationTokenPayload],
-        base_url: str = "http://localhost:8000",
+        # Base URL of the frontend application used in links sent via email
+        base_url: str = "http://localhost:5173",
     ) -> None:
         """Initialize the user email service.
 
@@ -57,6 +58,35 @@ class UserEmailService:
         message = EmailMessage(
             to_emails=[user.email],
             subject="Please verify your email address - Application Tracker",
+            body=text_body,
+            html_body=html_body,
+        )
+
+        return await self.email_service.send_email(message)
+
+    async def send_duplicate_registration_warning(self, email: str) -> bool:
+        """Send warning email when someone tries to register with an existing email.
+
+        Args:
+            email: Email address that someone tried to register with
+
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        # Link to the frontend sign-in page
+        login_url = f"{self.base_url}/sign-in"
+
+        context = {
+            "email": email,
+            "login_url": login_url,
+        }
+
+        html_body = self.template_loader.render_template("emails/duplicate_registration_warning.html", context)
+        text_body = self.template_loader.render_template("emails/duplicate_registration_warning.txt", context)
+
+        message = EmailMessage(
+            to_emails=[email],
+            subject="Account Security Alert - Application Tracker",
             body=text_body,
             html_body=html_body,
         )

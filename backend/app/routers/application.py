@@ -1,23 +1,41 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
+from typing_extensions import Annotated
 
 from app import Tags
 from app.base_schemas import ErrorResponse
-from app.core.dto import ApplicationCreate, ApplicationRead, ApplicationUpdate
+from app.core.dto import (
+    ApplicationCreate,
+    ApplicationFilterParams,
+    ApplicationRead,
+    ApplicationReadWithCompany,
+    ApplicationUpdate,
+)
 from app.core.exceptions import ApplicationNotFoundError, UserNotAuthorizedError
 from app.dependencies import ActiveUserDep, ApplicationServiceDep
 
 router = APIRouter(prefix="/applications", tags=[Tags.APPLICATION])
 
 
-@router.get("/")
-async def get_applications_by_email(app_service: ApplicationServiceDep, user: ActiveUserDep) -> list[ApplicationRead]:
-    apps = await app_service.get_applications_by_user_email(user.email)
+@router.get(
+    "/",
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Access token is invalid", "model": ErrorResponse},
+    },
+)
+async def get_applications(
+    app_service: ApplicationServiceDep,
+    user: ActiveUserDep,
+    filter_param: Annotated[ApplicationFilterParams, Query()],
+) -> list[ApplicationReadWithCompany]:
+    apps = await app_service.get_applications_by_user_email(user.email, filter_param)
     return apps
 
 
 @router.post("/")
 async def create_application(
-    app_service: ApplicationServiceDep, app: ApplicationCreate, user: ActiveUserDep
+    app_service: ApplicationServiceDep,
+    app: ApplicationCreate,
+    user: ActiveUserDep,
 ) -> ApplicationRead:
     application = await app_service.create(app, user.id)
     return application

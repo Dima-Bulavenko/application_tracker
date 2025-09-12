@@ -63,7 +63,7 @@ class BaseTest:
         self.session.add(user)
         await self.session.commit()
         await self.session.refresh(user)
-        return User(**{f: getattr(user, f) for f in User.__dataclass_fields__})
+        return User.model_validate(user, from_attributes=True)
 
     async def create_company(self, **kwargs) -> Company:
         """
@@ -151,6 +151,11 @@ class BaseTest:
 
     async def get_user(self, user_id: int) -> UserModel | None:
         statement = select(UserModel).where(UserModel.id == user_id)
+        user = await self.session.scalar(statement)
+        return user
+
+    async def get_user_by_email(self, email: str) -> UserModel | None:
+        statement = select(UserModel).where(UserModel.email == email)
         user = await self.session.scalar(statement)
         return user
 

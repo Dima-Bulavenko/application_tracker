@@ -4,14 +4,14 @@ import { defaultPlugins } from '@hey-api/openapi-ts';
 export default {
   input: './openapi.json',
   output: {
-    path: 'src/client',
+    path: 'src/shared/api/gen', // nested folder so generation won't delete manual files in api root
     format: 'prettier',
   },
   plugins: [
     ...defaultPlugins,
     {
       name: '@hey-api/client-axios',
-      runtimeConfigPath: './src/client_config.ts',
+      runtimeConfigPath: './client_config.ts',
     },
     defineConfig(),
   ],

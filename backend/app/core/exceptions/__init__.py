@@ -1,16 +1,10 @@
-from .application import ApplicationNotFoundError
-from .auth import TokenError, TokenExpireError, TokenInvalidError
-from .generic import InvalidPasswordError
-from .user import UserAlreadyActivatedError, UserAlreadyExistError, UserNotAuthorizedError, UserNotFoundError
-
-__all__ = [
-    "UserNotAuthorizedError",
-    "ApplicationNotFoundError",
-    "InvalidPasswordError",
-    "TokenError",
-    "TokenExpireError",
-    "TokenInvalidError",
-    "UserAlreadyExistError",
-    "UserAlreadyActivatedError",
-    "UserNotFoundError",
-]
+from .application import ApplicationNotFoundError as ApplicationNotFoundError
+from .auth import TokenError as TokenError, TokenExpireError as TokenExpireError, TokenInvalidError as TokenInvalidError
+from .company import CompanyNotFoundError as CompanyNotFoundError
+from .generic import InvalidPasswordError as InvalidPasswordError
+from .user import (
+    UserAlreadyActivatedError as UserAlreadyActivatedError,
+    UserAlreadyExistError as UserAlreadyExistError,
+    UserNotAuthorizedError as UserNotAuthorizedError,
+    UserNotFoundError as UserNotFoundError,
+)

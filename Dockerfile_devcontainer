@@ -36,13 +36,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x -o nodesource_
     bash nodesource_setup.sh && \
     apt-get install -y nodejs
 
-COPY . /code
-
-# Install Python dependencies
-RUN cd backend && poetry install
-
-# Install Node.js dependencies
-RUN cd frontend && npm install
-
-# Generate frontend API client
-RUN bash scripts/generate-client.sh
+# Install node
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x -o nodesource_setup.sh && \
+    bash nodesource_setup.sh && \
+    apt-get install -y nodejs

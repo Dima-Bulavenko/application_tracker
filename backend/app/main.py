@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.routing import APIRoute
 
 from app import ALLOWED_HOSTS
 from app.routers import application, auth, company, user
@@ -17,7 +18,11 @@ async def lifespan(_):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+def custom_generate_unique_id(route: APIRoute):
+    return f"{route.name}"
+
+
+app = FastAPI(lifespan=lifespan, generate_unique_id_function=custom_generate_unique_id)
 
 app.add_middleware(
     CORSMiddleware,

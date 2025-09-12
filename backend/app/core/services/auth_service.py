@@ -46,13 +46,6 @@ class AuthService:
 
         return new_access_token, new_refresh_token
 
-    async def logout(self, access_token: str, refresh_token: str) -> TokenPairT:
+    def logout(self, refresh_token: str) -> None:
         # TODO: Implement token blacklisting
-        access_token_v = self.access_strategy.verify_token(access_token)
-        refresh_token_v = self.refresh_strategy.verify_token(refresh_token)
-
-        # FIXME: user.id check only for typechecking, refactor User domain to fix it
-        user = await self.user_repo.get_by_email(refresh_token_v.payload.user_email)
-        if not user or user.id is None:
-            raise UserNotFoundError(f"User with {refresh_token_v.payload.user_email} email does not exist")
-        return access_token_v, refresh_token_v
+        return

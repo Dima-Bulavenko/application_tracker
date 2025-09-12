@@ -93,9 +93,7 @@ class TestLoginEndpoint(BaseTest):
 class TestLogoutEndpoint(BaseTest):
     async def test_without_tokens(self, client: AsyncClient):
         response = await client.post("/auth/logout")
-        assert response.status_code == 401
-        assert response.headers.get("www-authenticate") == "Bearer"
-        assert response.json() == {"detail": "Not authenticated"}
+        assert response.status_code == 204
 
     async def test_with_valid_tokens(self, client: AsyncClient):
         user = await self.create_user()
@@ -105,7 +103,7 @@ class TestLogoutEndpoint(BaseTest):
         response = await client.post(
             "/auth/logout",
             headers={"Authorization": f"Bearer {access_token.token}"},
-            cookies={"refresh": refresh_token.token},
+            cookies={"refresh_token": refresh_token.token},
         )
         assert response.status_code == 204
         assert "Max-Age=0" in response.headers.get("set-cookie", "")
@@ -118,11 +116,12 @@ class TestLogoutEndpoint(BaseTest):
         response = await client.post(
             "/auth/logout",
             headers={"Authorization": "Bearer invalid_token"},
-            cookies={"refresh": refresh_token.token},
+            cookies={"refresh_token": refresh_token.token},
         )
-        assert response.status_code == 401
-        assert response.headers.get("www-authenticate") == "Bearer"
-        assert response.json() == {"detail": "Token is not valid"}
+        assert response.status_code == 204
+        # should still delete refresh cookie regardless of invalid access token
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
 
     async def test_with_invalid_refresh_token(self, client: AsyncClient):
         user = await self.create_user()
@@ -131,11 +130,12 @@ class TestLogoutEndpoint(BaseTest):
         response = await client.post(
             "/auth/logout",
             headers={"Authorization": f"Bearer {access_token.token}"},
-            cookies={"refresh": "invalid_refresh_token"},
+            cookies={"refresh_token": "invalid_refresh_token"},
         )
-        assert response.status_code == 401
-        assert response.headers.get("www-authenticate") == "Bearer"
-        assert response.json() == {"detail": "Token is not valid"}
+        assert response.status_code == 204
+        # should still delete refresh cookie regardless of invalid refresh token
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
 
     async def test_user_does_not_exits(self, client: AsyncClient):
         user = User(id=1, email="notexistinguser@gmail.com", password="password")
@@ -145,11 +145,12 @@ class TestLogoutEndpoint(BaseTest):
         response = await client.post(
             "/auth/logout",
             headers={"Authorization": f"Bearer {access_token.token}"},
-            cookies={"refresh": refresh_token.token},
+            cookies={"refresh_token": refresh_token.token},
         )
-
-        assert response.status_code == 404
-        assert response.json() == {"detail": f"User with {user.email} email does not exist"}
+        assert response.status_code == 204
+        # cookie deleted even if user behind token doesn't exist
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
 
     @pytest.mark.parametrize(
         "token_live_duration",
@@ -164,8 +165,64 @@ class TestLogoutEndpoint(BaseTest):
             response = await client.post(
                 "/auth/logout",
                 headers={"Authorization": f"Bearer {access_token.token}"},
+                cookies={"refresh_token": refresh_token.token},
+            )
+        # logout no longer depends on token validity
+        assert response.status_code == 204
+        set_cookie = response.headers.get("set-cookie", "")
+        assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
+
+
+class TestRefreshEndpoint(BaseTest):
+    async def test_with_valid_refresh_token(self, client: AsyncClient):
+        user = await self.create_user()
+        refresh_token = self.create_refresh_token(user)
+
+        response = await client.post(
+            "/auth/refresh",
+            cookies={"refresh": refresh_token.token},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["access_token"] is not None
+        # new refresh cookie should be set
+        assert "refresh" in response.cookies
+        assert response.cookies["refresh"] not in (None, "")
+
+    async def test_with_invalid_refresh_token(self, client: AsyncClient):
+        response = await client.post(
+            "/auth/refresh",
+            cookies={"refresh": "invalid_refresh_token"},
+        )
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": "Token is not valid"}
+
+    async def test_refresh_token_expired(self, client: AsyncClient):
+        user = await self.create_user()
+        refresh_token = self.create_refresh_token(user)
+
+        with freeze_time(datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES + 5)):
+            response = await client.post(
+                "/auth/refresh",
                 cookies={"refresh": refresh_token.token},
             )
 
         assert response.status_code == 401
         assert response.json() == {"detail": "Token is expired"}
+
+    async def test_user_does_not_exist(self, client: AsyncClient):
+        # create token for a non-existent user
+        ghost_user = User(id=9999, email="ghost@example.com", password="irrelevant")
+        refresh_token = self.create_refresh_token(ghost_user)
+
+        response = await client.post(
+            "/auth/refresh",
+            cookies={"refresh": refresh_token.token},
+        )
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": f"User with {ghost_user.email} email does not exist"}

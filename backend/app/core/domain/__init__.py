@@ -1,5 +1,8 @@
-from .application import Application, AppStatus, WorkLocation, WorkType
-from .company import Company
-from .user import User
-
-__all__ = ["AppStatus", "Application", "Company", "User", "WorkLocation", "WorkType"]
+from .application import (
+    Application as Application,
+    AppStatus as AppStatus,
+    WorkLocation as WorkLocation,
+    WorkType as WorkType,
+)
+from .company import Company as Company
+from .user import User as User

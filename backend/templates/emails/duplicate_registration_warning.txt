@@ -1,0 +1,27 @@
+Security Alert - Application Tracker
+
+Someone tried to register with your email
+
+Hello,
+
+We received a request to create a new account using your email address ({{ email }}) on Application Tracker. Since you already have an account with us, we wanted to let you know about this attempt.
+
+🔒 YOUR ACCOUNT IS SECURE
+No changes have been made to your existing account. If this was you, you can simply log in using your existing credentials.
+
+If you didn't attempt to create a new account, please consider:
+- Someone may have accidentally used your email address
+- Checking if your password is strong and unique
+- Contacting us if you have security concerns
+
+If you forgot your password, you can reset it using the password reset feature on our login page.
+
+Login page: {{ login_url }}
+
+If you have any questions or concerns about your account security, please don't hesitate to contact our support team.
+
+Best regards,
+The Application Tracker Team
+
+---
+This is an automated security notification. Please do not reply to this message.
