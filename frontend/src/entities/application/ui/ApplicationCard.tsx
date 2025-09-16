@@ -1,4 +1,5 @@
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -19,8 +20,27 @@ import {
   UpdateApplicationButton,
   UpdateApplicationDialog,
 } from 'features/application';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { useDeleteApplication } from '../api';
 
 type Props = { application: ApplicationRead };
+
+function DeleteApplicationButton({
+  application_id,
+}: {
+  application_id: number;
+}) {
+  const { mutate: deleteApp, isPending } = useDeleteApplication(application_id);
+  return (
+    <Button
+      variant='contained'
+      color='error'
+      onClick={() => deleteApp()}
+      disabled={isPending}>
+      <DeleteForeverIcon />
+    </Button>
+  );
+}
 
 export function ApplicationCard({ application }: Props) {
   const {
@@ -98,6 +118,7 @@ export function ApplicationCard({ application }: Props) {
           application={application}
         />
         <UpdateApplicationButton onClick={() => setUpdateOpen(true)} />
+        <DeleteApplicationButton application_id={application.id} />
       </CardContent>
     </Card>
   );

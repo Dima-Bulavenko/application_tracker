@@ -3,11 +3,13 @@ import {
   getApplicationById,
   getApplications,
   updateApplication,
+  deleteApplication,
 } from 'shared/api';
 import type {
   ApplicationCreate,
   ApplicationUpdate,
   UpdateApplicationData,
+  DeleteApplicationData,
 } from 'shared/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { GetApplicationsData } from 'shared/api';
@@ -59,5 +61,22 @@ export function useGetApplication(
         (response) => response.data
       ),
     staleTime: 30_000,
+  });
+}
+
+export function useDeleteApplication(
+  application_id: DeleteApplicationData['path']['application_id']
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await deleteApplication<true>({
+        path: { application_id },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['applications'] });
+    },
   });
 }
