@@ -23,8 +23,8 @@ import { Form, FormError } from 'shared/ui';
 export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
     control,
-
     handleSubmit,
+    reset,
     formState: { errors, dirtyFields, isDirty },
   } = useForm<ApplicationUpdate>({
     resolver: customZodResolver(zApplicationUpdate),
@@ -59,6 +59,15 @@ export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
           disabled={!isDirty}
           variant='contained'>
           UpdateApplicationForm Application
+        </Button>
+        <Button
+          sx={{ mt: 3 }}
+          type='button'
+          color='primary'
+          disabled={!isDirty}
+          onClick={() => reset()}
+          variant='contained'>
+          Reset Form
         </Button>
       </Form>
     </>
