@@ -4,7 +4,6 @@ import { TextInput } from 'shared/ui';
 
 const RoleField: FieldComponent = ({ label = 'Role', ...props }) => {
   const controller = useController(props);
-  console.log(controller.formState.isSubmitting);
   return <TextInput label={label} {...controller} />;
 };
 

@@ -19,7 +19,6 @@ import {
 } from 'shared/api';
 import { customZodResolver } from 'shared/lib';
 import { Form, FormError } from 'shared/ui';
-import { DevTool } from '@hookform/devtools';
 
 export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
@@ -62,7 +61,6 @@ export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
           UpdateApplicationForm Application
         </Button>
       </Form>
-      <DevTool control={control} />
     </>
   );
 }

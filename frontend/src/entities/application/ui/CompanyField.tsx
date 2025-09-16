@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useController } from 'react-hook-form';
 import { type FieldComponent } from 'shared/types';
 import { CircularProgress } from '@mui/material';
@@ -6,11 +6,18 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { getUserCompanies } from 'shared/api';
 import { TextInput } from 'shared/ui';
+import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
 
 const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
   const { field, fieldState, formState } = useController(props);
   const [open, setOpen] = useState(false);
 
+  const debouncedFetching = useDebouncedCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      field.onChange(e.target.value);
+    },
+    { wait: 400 }
+  );
   const { data = [], isFetching } = useQuery({
     queryKey: ['companies', field.value],
     queryFn: async ({ queryKey }) => {
@@ -23,7 +30,6 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
     enabled: open,
     staleTime: 30000,
   });
-
   return (
     <Autocomplete
       options={data?.map((c) => c.name)}
@@ -43,7 +49,7 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
           field={field}
           fieldState={fieldState}
           formState={formState}
-          onChange={(event) => field.onChange(event.target.value)}
+          onChange={debouncedFetching}
           slotProps={{
             input: {
               ...params.InputProps,
