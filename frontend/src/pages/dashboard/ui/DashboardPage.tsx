@@ -1,7 +1,7 @@
 import { Container, Stack } from '@mui/material';
-import ApplicationList from 'entities/application/ui/ApplicationList';
 import { useState } from 'react';
 import {
+  ApplicationListWidget,
   CreateApplicationButton,
   CreateApplicationDialog,
 } from 'features/application';
@@ -13,7 +13,7 @@ export function DashboardPage() {
       <Stack direction='row' justifyContent='flex-end' mb={2}>
         <CreateApplicationButton onClick={() => setOpen(true)} />
       </Stack>
-      <ApplicationList />
+      <ApplicationListWidget />
       <CreateApplicationDialog open={open} onClose={() => setOpen(false)} />
     </Container>
   );

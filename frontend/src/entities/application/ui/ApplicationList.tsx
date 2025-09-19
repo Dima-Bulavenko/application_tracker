@@ -1,13 +1,13 @@
 import { Box, CircularProgress, Stack, Typography } from '@mui/material';
-import { useApplicationsList } from 'entities/application/api';
+import { type useApplicationsList } from 'entities/application/api';
 import ApplicationCard from 'entities/application/ui/ApplicationCard';
 
-export function ApplicationList(
-  params: Parameters<typeof useApplicationsList>[0]
-) {
-  const { data, isFetching, error } = useApplicationsList({
-    ...params,
-  });
+type Prop = {
+  queryResult: ReturnType<typeof useApplicationsList>;
+};
+
+export function ApplicationList({ queryResult }: Prop) {
+  const { error, isFetching, data } = queryResult;
 
   if (error) {
     return (
