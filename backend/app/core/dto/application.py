@@ -61,3 +61,8 @@ class ApplicationOrderBy(StrEnum):
 class ApplicationFilterParams(GenericFilterParams):
     order_by: ApplicationOrderBy = Field(ApplicationOrderBy.time_create)
     order_direction: Literal["asc", "desc"] = "desc"
+    status: list[AppStatus] | None = None
+    work_type: list[WorkType] | None = None
+    work_location: list[WorkLocation] | None = None
+    role_name: str | None = None
+    company_name: str | None = None
