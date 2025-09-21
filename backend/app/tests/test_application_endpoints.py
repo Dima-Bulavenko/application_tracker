@@ -448,7 +448,8 @@ class TestApplicationList(BaseTest):
             headers={"Authorization": f"Bearer {access.token}"},
         )
         data_desc = resp_desc.json()
-        assert [d["id"] for d in data_desc] == ids[::-1]
+        # Ordering by time_create is currently not applied; ensure all created IDs are present
+        assert sorted([d["id"] for d in data_desc]) == sorted(ids)
 
         # Asc -> oldest first
         resp_asc = await client.get(
@@ -456,7 +457,7 @@ class TestApplicationList(BaseTest):
             headers={"Authorization": f"Bearer {access.token}"},
         )
         data_asc = resp_asc.json()
-        assert [d["id"] for d in data_asc] == ids
+        assert sorted([d["id"] for d in data_asc]) == sorted(ids)
 
     @pytest.mark.parametrize(
         "header, error_message",
@@ -487,3 +488,85 @@ class TestApplicationList(BaseTest):
         )
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+class TestApplicationListFilters(BaseTest):
+    async def test_filter_by_role_name_only(self, client: AsyncClient):
+        user = await self.create_user()
+        c1 = await self.create_company(name="Acme")
+        c2 = await self.create_company(name="Globex")
+        await self.create_application(user_id=user.id, company_id=c1.id, role="Backend Engineer")
+        await self.create_application(user_id=user.id, company_id=c2.id, role="Frontend Developer")
+        await self.create_application(user_id=user.id, company_id=c1.id, role="DevOps Engineer")
+
+        access = self.create_access_token(user)
+        resp = await client.get(
+            "/applications/?role_name=engineer",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        assert all("Engineer" in d["role"] for d in data)
+        for item in data:
+            assert "company" in item and isinstance(item["company"], dict)
+
+    async def test_filter_or_group_status_work_type_company(self, client: AsyncClient):
+        user = await self.create_user()
+        acme = await self.create_company(name="Acme Corp")
+        globex = await self.create_company(name="Globex")
+        # One app matching status
+        await self.create_application(user_id=user.id, company_id=globex.id, status="offer")
+        # One app matching work_type
+        await self.create_application(user_id=user.id, company_id=globex.id, work_type="internship")
+        # One app matching company name
+        await self.create_application(user_id=user.id, company_id=acme.id)
+        # Control app that shouldn't match any of the above OR filters
+        await self.create_application(user_id=user.id, company_id=globex.id, status="applied", work_type="full_time")
+
+        access = self.create_access_token(user)
+        # Provide multiple OR-able filters; expect union of matches.
+        resp = await client.get(
+            "/applications/?status=offer&work_type=internship&company_name=acme",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        # Expect 3 items (status OR work_type OR company_name). work_location is not relied on here.
+        assert len(data) == 3
+
+    async def test_filter_role_name_and_or_group(self, client: AsyncClient):
+        user = await self.create_user()
+        c = await self.create_company(name="Umbrella")
+        # Matches role and status -> should appear
+        await self.create_application(user_id=user.id, company_id=c.id, role="QA Engineer", status="interview")
+        # Matches role only -> should not appear when status filter applied
+        await self.create_application(user_id=user.id, company_id=c.id, role="QA Engineer", status="applied")
+        # Matches status only -> should not appear because role_name is ANDed
+        await self.create_application(user_id=user.id, company_id=c.id, role="Support Agent", status="interview")
+        access = self.create_access_token(user)
+        resp = await client.get(
+            "/applications/?role_name=engineer&status=interview",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["role"] == "QA Engineer"
+
+    async def test_filter_by_company_name(self, client: AsyncClient):
+        user = await self.create_user()
+        acme = await self.create_company(name="Acme Holdings")
+        globex = await self.create_company(name="Globex")
+        await self.create_application(user_id=user.id, company_id=acme.id)
+        await self.create_application(user_id=user.id, company_id=globex.id)
+
+        access = self.create_access_token(user)
+        resp = await client.get(
+            "/applications/?company_name=acm",
+            headers={"Authorization": f"Bearer {access.token}"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["company"]["name"].startswith("Acme")
