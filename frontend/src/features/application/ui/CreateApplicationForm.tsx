@@ -26,6 +26,7 @@ export default function CreateApplicationForm() {
       status: 'applied',
       work_type: 'full_time',
       work_location: 'on_site',
+      interview_date: null,
     },
   });
   const { mutate: createApp } = useCreateApplication();
