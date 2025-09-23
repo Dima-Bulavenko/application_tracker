@@ -299,6 +299,11 @@ export type GetApplicationsData = {
     offset?: number;
     order_by?: ApplicationOrderBy;
     order_direction?: 'asc' | 'desc';
+    status?: Array<AppStatus> | null;
+    work_type?: Array<WorkType> | null;
+    work_location?: Array<WorkLocation> | null;
+    role_name?: string | null;
+    company_name?: string | null;
   };
   url: '/applications/';
 };

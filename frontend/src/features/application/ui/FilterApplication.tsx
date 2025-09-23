@@ -10,6 +10,10 @@ import {
   type AppListQueryRes,
   type FilterForm,
 } from 'entities/application/api';
+import { CompanyField } from 'entities/application/ui';
+
+import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api';
+import { MultipleSelectField } from 'shared/ui';
 
 type FilterFormParam = {
   control: NonNullable<Parameters<typeof useController>[0]['control']>;
@@ -69,6 +73,49 @@ function OrderDirection({ control }: FilterFormParam) {
   );
 }
 
+function ApplicationStatusField({ control }: FilterFormParam) {
+  const options = zAppStatus.options;
+  const controller = useController({
+    name: 'status',
+    control,
+  });
+  return (
+    <MultipleSelectField
+      controller={controller}
+      options={options}
+      label='Status'
+    />
+  );
+}
+function WorkLocationField({ control }: FilterFormParam) {
+  const options = zWorkLocation.options;
+  const controller = useController({
+    name: 'work_location',
+    control,
+  });
+  return (
+    <MultipleSelectField
+      controller={controller}
+      options={options}
+      label='Work Location'
+    />
+  );
+}
+function WorkTypeField({ control }: FilterFormParam) {
+  const options = zWorkType.options;
+  const controller = useController({
+    name: 'work_type',
+    control,
+  });
+  return (
+    <MultipleSelectField
+      controller={controller}
+      options={options}
+      label='Work Type'
+    />
+  );
+}
+
 export function FilterApplication({
   queryResult,
   defaultFilterParams,
@@ -88,6 +135,10 @@ export function FilterApplication({
     <Box>
       <OrderBy control={control} />
       <OrderDirection control={control} />
+      <ApplicationStatusField control={control} />
+      <WorkLocationField control={control} />
+      <WorkTypeField control={control} />
+      <CompanyField control={control} name='company_name' />
       <DevTool control={control} />
       <Button
         loading={isFetching}

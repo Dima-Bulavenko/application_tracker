@@ -7,13 +7,17 @@ import { Box } from '@mui/material';
 const defaultFilterParams: FilterForm = {
   order_by: 'time_create',
   order_direction: 'desc',
+  company_name: null,
+  status: [],
+  work_type: [],
+  work_location: [],
 };
 
 export function ApplicationListWidget() {
-  const filterParams = JSON.parse(localStorage.getItem('appFilters') || '');
-  const [filter, setFilter] = useState<FilterForm>(
-    filterParams || defaultFilterParams
+  const filterParams = JSON.parse(
+    localStorage.getItem('appFilters') || JSON.stringify(defaultFilterParams)
   );
+  const [filter, setFilter] = useState<FilterForm>(filterParams);
 
   const QueryResult = useApplicationsList({
     ...filter,
