@@ -15,6 +15,7 @@ export function TextInput<
   field,
   fieldState,
   formState,
+  children,
   ...props
 }: TextInputProps<TFieldValues, TName>) {
   return (
@@ -39,7 +40,8 @@ export function TextInput<
       name={field.name}
       inputRef={field.ref}
       value={field.value ?? ''}
-      {...props}
-    />
+      {...props}>
+      {children}
+    </TextField>
   );
 }
