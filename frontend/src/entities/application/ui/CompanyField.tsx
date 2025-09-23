@@ -14,7 +14,8 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
 
   const debouncedFetching = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      field.onChange(e.target.value);
+      const val = e.target.value;
+      field.onChange(val.trim() === '' ? null : val);
     },
     { wait: 400 }
   );
