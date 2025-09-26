@@ -10,18 +10,46 @@ import type {
   ApplicationUpdate,
   UpdateApplicationData,
   DeleteApplicationData,
+  ApplicationReadWithCompany,
 } from 'shared/api';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GetApplicationsData } from 'shared/api';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryOptions,
+} from '@tanstack/react-query';
+import { type GetApplicationsData } from 'shared/api';
 
-export function useApplicationsList(params?: GetApplicationsData['query']) {
+export const applicationKeys = {
+  all: ['applications'],
+  lists: () => [...applicationKeys.all, 'list'],
+  list: (filters: GetApplicationsData['query']) => [
+    ...applicationKeys.lists(),
+    filters,
+  ],
+  details: () => [...applicationKeys.all, 'detail'],
+  detail: (id: number) => [...applicationKeys.details(), id],
+} as const;
+
+export function useApplicationsList(
+  filters?: GetApplicationsData['query'],
+  options?: Omit<
+    UseQueryOptions<
+      ApplicationReadWithCompany[],
+      Error,
+      ApplicationReadWithCompany[],
+      ReturnType<typeof applicationKeys.list>
+    >,
+    'queryKey' | 'queryFn'
+  >
+) {
   return useQuery({
-    queryKey: ['applications', params],
+    ...options,
+    queryKey: applicationKeys.list(filters),
     queryFn: async () => {
-      const res = await getApplications({ query: { ...params } });
+      const res = await getApplications<true>({ query: { ...filters } });
       return res.data ?? [];
     },
-    staleTime: 30_000,
   });
 }
 
@@ -31,7 +59,7 @@ export function useCreateApplication() {
     mutationFn: (body: ApplicationCreate) =>
       createApplication({ body }).then((r) => r.data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['applications'] });
+      qc.invalidateQueries({ queryKey: applicationKeys.all });
     },
   });
 }
@@ -46,7 +74,7 @@ export function useUpdateApplication(
         (response) => response.data
       ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['applications'] });
+      qc.invalidateQueries({ queryKey: applicationKeys.all });
     },
   });
 }
@@ -55,7 +83,7 @@ export function useGetApplication(
   application_id: UpdateApplicationData['path']['application_id']
 ) {
   return useQuery({
-    queryKey: ['applications', application_id],
+    queryKey: applicationKeys.detail(application_id),
     queryFn: () =>
       getApplicationById<true>({ path: { application_id } }).then(
         (response) => response.data
@@ -76,7 +104,7 @@ export function useDeleteApplication(
       return response.data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['applications'] });
+      qc.invalidateQueries({ queryKey: applicationKeys.all });
     },
   });
 }
