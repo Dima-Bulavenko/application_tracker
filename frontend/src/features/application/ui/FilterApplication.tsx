@@ -1,29 +1,47 @@
-import { Box, Button } from '@mui/material';
+import {
+  Box,
+  Button,
+  Drawer,
+  Stack,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 import { useForm, useController } from 'react-hook-form';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
-import { DevTool } from '@hookform/devtools';
-import {
-  type AppListQueryRes,
-  type FilterForm,
-} from 'entities/application/api';
+import { useIsFetching } from '@tanstack/react-query';
+
+import { applicationKeys, type FilterForm } from 'entities/application/api';
 import { CompanyField } from 'entities/application/ui';
 
 import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api';
 import { MultipleSelectField } from 'shared/ui';
+import { useEffect, useState } from 'react';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
 
 type FilterFormParam = {
   control: NonNullable<Parameters<typeof useController>[0]['control']>;
 };
 
 type Prop = {
-  defaultFilterParams: FilterForm;
-  setFilterParams: React.Dispatch<React.SetStateAction<FilterForm>>;
-  queryResult: AppListQueryRes;
+  setFilterParams: React.Dispatch<React.SetStateAction<FilterForm | undefined>>;
 };
+
+const defaultFilterParams: FilterForm = {
+  order_by: 'time_create',
+  order_direction: 'desc',
+  company_name: null,
+  status: [],
+  work_type: [],
+  work_location: [],
+};
+
+const filterParams = JSON.parse(
+  localStorage.getItem('appFilters') || JSON.stringify(defaultFilterParams)
+);
 
 function OrderBy({ control }: FilterFormParam) {
   const { field } = useController<FilterForm>({
@@ -116,39 +134,73 @@ function WorkTypeField({ control }: FilterFormParam) {
   );
 }
 
-export function FilterApplication({
-  queryResult,
-  defaultFilterParams,
-  setFilterParams,
-}: Prop) {
+function FilterForm({ setFilterParams }: Prop) {
   const { control, handleSubmit, reset, formState } = useForm<FilterForm>({
-    defaultValues: defaultFilterParams,
+    defaultValues: filterParams,
   });
 
-  const { isFetching } = queryResult;
+  useEffect(() => setFilterParams(filterParams), [setFilterParams]);
   const applyFilter = (data: FilterForm) => {
     localStorage.setItem('appFilters', JSON.stringify(data));
     setFilterParams(data);
     reset(data);
   };
+
+  const isFetching = useIsFetching({ queryKey: applicationKeys.lists() });
   return (
-    <Box>
-      <OrderBy control={control} />
-      <OrderDirection control={control} />
+    <Stack spacing={3} sx={{ p: 2 }}>
+      <Box>
+        <OrderBy control={control} />
+        <OrderDirection control={control} />
+      </Box>
       <ApplicationStatusField control={control} />
       <WorkLocationField control={control} />
       <WorkTypeField control={control} />
       <CompanyField control={control} name='company_name' />
-      <DevTool control={control} />
-      <Button
-        loading={isFetching}
-        disabled={!formState.isDirty}
-        onClick={handleSubmit(applyFilter)}
-        type='button'
-        variant='contained'
-        color='primary'>
-        Apply Filters
-      </Button>
+      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+        <Button
+          loading={!!isFetching}
+          disabled={!formState.isDirty}
+          onClick={handleSubmit(applyFilter)}
+          type='button'
+          variant='contained'
+          color='primary'>
+          Apply Filters
+        </Button>
+      </Box>
+    </Stack>
+  );
+}
+
+export function FilterApplication({ setFilterParams }: Prop) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const filterPanel = <FilterForm setFilterParams={setFilterParams} />;
+  return isMobile ? (
+    <>
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: theme.spacing(2),
+          right: theme.spacing(2),
+        }}>
+        <Button variant='contained' onClick={() => setDrawerOpen(true)}>
+          <FilterAltIcon />
+        </Button>
+      </Box>
+      <Drawer
+        anchor='right'
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        ModalProps={{ keepMounted: true }}
+        slotProps={{ paper: { sx: { width: '85vw', maxWidth: 420 } } }}>
+        {filterPanel}
+      </Drawer>
+    </>
+  ) : (
+    <Box sx={{ position: 'sticky', top: (theme) => theme.spacing(2) }}>
+      {filterPanel}
     </Box>
   );
 }
