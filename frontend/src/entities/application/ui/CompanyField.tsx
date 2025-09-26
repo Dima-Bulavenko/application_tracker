@@ -9,8 +9,9 @@ import { TextInput } from 'shared/ui';
 import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
 
 const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
-  const { field, fieldState, formState } = useController(props);
+  const controller = useController(props);
   const [open, setOpen] = useState(false);
+  const { field } = controller;
 
   const debouncedFetching = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,9 +48,7 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
         <TextInput
           {...params}
           label={label}
-          field={field}
-          fieldState={fieldState}
-          formState={formState}
+          controller={controller}
           onChange={debouncedFetching}
           slotProps={{
             input: {

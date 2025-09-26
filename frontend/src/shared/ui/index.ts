@@ -2,9 +2,8 @@
 export { PageNotFound } from './PageNotFound';
 export { Form } from './Form';
 export { TextInput } from './TextInput';
-export { PasswordInput } from './PasswordInput';
 export { ColorModeToggler } from './ColorModeToggler';
 export { LinkButton } from './LinkButton';
 export { FormError } from './FormError';
 export { LogoutButton } from './LogoutButton';
-export { MultipleSelectField } from './MultipleSelectField';
+export * from './SelectField';

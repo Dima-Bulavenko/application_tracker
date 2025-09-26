@@ -1,5 +1,5 @@
 import { TextInput } from 'shared/ui';
-import { type FieldComponent } from 'shared/types';
+import type { FieldComponent } from 'shared/types';
 import { useController } from 'react-hook-form';
 import { useState } from 'react';
 import { IconButton, InputAdornment } from '@mui/material';
@@ -33,7 +33,7 @@ const PasswordField: FieldComponent = ({ label = 'Password', ...props }) => {
           ),
         },
       }}
-      {...controller}
+      controller={controller}
     />
   );
 };

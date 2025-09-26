@@ -1,5 +1,5 @@
 import { useController } from 'react-hook-form';
-import { FieldComponent } from 'shared/types';
+import type { FieldComponent } from 'shared/types';
 import { TextInput } from 'shared/ui';
 
 /**
@@ -11,7 +11,7 @@ const ApplicationURLField: FieldComponent = ({
   ...props
 }) => {
   const controller = useController(props);
-  return <TextInput label={label} {...controller} />;
+  return <TextInput label={label} controller={controller} />;
 };
 
 export default ApplicationURLField;

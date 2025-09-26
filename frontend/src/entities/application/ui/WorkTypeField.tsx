@@ -1,6 +1,7 @@
-import { FieldComponent } from 'shared/types';
+import type { FieldComponent } from 'shared/types';
 import { zWorkType } from 'shared/api/gen/zod.gen';
-import { EnumSelectField } from 'shared/ui/EnumSelectField';
+import { SelectField } from 'shared/ui/SelectField';
+import { useController } from 'react-hook-form';
 
 /**
  * Application status select field integrated with react-hook-form.
@@ -11,7 +12,15 @@ export const WorkTypeField: FieldComponent = ({
   ...props
 }) => {
   const options = zWorkType.options;
-  return <EnumSelectField {...props} label={label} options={options} />;
+  const controller = useController({ ...props });
+  return (
+    <SelectField
+      {...props}
+      label={label}
+      options={options}
+      controller={controller}
+    />
+  );
 };
 
 export default WorkTypeField;
