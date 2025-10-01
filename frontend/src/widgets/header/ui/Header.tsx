@@ -6,10 +6,11 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouterLink } from 'react-router-dom';
 import { useSession } from 'shared/hooks';
-import { ColorModeToggler, LogoutButton } from 'shared/ui';
+import { ColorModeToggler } from 'shared/ui';
+import { AccountMenu } from 'features/user/ui';
 
 export function Header() {
-  const { token, user } = useSession();
+  const { token } = useSession();
 
   return (
     <AppBar position='sticky' color='default' elevation={0}>
@@ -26,14 +27,7 @@ export function Header() {
 
         <Stack direction='row' spacing={1} alignItems='center'>
           {token ? (
-            <>
-              {user?.username && (
-                <Typography variant='body2' color='text.secondary'>
-                  {user.username}
-                </Typography>
-              )}
-              <LogoutButton />
-            </>
+            <AccountMenu />
           ) : (
             <>
               <Button
