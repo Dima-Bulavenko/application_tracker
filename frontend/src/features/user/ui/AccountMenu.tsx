@@ -6,6 +6,7 @@ import {
   ListItemIcon,
   Menu,
   MenuItem,
+  Skeleton,
   Tooltip,
 } from '@mui/material';
 import { useState } from 'react';
@@ -41,18 +42,19 @@ const MenuStyle = {
 };
 
 export function AccountMenu() {
-  const { user } = useSession();
+  const { user, isFetching } = useSession();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleLogout = useLogout();
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    console.log(e);
     setAnchorEl(e.currentTarget);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
   };
+  if (isFetching) return <Skeleton variant='circular' width={32} height={32} />;
+  if (!user) return null;
   return (
     <>
       <Tooltip title='Account settings'>
@@ -64,7 +66,7 @@ export function AccountMenu() {
           aria-haspopup='true'
           aria-expanded={open ? 'true' : undefined}>
           <Avatar sx={{ width: 32, height: 32 }}>
-            {user?.username ? user.username.charAt(0).toUpperCase() : undefined}
+            {user.username.charAt(0).toUpperCase()}
           </Avatar>
         </IconButton>
       </Tooltip>

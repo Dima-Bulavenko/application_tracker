@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   Drawer,
+  IconButton,
   Stack,
   useMediaQuery,
   useTheme,
@@ -182,12 +183,15 @@ export function FilterApplication({ setFilterParams }: Prop) {
       <Box
         sx={{
           position: 'fixed',
-          bottom: theme.spacing(2),
+          bottom: theme.spacing(4),
           right: theme.spacing(2),
         }}>
-        <Button variant='contained' onClick={() => setDrawerOpen(true)}>
-          <FilterAltIcon />
-        </Button>
+        <IconButton
+          sx={{ backgroundColor: 'primary.main' }}
+          size='medium'
+          onClick={() => setDrawerOpen(true)}>
+          <FilterAltIcon fontSize='inherit' />
+        </IconButton>
       </Box>
       <Drawer
         anchor='right'
