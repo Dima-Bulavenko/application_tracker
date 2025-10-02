@@ -1,4 +1,5 @@
 export { default as ApplicationCard } from './ApplicationCard';
+export { default as ApplicationCardSkeleton } from './ApplicationCardSkeleton';
 export { default as ApplicationList } from './ApplicationList';
 export { default as ApplicationStatusField } from './ApplicationStatusField';
 export { default as WorkTypeField } from './WorkTypeField';

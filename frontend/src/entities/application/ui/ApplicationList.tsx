@@ -1,6 +1,9 @@
-import { Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
 import { type useApplicationsList } from 'entities/application/api';
-import ApplicationCard from 'entities/application/ui/ApplicationCard';
+import {
+  ApplicationCard,
+  ApplicationCardSkeleton,
+} from 'entities/application/ui';
 
 type Prop = {
   queryResult: ReturnType<typeof useApplicationsList>;
@@ -27,15 +30,19 @@ export function ApplicationList({ queryResult }: Prop) {
     );
   }
 
+  if (isFetching) {
+    return (
+      <Stack spacing={2}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <ApplicationCardSkeleton key={index} />
+        ))}
+      </Stack>
+    );
+  }
+
   return (
     <Stack spacing={2}>
       {data?.map((app) => <ApplicationCard key={app.id} application={app} />)}
-
-      {isFetching && (
-        <Box display='flex' justifyContent='center' py={1}>
-          <CircularProgress size={24} />
-        </Box>
-      )}
     </Stack>
   );
 }
