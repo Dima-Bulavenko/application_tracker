@@ -10,8 +10,7 @@ import { ColorModeToggler } from 'shared/ui';
 import { AccountMenu } from 'features/user/ui';
 
 export function Header() {
-  const { token } = useSession();
-
+  const { token, isFetching } = useSession();
   return (
     <AppBar position='sticky' color='default' elevation={0}>
       <Toolbar sx={{ gap: 1, minHeight: 64 }}>
@@ -26,7 +25,7 @@ export function Header() {
         <Box sx={{ flex: 1 }} />
 
         <Stack direction='row' spacing={1} alignItems='center'>
-          {token ? (
+          {token || isFetching ? (
             <AccountMenu />
           ) : (
             <>
