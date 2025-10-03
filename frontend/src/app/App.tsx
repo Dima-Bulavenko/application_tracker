@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
@@ -12,18 +11,16 @@ const queryClient = new QueryClient();
 
 export function App() {
   return (
-    <StrictMode>
-      <ThemeProvider theme={buildTheme()} defaultMode='system' noSsr>
-        <CssBaseline />
-        <QueryClientProvider client={queryClient}>
-          <SessionProvider>
-            <Router>
-              <Header />
-              <AppRouter />
-            </Router>
-          </SessionProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </StrictMode>
+    <ThemeProvider theme={buildTheme()} defaultMode='system' noSsr>
+      <CssBaseline />
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          <Router>
+            <Header />
+            <AppRouter />
+          </Router>
+        </SessionProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
