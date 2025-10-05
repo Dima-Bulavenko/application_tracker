@@ -41,7 +41,7 @@ function sessionReducer(
 const initialState: SessionState = {
   token: undefined,
   user: undefined,
-  isFetching: false,
+  isFetching: true,
 };
 
 export function SessionProvider({ children }: React.PropsWithChildren<object>) {
@@ -57,16 +57,15 @@ export function SessionProvider({ children }: React.PropsWithChildren<object>) {
   }, []);
 
   useEffect(() => {
-    dispatch({ type: 'SET_FETCHING', payload: true });
     refreshToken<true>({})
       .then(async ({ data: { access_token } }) => {
         setToken(access_token);
         client.setConfig({ auth: access_token });
         const { data: user } = await getCurrentUser<true>();
         setUser(user);
+        dispatch({ type: 'SET_FETCHING', payload: false });
       })
-      .catch(() => dispatch({ type: 'RESET_SESSION' }))
-      .finally(() => dispatch({ type: 'SET_FETCHING', payload: false }));
+      .catch(() => dispatch({ type: 'RESET_SESSION' }));
   }, [setToken, setUser]);
 
   useEffect(() => {
