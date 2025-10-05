@@ -1,11 +1,28 @@
 import { useContext } from 'react';
-import { SessionContext } from 'shared/context';
+import type { UserRead } from 'shared/api';
+
+import { SessionContext, SessionContextType } from 'shared/context';
+
+type ActiveSession = Omit<SessionContextType, 'user' | 'token'> & {
+  user: UserRead;
+  token: string;
+};
+
+type Session = Omit<SessionContextType, 'setToken' | 'setUser'> &
+  Required<Pick<SessionContextType, 'setToken' | 'setUser'>>;
 
 export function useSession() {
-  const { user, token, isFetching, setUser, setToken } =
-    useContext(SessionContext);
-  if (setUser !== undefined && setToken !== undefined) {
-    return { user, token, isFetching, setUser, setToken };
+  const ctx = useContext(SessionContext);
+  if (!ctx || !ctx.setToken || !ctx.setUser) {
+    throw new Error('No session context found');
   }
-  throw new Error('setToken and setUser must be set inside SessionProvider');
+  return ctx as Session;
+}
+
+export function useActiveSession() {
+  const ctx = useContext(SessionContext);
+  if (!ctx || !ctx.user || !ctx.token) {
+    throw new Error('No active session found');
+  }
+  return ctx as ActiveSession;
 }
