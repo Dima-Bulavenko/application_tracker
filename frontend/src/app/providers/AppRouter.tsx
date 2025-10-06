@@ -1,16 +1,27 @@
 import { Route, Routes } from 'react-router-dom';
-import { HomePage } from 'pages/home';
-import { SignInPage, RegisterPage, VerifyEmailPage } from 'pages/auth';
-import { DashboardPage } from 'pages/dashboard';
-import { PageNotFound } from 'shared/ui';
 import { PublicOnly } from './route-guards/PublicOnly';
 import { RequireAuth } from './route-guards/RequireAuth';
+import { lazyImport } from 'shared/lib';
+import { Layout } from './Layout';
+
+const { HomePage } = lazyImport(() => import('pages/home'), 'HomePage');
+const { DashboardPage } = lazyImport(
+  () => import('pages/dashboard'),
+  'DashboardPage'
+);
+const { SignInPage } = lazyImport(() => import('pages/auth'), 'SignInPage');
+const { RegisterPage } = lazyImport(() => import('pages/auth'), 'RegisterPage');
+const { VerifyEmailPage } = lazyImport(
+  () => import('pages/auth'),
+  'VerifyEmailPage'
+);
+const { PageNotFound } = lazyImport(() => import('shared/ui'), 'PageNotFound');
 
 export function AppRouter() {
   return (
     <Routes>
-      <Route path='/'>
-        <Route index element={<HomePage />} />
+      <Route path='/' element={<Layout />}>
+        <Route path='/' element={<HomePage />} />
         <Route
           path='/dashboard'
           element={
