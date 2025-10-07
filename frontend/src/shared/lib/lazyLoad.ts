@@ -1,14 +1,13 @@
-import { lazy } from "react";
+import { lazy, ComponentType } from "react";
 
 export function lazyImport<
-  T extends React.ComponentType<unknown>,
-  I extends { [K2 in K]: T },
+  I,
   K extends keyof I,
 >(
   factory: () => Promise<I>,
   name: K
-): I {
-  return Object.create({
-    [name]: lazy(() => factory().then(module => ({ default:  module[name] })))
-  });
+): { [Key in K]: I[Key] } {
+  return {
+    [name]: lazy(() => factory().then(module => ({ default: module[name] as ComponentType }))) as unknown
+  } as { [Key in K]: I[Key] };
 }
