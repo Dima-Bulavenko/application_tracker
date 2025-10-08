@@ -12,15 +12,15 @@ import {
 } from 'entities/application/ui';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import {
-  ApplicationRead,
+  type ApplicationUpdate,
+  type ApplicationRead,
   getDirtyValues,
   zApplicationUpdate,
-  type ApplicationUpdate,
 } from 'shared/api';
 import { customZodResolver } from 'shared/lib';
 import { Form, FormError } from 'shared/ui';
 
-export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
+export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
     control,
     handleSubmit,

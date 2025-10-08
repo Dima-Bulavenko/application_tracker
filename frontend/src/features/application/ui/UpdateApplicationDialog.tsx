@@ -1,11 +1,18 @@
 import { Dialog, DialogTitle, DialogContent } from '@mui/material';
-import UpdateApplicationForm from './UpdateApplicationForm';
+import { Suspense } from 'react';
+import { lazyImport } from 'shared/lib';
+import type { ApplicationRead } from 'shared/api';
 
 type UpdateApplicationDialogProps = {
   open: boolean;
   onClose: () => void;
-  application: Parameters<typeof UpdateApplicationForm>[0];
+  application: ApplicationRead;
 };
+
+const { UpdateApplicationForm } = lazyImport(
+  () => import('./UpdateApplicationForm'),
+  'UpdateApplicationForm'
+);
 
 export function UpdateApplicationDialog({
   open,
@@ -16,7 +23,9 @@ export function UpdateApplicationDialog({
     <Dialog open={open} onClose={onClose} fullWidth maxWidth='md'>
       <DialogTitle>Update Application</DialogTitle>
       <DialogContent>
-        <UpdateApplicationForm {...application} />
+        <Suspense fallback={<div>Loading...</div>}>
+          {open && <UpdateApplicationForm {...application} />}
+        </Suspense>
       </DialogContent>
     </Dialog>
   );
