@@ -15,7 +15,7 @@ import { zApplicationCreate, type ApplicationCreate } from 'shared/api';
 import { customZodResolver } from 'shared/lib';
 import { Form, FormError } from 'shared/ui';
 
-export default function CreateApplicationForm() {
+export function CreateApplicationForm() {
   const {
     control,
     handleSubmit,

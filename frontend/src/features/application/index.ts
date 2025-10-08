@@ -1,5 +1,4 @@
-export * from './ui/CreateApplicationButton';
-export * from './ui/CreateApplicationDialog';
+export * from './ui/CreateApplication';
 export * from './ui/UpdateApplicationButton';
 export * from './ui/UpdateApplicationDialog';
 export * from './ui/FilterApplication';
