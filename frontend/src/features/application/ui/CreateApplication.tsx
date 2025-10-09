@@ -10,6 +10,7 @@ import {
 import { Add as AddIcon } from '@mui/icons-material';
 import { Suspense, useState } from 'react';
 import { lazyImport } from 'shared/lib';
+import { SuspenseFallback } from 'shared/ui';
 
 const { CreateApplicationForm } = lazyImport(
   () => import('./CreateApplicationForm'),
@@ -52,12 +53,12 @@ export function CreateApplication() {
             },
           },
         }}>
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, height: '100%' }}>
           <Typography variant='h5' component='h2' gutterBottom>
             Create Application
           </Typography>
           <Divider sx={{ mb: 3 }} />
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<SuspenseFallback />}>
             {drawerOpen && <CreateApplicationForm />}
           </Suspense>
         </Box>

@@ -10,6 +10,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import { Suspense, useState } from 'react';
 import { lazyImport } from 'shared/lib';
+import { SuspenseFallback } from 'shared/ui';
 import type { ApplicationRead } from 'shared/api';
 
 type UpdateApplicationProps = {
@@ -50,12 +51,12 @@ export function UpdateApplication({ application }: UpdateApplicationProps) {
             },
           },
         }}>
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, height: '100%' }}>
           <Typography variant='h5' component='h2' gutterBottom>
             Update Application
           </Typography>
           <Divider sx={{ mb: 3 }} />
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<SuspenseFallback />}>
             {drawerOpen && <UpdateApplicationForm {...application} />}
           </Suspense>
         </Box>

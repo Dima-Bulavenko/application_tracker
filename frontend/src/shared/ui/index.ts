@@ -5,4 +5,5 @@ export { TextInput } from './TextInput';
 export { ColorModeToggler } from './ColorModeToggler';
 export { LinkButton } from './LinkButton';
 export { FormError } from './FormError';
+export { SuspenseFallback } from './SuspenseFallback';
 export * from './SelectField';
