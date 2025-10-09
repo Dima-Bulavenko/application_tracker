@@ -8,7 +8,6 @@ export function Form({ children, sx, ...props }: BaseFormProps) {
   const baseSx = (theme: Theme) => ({
     p: theme.spacing(3),
     m: 'auto',
-    height: '100%',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',

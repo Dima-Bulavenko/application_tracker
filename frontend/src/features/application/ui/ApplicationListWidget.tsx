@@ -4,8 +4,21 @@ import { FilterApplication } from './FilterApplication';
 import { ApplicationList } from 'entities/application/ui';
 import { Box } from '@mui/material';
 
+const defaultFilterParams: FilterForm = {
+  order_by: 'time_create',
+  order_direction: 'desc',
+  company_name: null,
+  status: [],
+  work_type: [],
+  work_location: [],
+};
+
+const filterParams = JSON.parse(
+  localStorage.getItem('appFilters') || JSON.stringify(defaultFilterParams)
+);
+
 export function ApplicationListWidget() {
-  const [filter, setFilter] = useState<FilterForm>();
+  const [filter, setFilter] = useState<FilterForm>(filterParams);
   const QueryResult = useApplicationsList(
     { ...filter },
     { enabled: !!filter, staleTime: 30000 }
@@ -20,7 +33,7 @@ export function ApplicationListWidget() {
         alignItems: 'start',
       }}>
       <ApplicationList queryResult={QueryResult} />
-      <FilterApplication setFilterParams={setFilter} />
+      <FilterApplication setFilterParams={setFilter} filterParams={filter} />
     </Box>
   );
 }
