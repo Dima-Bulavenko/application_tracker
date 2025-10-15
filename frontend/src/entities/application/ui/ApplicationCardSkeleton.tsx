@@ -1,11 +1,9 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  Divider,
-  Skeleton,
-  Stack,
-} from '@mui/material';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
+import Divider from '@mui/material/Divider';
+import Skeleton from '@mui/material/Skeleton';
+import Stack from '@mui/material/Stack';
 
 export function ApplicationCardSkeleton() {
   return (

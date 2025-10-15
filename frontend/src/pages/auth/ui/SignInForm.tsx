@@ -1,11 +1,16 @@
-import { Form, FormError } from 'shared/ui';
-import { UserLogin, zUserLogin, login } from 'shared/api';
-import { Button, Stack } from '@mui/material';
-import { useSession } from 'shared/hooks';
+import { Form } from 'shared/ui/Form';
+import { FormError } from 'shared/ui/FormError';
+import type { UserLogin } from 'shared/api/gen/types.gen';
+import { login } from 'shared/api/gen/sdk.gen';
+import { zUserLogin } from 'shared/api/gen/zod.gen';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import { useSession } from 'shared/hooks/useSession';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { customZodResolver } from 'shared/lib';
+import { customZodResolver } from 'shared/lib/customZodResolver';
 import { useNavigate } from 'react-router-dom';
-import { EmailField, PasswordField } from 'entities/user/ui';
+import EmailField from 'entities/user/ui/EmailField';
+import PasswordField from 'entities/user/ui/PasswordField';
 
 export default function SignInForm() {
   const {

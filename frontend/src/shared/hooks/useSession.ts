@@ -1,7 +1,7 @@
 import { useContext } from 'react';
-import type { UserRead } from 'shared/api';
-
-import { SessionContext, SessionContextType } from 'shared/context';
+import type { UserRead } from 'shared/api/gen/types.gen';
+import type { SessionContextType } from 'shared/context/SessionContext';
+import { SessionContext } from 'shared/context/SessionContext';
 
 type ActiveSession = Omit<SessionContextType, 'user' | 'token'> & {
   user: UserRead;

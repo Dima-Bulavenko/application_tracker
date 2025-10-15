@@ -1,5 +1,6 @@
-import { Container } from '@mui/material';
-import { ApplicationListWidget, CreateApplication } from 'features/application';
+import Container from '@mui/material/Container';
+import { ApplicationListWidget } from 'features/application/ui/ApplicationListWidget';
+import { CreateApplication } from 'features/application/ui/CreateApplication';
 
 export function DashboardPage() {
   return (

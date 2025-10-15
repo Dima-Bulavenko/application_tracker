@@ -1,4 +1,4 @@
-import type { FieldComponent } from 'shared/types';
+import type { FieldComponent } from 'shared/types/form';
 import { zWorkType } from 'shared/api/gen/zod.gen';
 import { SelectField } from 'shared/ui/SelectField';
 import { useController } from 'react-hook-form';

@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import Button from '@mui/material/Button';
 import { Link as RouterLink, type LinkProps } from 'react-router-dom';
 
 type AnchorButtonProps = React.ComponentProps<typeof Button<'a'>>;

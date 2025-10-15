@@ -1,4 +1,4 @@
-import type { TextFieldProps } from '@mui/material';
+import type { TextFieldProps } from '@mui/material/TextField';
 import type { ReactNode } from 'react';
 import type {
   UseControllerProps,

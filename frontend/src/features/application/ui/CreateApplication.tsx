@@ -1,16 +1,14 @@
-import {
-  Box,
-  Drawer,
-  IconButton,
-  useMediaQuery,
-  useTheme,
-  Typography,
-  Divider,
-} from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import AddIcon from '@mui/icons-material/Add';
 import { Suspense, useState } from 'react';
-import { lazyImport } from 'shared/lib';
-import { SuspenseFallback } from 'shared/ui';
+import { lazyImport } from 'shared/lib/lazyLoad';
+import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
 
 const { CreateApplicationForm } = lazyImport(
   () => import('./CreateApplicationForm'),

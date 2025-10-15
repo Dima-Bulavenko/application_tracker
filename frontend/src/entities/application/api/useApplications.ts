@@ -4,21 +4,21 @@ import {
   getApplications,
   updateApplication,
   deleteApplication,
-} from 'shared/api';
+} from 'shared/api/gen/sdk.gen';
 import type {
   ApplicationCreate,
   ApplicationUpdate,
   UpdateApplicationData,
   DeleteApplicationData,
   ApplicationReadWithCompany,
-} from 'shared/api';
+  GetApplicationsData,
+} from 'shared/api/gen/types.gen';
 import {
   useQuery,
   useMutation,
   useQueryClient,
   type UseQueryOptions,
 } from '@tanstack/react-query';
-import { type GetApplicationsData } from 'shared/api';
 
 export const applicationKeys = {
   all: ['applications'],

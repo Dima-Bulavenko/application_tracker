@@ -1,4 +1,9 @@
-import { Box, Paper, Stack, Typography, Divider, Link } from '@mui/material';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import Link from '@mui/material/Link';
 import { Link as RouterLink } from 'react-router-dom';
 import type { SxProps, Theme } from '@mui/material/styles';
 

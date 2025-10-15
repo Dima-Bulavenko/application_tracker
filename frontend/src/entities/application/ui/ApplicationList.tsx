@@ -1,9 +1,9 @@
-import { Box, Stack, Typography } from '@mui/material';
-import { type useApplicationsList } from 'entities/application/api';
-import {
-  ApplicationCard,
-  ApplicationCardSkeleton,
-} from 'entities/application/ui';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { type useApplicationsList } from 'entities/application/api/useApplications';
+import ApplicationCard from './ApplicationCard';
+import ApplicationCardSkeleton from './ApplicationCardSkeleton';
 
 type Prop = {
   queryResult: ReturnType<typeof useApplicationsList>;

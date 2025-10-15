@@ -1,6 +1,6 @@
-import { TextField } from '@mui/material';
+import TextField from '@mui/material/TextField';
 import type { FieldValues, FieldPath } from 'react-hook-form';
-import { TextInputProps } from 'shared/types';
+import { TextInputProps } from 'shared/types/form';
 
 export function TextInput<
   V extends FieldValues = FieldValues,

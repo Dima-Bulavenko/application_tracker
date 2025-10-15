@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
-import { Stack, Typography, CircularProgress } from '@mui/material';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 import { useSearchParams } from 'react-router-dom';
-import { activateUser } from 'shared/api';
+import { activateUser } from 'shared/api/gen/sdk.gen';
 import { AuthPage } from './AuthPage';
-import { LinkButton } from 'shared/ui';
+import { LinkButton } from 'shared/ui/LinkButton';
 import { useQuery } from '@tanstack/react-query';
 
 export function VerifyEmailPage() {

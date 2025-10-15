@@ -1,8 +1,9 @@
-import { type FilterForm, useApplicationsList } from 'entities/application/api';
+import { useApplicationsList } from 'entities/application/api/useApplications';
+import type { FilterForm } from 'entities/application/api/types';
 import { useState } from 'react';
 import { FilterApplication } from './FilterApplication';
-import { ApplicationList } from 'entities/application/ui';
-import { Box } from '@mui/material';
+import { ApplicationList } from 'entities/application/ui/ApplicationList';
+import Box from '@mui/material/Box';
 
 const defaultFilterParams: FilterForm = {
   order_by: 'time_create',

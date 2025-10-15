@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useReducer, useCallback } from 'react';
-import {
-  refreshToken,
-  getCurrentUser,
-  type UserRead,
-  client,
-  setResponseInterceptor,
-} from 'shared/api';
+import { refreshToken, getCurrentUser } from 'shared/api/gen/sdk.gen';
+import { client } from 'shared/api/gen/client.gen';
+import type { UserRead } from 'shared/api/gen/types.gen';
+import { setResponseInterceptor } from 'shared/api/set_interceptors';
 import { SessionContext } from 'shared/context/SessionContext';
 
 interface SessionState {

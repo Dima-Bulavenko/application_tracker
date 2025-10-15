@@ -1,7 +1,10 @@
 import { useContext } from 'react';
-import { Box, Typography, Stack, Paper } from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
 import { SessionContext } from 'shared/context/SessionContext';
-import { LinkButton } from 'shared/ui';
+import { LinkButton } from 'shared/ui/LinkButton';
 export function HomePage() {
   const { token } = useContext(SessionContext);
   return (

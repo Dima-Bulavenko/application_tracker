@@ -1,16 +1,15 @@
-import { Logout } from '@mui/icons-material';
-import {
-  Avatar,
-  Divider,
-  IconButton,
-  ListItemIcon,
-  Menu,
-  MenuItem,
-  Skeleton,
-  Tooltip,
-} from '@mui/material';
+import Logout from '@mui/icons-material/Logout';
+import Avatar from '@mui/material/Avatar';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Skeleton from '@mui/material/Skeleton';
+import Tooltip from '@mui/material/Tooltip';
 import { useState } from 'react';
-import { useLogout, useSession } from 'shared/hooks';
+import { useLogout } from 'shared/hooks/userHooks';
+import { useSession } from 'shared/hooks/useSession';
 
 const MenuStyle = {
   paper: {

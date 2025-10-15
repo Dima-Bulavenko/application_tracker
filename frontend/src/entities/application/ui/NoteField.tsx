@@ -1,6 +1,6 @@
 import { useController } from 'react-hook-form';
-import type { FieldComponent } from 'shared/types';
-import { TextInput } from 'shared/ui';
+import type { FieldComponent } from 'shared/types/form';
+import { TextInput } from 'shared/ui/TextInput';
 
 /**
  * Application status select field integrated with react-hook-form.

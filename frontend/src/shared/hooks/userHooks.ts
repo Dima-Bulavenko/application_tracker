@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { logout } from 'shared/api';
+import { logout } from 'shared/api/gen/sdk.gen';
 import { useSession } from './useSession';
 
 export function useLogout(redirectTo: string = '/') {

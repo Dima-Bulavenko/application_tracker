@@ -1,19 +1,20 @@
-import { Button, Stack } from '@mui/material';
-import { useCreateApplication } from 'entities/application/api';
-import {
-  ApplicationStatusField,
-  WorkTypeField,
-  WorkLocationField,
-  NoteField,
-  InterviewDateField,
-  RoleField,
-  CompanyField,
-  ApplicationURLField,
-} from 'entities/application/ui';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import { useCreateApplication } from 'entities/application/api/useApplications';
+import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
+import { WorkTypeField } from 'entities/application/ui/WorkTypeField';
+import { WorkLocationField } from 'entities/application/ui/WorkLocationField';
+import { NoteField } from 'entities/application/ui/NoteField';
+import InterviewDateField from 'entities/application/ui/InterviewDateField';
+import RoleField from 'entities/application/ui/RoleField';
+import CompanyField from 'entities/application/ui/CompanyField';
+import ApplicationURLField from 'entities/application/ui/ApplicationURLField';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import { zApplicationCreate, type ApplicationCreate } from 'shared/api';
-import { customZodResolver } from 'shared/lib';
-import { Form, FormError } from 'shared/ui';
+import { type ApplicationCreate } from 'shared/api/gen/types.gen';
+import { zApplicationCreate } from 'shared/api/gen/zod.gen';
+import { customZodResolver } from 'shared/lib/customZodResolver';
+import { Form } from 'shared/ui/Form';
+import { FormError } from 'shared/ui/FormError';
 
 export function CreateApplicationForm() {
   const {

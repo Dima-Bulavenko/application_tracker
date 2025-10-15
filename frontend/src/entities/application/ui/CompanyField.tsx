@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useController } from 'react-hook-form';
-import { type FieldComponent } from 'shared/types';
-import { CircularProgress } from '@mui/material';
+import { type FieldComponent } from 'shared/types/form';
+import CircularProgress from '@mui/material/CircularProgress';
 import Autocomplete from '@mui/material/Autocomplete';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { getUserCompanies } from 'shared/api';
-import { TextInput } from 'shared/ui';
+import { getUserCompanies } from 'shared/api/gen/sdk.gen';
+import { TextInput } from 'shared/ui/TextInput';
 import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
 
 const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {

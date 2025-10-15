@@ -1,7 +1,9 @@
-import { Checkbox, ListItemText, MenuItem } from '@mui/material';
+import Checkbox from '@mui/material/Checkbox';
+import ListItemText from '@mui/material/ListItemText';
+import MenuItem from '@mui/material/MenuItem';
 
 import { TextInput } from './TextInput';
-import type { SelectInputProps, SelectMultipleProps } from 'shared/types';
+import type { SelectInputProps, SelectMultipleProps } from 'shared/types/form';
 import { FieldPath, FieldValues } from 'react-hook-form';
 
 const defaultHumanize = (v: string) =>

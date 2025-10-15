@@ -1,23 +1,19 @@
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  Divider,
-  Stack,
-  Typography,
-} from '@mui/material';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { ApplicationReadWithCompany as ApplicationRead } from 'shared/api/gen/types.gen';
-import { formatDate } from 'shared/lib';
-import {
-  humanizeWorkLocation,
-  humanizeWorkType,
-} from 'entities/application/lib/humanize';
+import { formatDate } from 'shared/lib/date';
+import { humanizeWorkLocation } from 'entities/application/lib/humanize';
+import { humanizeWorkType } from 'entities/application/lib/humanize';
 import { statusColor } from 'entities/application/lib/status';
-import { UpdateApplication } from 'features/application';
+import { UpdateApplication } from 'features/application/ui/UpdateApplication';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useDeleteApplication } from '../api';
+import { useDeleteApplication } from 'entities/application/api/useApplications';
 
 type Props = { application: ApplicationRead };
 

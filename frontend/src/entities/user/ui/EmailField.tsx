@@ -1,5 +1,5 @@
-import { TextInput } from 'shared/ui';
-import type { FieldComponent } from 'shared/types';
+import { TextInput } from 'shared/ui/TextInput';
+import type { FieldComponent } from 'shared/types/form';
 import { useController } from 'react-hook-form';
 
 const EmailField: FieldComponent = ({ label = 'Email', ...props }) => {

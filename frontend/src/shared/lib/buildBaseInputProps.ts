@@ -4,7 +4,7 @@ import {
   ControllerRenderProps,
   ControllerFieldState,
 } from 'react-hook-form';
-import { TextFieldProps } from '@mui/material';
+import type { TextFieldProps } from '@mui/material/TextField';
 
 export function buildBaseInputProps<
   TFieldValues extends FieldValues,

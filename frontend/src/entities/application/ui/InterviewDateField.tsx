@@ -1,6 +1,6 @@
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { useController } from 'react-hook-form';
-import { FieldComponent } from 'shared/types';
+import { FieldComponent } from 'shared/types/form';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs from 'dayjs';

@@ -5,9 +5,9 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouterLink } from 'react-router-dom';
-import { useSession } from 'shared/hooks';
-import { ColorModeToggler } from 'shared/ui';
-import { AccountMenu } from 'features/user/ui';
+import { useSession } from 'shared/hooks/useSession';
+import { ColorModeToggler } from 'shared/ui/ColorModeToggler';
+import { AccountMenu } from 'features/user/ui/AccountMenu';
 
 export function Header() {
   const { token, isFetching } = useSession();

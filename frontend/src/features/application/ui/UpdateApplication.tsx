@@ -1,17 +1,15 @@
-import {
-  Box,
-  Button,
-  Drawer,
-  Typography,
-  Divider,
-  useMediaQuery,
-  useTheme,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Drawer from '@mui/material/Drawer';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
 import { Suspense, useState } from 'react';
-import { lazyImport } from 'shared/lib';
-import { SuspenseFallback } from 'shared/ui';
-import type { ApplicationRead } from 'shared/api';
+import { lazyImport } from 'shared/lib/lazyLoad';
+import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
+import type { ApplicationRead } from 'shared/api/gen/types.gen';
 
 type UpdateApplicationProps = {
   application: ApplicationRead;

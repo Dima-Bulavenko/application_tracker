@@ -1,4 +1,6 @@
-import { Box, Button, Stack } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { useForm, useController } from 'react-hook-form';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
@@ -8,11 +10,12 @@ import FormLabel from '@mui/material/FormLabel';
 import { useIsFetching } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
-import { applicationKeys, type FilterForm } from 'entities/application/api';
-import { CompanyField } from 'entities/application/ui';
+import { applicationKeys } from 'entities/application/api/useApplications';
+import type { FilterForm } from 'entities/application/api/types';
+import CompanyField from 'entities/application/ui/CompanyField';
 
-import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api';
-import { MultipleSelectField } from 'shared/ui';
+import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen';
+import { MultipleSelectField } from 'shared/ui/SelectField';
 
 type FilterFormParam = {
   control: NonNullable<Parameters<typeof useController>[0]['control']>;

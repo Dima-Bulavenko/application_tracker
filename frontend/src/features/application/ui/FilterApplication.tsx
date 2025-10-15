@@ -1,10 +1,13 @@
-import { Box, Drawer, IconButton, useMediaQuery } from '@mui/material';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { Suspense, useState } from 'react';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 
-import type { FilterForm } from 'entities/application/api';
-import { lazyImport } from 'shared/lib';
-import { SuspenseFallback } from 'shared/ui';
+import type { FilterForm } from 'entities/application/api/types';
+import { lazyImport } from 'shared/lib/lazyLoad';
+import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
 
 type Prop = {
   setFilterParams: React.Dispatch<React.SetStateAction<FilterForm>>;

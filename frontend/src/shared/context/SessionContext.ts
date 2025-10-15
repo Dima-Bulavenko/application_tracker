@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { UserRead } from 'shared/api';
+import { UserRead } from 'shared/api/gen/types.gen';
 
 export interface SessionContextType {
   readonly token?: string;

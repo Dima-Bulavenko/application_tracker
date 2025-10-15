@@ -1,4 +1,4 @@
-import { type GetApplicationsData } from 'shared/api';
+import { type GetApplicationsData } from 'shared/api/gen/types.gen';
 import { type useApplicationsList } from './useApplications';
 
 export type FilterForm = Omit<

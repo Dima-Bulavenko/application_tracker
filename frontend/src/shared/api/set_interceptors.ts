@@ -1,6 +1,6 @@
-import { SessionContextType } from 'shared/context';
+import { SessionContextType } from 'shared/context/SessionContext';
 import { client } from './gen/client.gen';
-import { refreshToken } from './gen';
+import { refreshToken } from './gen/sdk.gen';
 const retryHeaderName = 'X-Retry';
 
 export function setResponseInterceptor(
