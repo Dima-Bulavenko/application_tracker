@@ -1,13 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import { SessionContext } from 'shared/context/SessionContext';
+import { SuspenseFallback } from 'shared/ui';
 
 export function RequireAuth({ children }: { children: JSX.Element }) {
-  const { token } = useContext(SessionContext);
+  const { token, isFetching } = useContext(SessionContext);
+  console.log('in RequireAuth');
   const location = useLocation();
-  return token ? (
-    children
-  ) : (
-    <Navigate to='/sign-in' replace state={{ from: location }} />
-  );
+  if (isFetching) return <SuspenseFallback />;
+  if (!token)
+    return <Navigate to='/sign-in' replace state={{ from: location }} />;
+  return children;
 }
