@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
-from app.core.dto import UserChangePassword, UserCreate, UserRead
+from app.core.dto import UserChangePassword, UserCreate, UserRead, UserUpdate
 from app.core.exceptions import (
     InvalidPasswordError,
     TokenExpireError,
@@ -13,7 +13,7 @@ from app.core.exceptions import (
     UserAlreadyExistError,
     UserNotFoundError,
 )
-from app.dependencies import AccessTokenDep, UserEmailServiceDep, UserServiceDep
+from app.dependencies import AccessTokenDep, AccessTokenPayloadDep, UserEmailServiceDep, UserServiceDep
 
 router = APIRouter(prefix="/users", tags=[Tags.USER])
 
@@ -171,3 +171,27 @@ async def get_current_user(access_token: AccessTokenDep, user_service: UserServi
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e
+
+
+@router.patch(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing, invalid, or expired access token",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def update_user(
+    payload: AccessTokenPayloadDep, user_update: UserUpdate, user_service: UserServiceDep
+) -> UserRead:
+    try:
+        user = await user_service.update(payload.user_id, user_update)
+    except UserNotFoundError as ex:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(ex)) from ex
+    return user
