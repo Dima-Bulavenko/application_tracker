@@ -195,3 +195,25 @@ async def update_user(
     except UserNotFoundError as ex:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(ex)) from ex
     return user
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing, invalid, or expired access token",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def delete_user(payload: AccessTokenPayloadDep, user_service: UserServiceDep) -> MessageResponse:
+    try:
+        await user_service.delete(payload.user_id)
+    except UserNotFoundError as ex:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(ex)) from ex
+    return MessageResponse(message="User deleted successfully")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from app.core.domain import User
 from app.core.repositories import IUserRepository
@@ -32,3 +32,8 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
         self.session.add(user_model)
         await self.session.flush()
         return User.model_validate(user_model, from_attributes=True)
+
+    async def delete(self, user_id: int) -> User | None:
+        statement = delete(self.model).where(self.model.id == user_id).returning(self.model)
+        deleted_user = await self.session.scalar(statement)
+        return User.model_validate(deleted_user, from_attributes=True) if deleted_user else None

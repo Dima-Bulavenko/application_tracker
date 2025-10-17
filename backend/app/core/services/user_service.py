@@ -95,3 +95,8 @@ class UserService:
         if updated_user is None:
             raise UserNotFoundError(f"User with id {user_id} not found")
         return UserRead.model_validate(updated_user, from_attributes=True)
+
+    async def delete(self, user_id: int) -> None:
+        deleted = await self.user_repo.delete(user_id)
+        if not deleted:
+            raise UserNotFoundError(f"User with id {user_id} not found")
