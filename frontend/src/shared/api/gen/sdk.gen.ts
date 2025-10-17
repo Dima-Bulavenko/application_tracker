@@ -19,6 +19,9 @@ import type {
   GetCurrentUserData,
   GetCurrentUserResponse,
   GetCurrentUserError,
+  UpdateUserData,
+  UpdateUserResponse,
+  UpdateUserError,
   GetApplicationsData,
   GetApplicationsResponse,
   GetApplicationsError,
@@ -166,6 +169,32 @@ export const getCurrentUser = <ThrowOnError extends boolean = false>(
     ],
     url: '/users/me',
     ...options,
+  });
+};
+
+/**
+ * Update User
+ */
+export const updateUser = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateUserData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).patch<
+    UpdateUserResponse,
+    UpdateUserError,
+    ThrowOnError
+  >({
+    security: [
+      {
+        scheme: 'bearer',
+        type: 'http',
+      },
+    ],
+    url: '/users/me',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
   });
 };
 

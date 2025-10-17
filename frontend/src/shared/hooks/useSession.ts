@@ -1,13 +1,8 @@
 import { useContext } from 'react';
-import type { UserRead } from 'shared/api/gen/types.gen';
 import type { SessionContextType } from 'shared/context/SessionContext';
 import { SessionContext } from 'shared/context/SessionContext';
 
-type ActiveSession = Omit<SessionContextType, 'user' | 'token'> & {
-  user: UserRead;
-  token: string;
-};
-
+type ActiveSession = Required<SessionContextType>;
 type Session = Omit<SessionContextType, 'setToken' | 'setUser'> &
   Required<Pick<SessionContextType, 'setToken' | 'setUser'>>;
 

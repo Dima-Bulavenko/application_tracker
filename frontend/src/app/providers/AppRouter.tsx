@@ -3,6 +3,7 @@ import { PublicOnly } from './route-guards/PublicOnly';
 import { RequireAuth } from './route-guards/RequireAuth';
 import { lazyImport } from 'shared/lib/lazyLoad';
 import { Layout } from './Layout';
+import { ProfilePage } from 'pages/profile/ui/ProfilePage';
 
 const { HomePage } = lazyImport(
   () => import('pages/home/ui/HomePage'),
@@ -39,6 +40,14 @@ export function AppRouter() {
           element={
             <RequireAuth>
               <DashboardPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path='/profile'
+          element={
+            <RequireAuth>
+              <ProfilePage />
             </RequireAuth>
           }
         />

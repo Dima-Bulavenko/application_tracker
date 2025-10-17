@@ -175,6 +175,11 @@ export const zUserRead = z.object({
   is_active: z.boolean().default(true),
 });
 
+export const zUserUpdate = z.object({
+  first_name: z.union([z.string().max(40), z.null()]).optional(),
+  second_name: z.union([z.string().max(40), z.null()]).optional(),
+});
+
 export const zValidationError = z.object({
   loc: z.array(z.union([z.string(), z.number().int()])),
   msg: z.string(),

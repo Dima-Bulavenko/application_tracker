@@ -10,6 +10,8 @@ import Tooltip from '@mui/material/Tooltip';
 import { useState } from 'react';
 import { useLogout } from 'shared/hooks/userHooks';
 import { useSession } from 'shared/hooks/useSession';
+import Link from '@mui/material/Link';
+import { Link as RouterLink } from 'react-router-dom';
 
 const MenuStyle = {
   paper: {
@@ -79,7 +81,13 @@ export function AccountMenu() {
         transformOrigin={{ horizontal: 'center', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
         <MenuItem onClick={handleClose}>
-          <Avatar /> Profile
+          <Link
+            component={RouterLink}
+            to='/profile'
+            underline='none'
+            sx={{ display: 'flex', alignItems: 'center', color: 'inherit' }}>
+            <Avatar /> Profile
+          </Link>
         </MenuItem>
         <Divider />
         <MenuItem

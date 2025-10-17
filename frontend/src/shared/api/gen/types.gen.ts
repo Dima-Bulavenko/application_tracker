@@ -135,6 +135,11 @@ export type UserRead = {
   is_active?: boolean;
 };
 
+export type UserUpdate = {
+  first_name?: string | null;
+  second_name?: string | null;
+};
+
 export type ValidationError = {
   loc: Array<string | number>;
   msg: string;
@@ -284,6 +289,39 @@ export type GetCurrentUserResponses = {
 
 export type GetCurrentUserResponse =
   GetCurrentUserResponses[keyof GetCurrentUserResponses];
+
+export type UpdateUserData = {
+  body: UserUpdate;
+  path?: never;
+  query?: never;
+  url: '/users/me';
+};
+
+export type UpdateUserErrors = {
+  /**
+   * Missing, invalid, or expired access token
+   */
+  401: ErrorResponse;
+  /**
+   * User not found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateUserError = UpdateUserErrors[keyof UpdateUserErrors];
+
+export type UpdateUserResponses = {
+  /**
+   * Successful Response
+   */
+  200: UserRead;
+};
+
+export type UpdateUserResponse = UpdateUserResponses[keyof UpdateUserResponses];
 
 export type GetApplicationsData = {
   body?: never;
