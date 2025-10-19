@@ -1,6 +1,5 @@
 import { useForm, useController, SubmitHandler } from 'react-hook-form';
 import { zUserUpdate } from 'shared/api/gen/zod.gen';
-import { useActiveSession } from 'shared/hooks/useSession';
 import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import type { FieldComponent } from 'shared/types/form';
@@ -12,6 +11,7 @@ import Stack from '@mui/material/Stack';
 import { DevTool } from '@hookform/devtools';
 import { updateUser } from 'shared/api/gen';
 import { getDirtyValues } from 'shared/api/get_dirty_values';
+import { getRouteApi } from '@tanstack/react-router';
 
 type FormType = z.infer<typeof zUserUpdate>;
 
@@ -28,8 +28,12 @@ const SecondNameField: FieldComponent = ({
   return <TextInput label={label} controller={controller} />;
 };
 
+const routeApi = getRouteApi('/_authenticated');
+
 export function UpdateForm() {
-  const { user, setUser } = useActiveSession();
+  const {
+    auth: { user },
+  } = routeApi.useRouteContext();
   const {
     control,
     handleSubmit,

@@ -5,13 +5,11 @@ import IconButton from '@mui/material/IconButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Skeleton from '@mui/material/Skeleton';
 import Tooltip from '@mui/material/Tooltip';
 import { useState } from 'react';
-import { useLogout } from 'shared/hooks/userHooks';
-import { useSession } from 'shared/hooks/useSession';
 import Link from '@mui/material/Link';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from '@tanstack/react-router';
+import { useAuth } from 'shared/hooks/useAuth';
 
 const MenuStyle = {
   paper: {
@@ -43,18 +41,16 @@ const MenuStyle = {
 };
 
 export function AccountMenu() {
-  const { user, isFetching } = useSession();
+  const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const navigate = useNavigate();
   const open = Boolean(anchorEl);
-  const handleLogout = useLogout();
-  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
+  const handleClick = (e: React.MouseEvent<HTMLElement>) =>
     setAnchorEl(e.currentTarget);
-  };
 
   const handleClose = () => {
     setAnchorEl(null);
   };
-  if (isFetching) return <Skeleton variant='circular' width={32} height={32} />;
   if (!user) return null;
   return (
     <>
@@ -92,8 +88,10 @@ export function AccountMenu() {
         <Divider />
         <MenuItem
           onClick={() => {
-            handleLogout();
-            handleClose();
+            logout().finally(() => {
+              handleClose();
+              navigate({ to: '/' });
+            });
           }}>
           <ListItemIcon>
             <Logout fontSize='small' />

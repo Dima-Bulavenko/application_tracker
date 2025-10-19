@@ -1,11 +1,8 @@
-import { SessionContextType } from 'shared/context/SessionContext';
 import { client } from './gen/client.gen';
 import { refreshToken } from './gen/sdk.gen';
 const retryHeaderName = 'X-Retry';
 
-export function setResponseInterceptor(
-  setToken: NonNullable<SessionContextType['setToken']>
-) {
+export function setResponseInterceptor() {
   const interceptorId = client.instance.interceptors.response.use(
     (response) => {
       return response;
@@ -19,7 +16,7 @@ export function setResponseInterceptor(
         error.config.headers[retryHeaderName] = true;
         const refreshResponse = await refreshToken({});
         if (refreshResponse.status === 200) {
-          setToken(refreshResponse?.data?.access_token);
+          client.setConfig({ auth: refreshResponse.data?.access_token });
           error.config.headers['Authorization'] =
             `Bearer ${refreshResponse?.data?.access_token}`;
           return client.instance(error.config);

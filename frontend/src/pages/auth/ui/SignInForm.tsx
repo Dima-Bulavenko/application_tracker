@@ -8,7 +8,7 @@ import Stack from '@mui/material/Stack';
 import { useSession } from 'shared/hooks/useSession';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { customZodResolver } from 'shared/lib/customZodResolver';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
 
@@ -28,7 +28,7 @@ export default function SignInForm() {
     const res = await login({ body: data });
     if (res.status === 200) {
       setToken(res.data?.access_token);
-      navigate('/dashboard', { replace: true });
+      navigate({ to: '/dashboard', replace: true });
     }
     if (res.status === 401) {
       setError('root', { message: 'Invalid email or password' });

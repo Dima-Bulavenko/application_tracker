@@ -1,16 +1,16 @@
-import { useMemo } from 'react';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
-import { useSearchParams } from 'react-router-dom';
 import { activateUser } from 'shared/api/gen/sdk.gen';
 import { AuthPage } from './AuthPage';
 import { LinkButton } from 'shared/ui/LinkButton';
 import { useQuery } from '@tanstack/react-query';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('/verify-email');
 
 export function VerifyEmailPage() {
-  const [search] = useSearchParams();
-  const token = useMemo(() => search.get('token') ?? '', [search]);
+  const { token } = routeApi.useSearch();
 
   const { isLoading, isSuccess, isError, error } = useQuery({
     queryKey: ['activateUser', token],
