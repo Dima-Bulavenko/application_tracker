@@ -32,7 +32,7 @@ const routeApi = getRouteApi('/_authenticated');
 
 export function UpdateForm() {
   const {
-    auth: { user },
+    auth: { user, setUser },
   } = routeApi.useRouteContext();
   const {
     control,

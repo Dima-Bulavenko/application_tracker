@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as SingInRouteImport } from './routes/sing-in'
+import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -22,9 +22,9 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SingInRoute = SingInRouteImport.update({
-  id: '/sing-in',
-  path: '/sing-in',
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -55,7 +55,7 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/register': typeof RegisterRoute
-  '/sing-in': typeof SingInRoute
+  '/sign-in': typeof SignInRoute
   '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -63,7 +63,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/register': typeof RegisterRoute
-  '/sing-in': typeof SingInRoute
+  '/sign-in': typeof SignInRoute
   '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -73,7 +73,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/register': typeof RegisterRoute
-  '/sing-in': typeof SingInRoute
+  '/sign-in': typeof SignInRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -83,7 +83,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/register'
-    | '/sing-in'
+    | '/sign-in'
     | '/verify-email'
     | '/dashboard'
     | '/profile'
@@ -91,7 +91,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/register'
-    | '/sing-in'
+    | '/sign-in'
     | '/verify-email'
     | '/dashboard'
     | '/profile'
@@ -100,7 +100,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/register'
-    | '/sing-in'
+    | '/sign-in'
     | '/verify-email'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
@@ -110,7 +110,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   RegisterRoute: typeof RegisterRoute
-  SingInRoute: typeof SingInRoute
+  SignInRoute: typeof SignInRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
@@ -123,11 +123,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sing-in': {
-      id: '/sing-in'
-      path: '/sing-in'
-      fullPath: '/sing-in'
-      preLoaderRoute: typeof SingInRouteImport
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -186,7 +186,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   RegisterRoute: RegisterRoute,
-  SingInRoute: SingInRoute,
+  SignInRoute: SignInRoute,
   VerifyEmailRoute: VerifyEmailRoute,
 }
 export const routeTree = rootRouteImport

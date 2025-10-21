@@ -10,7 +10,8 @@
     "format": "prettier --write --ignore-unknown .",
     "format:check": "prettier --check --ignore-unknown .",
     "preview": "vite preview",
-    "generate-client": "openapi-ts"
+    "generate-client": "openapi-ts",
+    "type": "tsc --noEmit"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

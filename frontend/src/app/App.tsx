@@ -6,12 +6,20 @@ import { useAuth } from 'shared/hooks/useAuth';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
 import { AuthProvider } from './AuthProvider';
+import { useLogin, useLogout } from 'features/user/hooks/useUser';
 
 const queryClient = new QueryClient();
 
 function InnerApp() {
   const auth = useAuth();
-  return <RouterProvider router={router} context={{ auth }} />;
+  const logout = useLogout();
+  const login = useLogin();
+  return (
+    <RouterProvider
+      router={router}
+      context={{ auth: { ...auth, login, logout } }}
+    />
+  );
 }
 
 export function App() {

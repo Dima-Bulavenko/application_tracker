@@ -25,7 +25,7 @@ export default function RegisterForm() {
     event?.preventDefault();
     const res = await createUser({ body: data });
     if (res.status === 201) {
-      navigate({ to: '/sing-in', replace: true });
+      navigate({ to: '/sign-in', replace: true });
       return;
     }
     setError('root', { message: 'Registration failed. Please try again.' });

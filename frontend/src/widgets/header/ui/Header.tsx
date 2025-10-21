@@ -4,13 +4,17 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import { Link as RouterLink } from 'react-router-dom';
-import { useSession } from 'shared/hooks/useSession';
+import { Link as RouterLink } from '@tanstack/react-router';
 import { ColorModeToggler } from 'shared/ui/ColorModeToggler';
 import { AccountMenu } from 'features/user/ui/AccountMenu';
+import { getRouteApi } from '@tanstack/react-router';
+
+const routeApi = getRouteApi('__root__');
 
 export function Header() {
-  const { token, isFetching } = useSession();
+  const {
+    auth: { user },
+  } = routeApi.useRouteContext();
   return (
     <AppBar position='sticky' color='default' elevation={0}>
       <Toolbar sx={{ gap: 1, minHeight: 64 }}>
@@ -25,7 +29,7 @@ export function Header() {
         <Box sx={{ flex: 1 }} />
 
         <Stack direction='row' spacing={1} alignItems='center'>
-          {token || isFetching ? (
+          {user ? (
             <AccountMenu />
           ) : (
             <>

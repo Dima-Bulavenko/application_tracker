@@ -8,8 +8,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import { useState } from 'react';
 import Link from '@mui/material/Link';
-import { Link as RouterLink, useNavigate } from '@tanstack/react-router';
-import { useAuth } from 'shared/hooks/useAuth';
+import { getRouteApi, Link as RouterLink } from '@tanstack/react-router';
 
 const MenuStyle = {
   paper: {
@@ -40,17 +39,19 @@ const MenuStyle = {
   },
 };
 
+const routeApi = getRouteApi('__root__');
+
 export function AccountMenu() {
-  const { user, logout } = useAuth();
+  const {
+    auth: { user, logout },
+  } = routeApi.useRouteContext();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const navigate = useNavigate();
-  const open = Boolean(anchorEl);
+  const navigate = routeApi.useNavigate();
+  const open = !!anchorEl;
   const handleClick = (e: React.MouseEvent<HTMLElement>) =>
     setAnchorEl(e.currentTarget);
+  const handleClose = () => setAnchorEl(null);
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
   if (!user) return null;
   return (
     <>
