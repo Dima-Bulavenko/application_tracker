@@ -12,8 +12,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const authenticateUser = React.useCallback(async (access_token: string) => {
     client.setConfig({ auth: access_token });
-    getCurrentUser<true>({})
-      .then(({ data }) => setUser(data))
+    await getCurrentUser<true>({})
+      .then(({ data }) => {
+        setUser(data);
+      })
       .catch(() => {
         client.setConfig({ auth: undefined });
         setUser(null);
@@ -23,8 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     setIsLoading(true);
     refreshToken<true>({})
-      .then(({ data: { access_token } }) => authenticateUser(access_token))
-      .finally(() => setIsLoading(false));
+      .then(async ({ data: { access_token } }) => {
+        await authenticateUser(access_token);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [authenticateUser]);
 
   React.useEffect(() => {

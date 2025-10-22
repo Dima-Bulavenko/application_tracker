@@ -8,9 +8,7 @@ export const Route = createFileRoute('/_authenticated')({
     if (!user) {
       throw redirect({ to: '/sign-in', search: { redirect: location.href } });
     }
-    return {
-      auth: { user, isAuthenticated, setUser },
-    };
+    return { auth: { user, isAuthenticated, setUser } };
   },
   component: RouteComponent,
 });

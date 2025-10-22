@@ -24,17 +24,13 @@ export default function SignInForm() {
   const {
     auth: { login },
   } = routeApi.useRouteContext();
-  const navigate = routeApi.useNavigate();
-  const { redirect } = routeApi.useSearch();
   const onSubmit: SubmitHandler<UserLogin> = async (data, event) => {
     event?.preventDefault();
-    login(data)
-      .then(() => navigate({ to: redirect, replace: true }))
-      .catch((err) => {
-        if (err.status === 401) {
-          setError('root', { message: 'Invalid email or password' });
-        }
-      });
+    login(data).catch((err) => {
+      if (err.status === 401) {
+        setError('root', { message: 'Invalid email or password' });
+      }
+    });
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>

@@ -7,6 +7,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
 import { AuthProvider } from './AuthProvider';
 import { useLogin, useLogout } from 'features/user/hooks/useUser';
+import { useEffect } from 'react';
 
 const queryClient = new QueryClient();
 
@@ -14,6 +15,11 @@ function InnerApp() {
   const auth = useAuth();
   const logout = useLogout();
   const login = useLogin();
+
+  useEffect(() => {
+    router.invalidate();
+  }, [auth.user]);
+
   return (
     <RouterProvider
       router={router}

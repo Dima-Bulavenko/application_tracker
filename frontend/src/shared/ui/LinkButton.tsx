@@ -4,9 +4,7 @@ import { createLink } from '@tanstack/react-router';
 import type { ButtonProps } from '@mui/material';
 import type { LinkComponent } from '@tanstack/react-router';
 
-interface MUIButtonLinkProps extends ButtonProps<'a'> {
-  gav?: string;
-}
+type MUIButtonLinkProps = ButtonProps<'a'>;
 
 const MUIButtonLinkComponent = React.forwardRef<
   HTMLAnchorElement,
