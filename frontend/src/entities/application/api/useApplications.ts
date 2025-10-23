@@ -10,14 +10,12 @@ import type {
   ApplicationUpdate,
   UpdateApplicationData,
   DeleteApplicationData,
-  ApplicationReadWithCompany,
   GetApplicationsData,
 } from 'shared/api/gen/types.gen';
 import {
-  useQuery,
   useMutation,
   useQueryClient,
-  type UseQueryOptions,
+  queryOptions,
 } from '@tanstack/react-query';
 
 export const applicationKeys = {
@@ -31,25 +29,22 @@ export const applicationKeys = {
   detail: (id: number) => [...applicationKeys.details(), id],
 } as const;
 
-export function useApplicationsList(
-  filters?: GetApplicationsData['query'],
-  options?: Omit<
-    UseQueryOptions<
-      ApplicationReadWithCompany[],
-      Error,
-      ApplicationReadWithCompany[],
-      ReturnType<typeof applicationKeys.list>
-    >,
-    'queryKey' | 'queryFn'
-  >
-) {
-  return useQuery({
-    ...options,
+export function applicationsOptions(filters?: GetApplicationsData['query']) {
+  return queryOptions({
     queryKey: applicationKeys.list(filters),
-    queryFn: async () => {
-      const res = await getApplications<true>({ query: { ...filters } });
-      return res.data ?? [];
-    },
+    queryFn: async () =>
+      getApplications<true>({ query: filters }).then((res) => res.data ?? []),
+  });
+}
+
+export function applicationOptions(application_id: number) {
+  return queryOptions({
+    queryKey: applicationKeys.detail(application_id),
+    queryFn: async () =>
+      getApplicationById<true>({ path: { application_id } }).then(
+        (res) => res.data
+      ),
+    staleTime: Infinity,
   });
 }
 
@@ -76,19 +71,6 @@ export function useUpdateApplication(
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: applicationKeys.all });
     },
-  });
-}
-
-export function useGetApplication(
-  application_id: UpdateApplicationData['path']['application_id']
-) {
-  return useQuery({
-    queryKey: applicationKeys.detail(application_id),
-    queryFn: () =>
-      getApplicationById<true>({ path: { application_id } }).then(
-        (response) => response.data
-      ),
-    staleTime: 30_000,
   });
 }
 
