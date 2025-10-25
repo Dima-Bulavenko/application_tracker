@@ -1,10 +1,9 @@
-import { defineConfig } from './plugins/zod/config';
-import { defaultPlugins } from '@hey-api/openapi-ts';
+import { defaultPlugins, defineConfig } from '@hey-api/openapi-ts';
 
-export default {
+export default defineConfig({
   input: './openapi.json',
   output: {
-    path: 'src/shared/api/gen', // nested folder so generation won't delete manual files in api root
+    path: 'src/shared/api/gen',
     format: 'prettier',
   },
   plugins: [
@@ -13,6 +12,12 @@ export default {
       name: '@hey-api/client-axios',
       runtimeConfigPath: './client_config.ts',
     },
-    defineConfig(),
+    {
+      name: 'zod',
+      responses: false,
+      dates: { offset: true },
+      metadata: true,
+      comments: false,
+    },
   ],
-};
+});

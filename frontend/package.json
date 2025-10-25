@@ -16,7 +16,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@hey-api/client-axios": "^0.6.2",
+    "@hey-api/client-axios": "^0.9.1",
     "@hookform/resolvers": "^3.9.1",
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.7",
@@ -29,12 +29,12 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.1",
-    "zod": "^3.24.1"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
     "@eslint/js": "^9.15.0",
-    "@hey-api/openapi-ts": "^0.64.9",
+    "@hey-api/openapi-ts": "0.80.18",
     "@hookform/devtools": "^4.3.3",
     "@tanstack/router-plugin": "^1.133.13",
     "@types/node": "^24.2.1",
@@ -45,7 +45,6 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.12.0",
-    "json-schema-to-zod": "^2.6.0",
     "prettier": "3.4.2",
     "rollup-plugin-visualizer": "^6.0.3",
     "typescript": "~5.6.2",
