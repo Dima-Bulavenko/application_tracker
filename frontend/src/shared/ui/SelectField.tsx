@@ -42,13 +42,16 @@ export function SelectField<
   );
 }
 
-export function MultipleSelectField({
+export function MultipleSelectField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({
   options,
   controller,
   humanize = defaultHumanize,
   renderValue = defaultRenderValue,
   ...props
-}: SelectMultipleProps) {
+}: SelectMultipleProps<V, N>) {
   const { field } = controller;
   return (
     <SelectField

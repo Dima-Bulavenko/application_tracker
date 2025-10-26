@@ -5,12 +5,14 @@ import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import type { AuthContextType } from 'shared/context/AuthContext';
 import type { AccessTokenResponse, UserLogin } from 'shared/api/gen';
+import type { QueryClient } from '@tanstack/react-query';
 
 interface RouterContext {
   auth: AuthContextType & {
     logout: () => Promise<void>;
     login: (data: UserLogin) => Promise<AccessTokenResponse>;
   };
+  queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({

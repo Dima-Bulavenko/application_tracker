@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import { useUpdateApplication } from 'entities/application/api/useApplications';
+import { applicationUpdateOptions } from 'entities/application/api/queryOptions';
 import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
 import { WorkTypeField } from 'entities/application/ui/WorkTypeField';
 import { WorkLocationField } from 'entities/application/ui/WorkLocationField';
@@ -19,6 +19,7 @@ import { zApplicationUpdate } from 'shared/api/gen/zod.gen';
 import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
+import { useMutation } from '@tanstack/react-query';
 
 export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
@@ -30,7 +31,9 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
     resolver: customZodResolver(zApplicationUpdate),
     defaultValues,
   });
-  const { mutate: updateApp } = useUpdateApplication(defaultValues.id);
+  const { mutate: updateApp } = useMutation(
+    applicationUpdateOptions(defaultValues.id)
+  );
   const onSubmit: SubmitHandler<ApplicationUpdate> = async (data, event) => {
     event?.preventDefault();
     const newData = getDirtyValues(dirtyFields, data);

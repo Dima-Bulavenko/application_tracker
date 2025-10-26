@@ -5,30 +5,21 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { Suspense, useState } from 'react';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 
-import type { FilterForm } from 'entities/application/api/types';
 import { lazyImport } from 'shared/lib/lazyLoad';
 import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
-
-type Prop = {
-  setFilterParams: React.Dispatch<React.SetStateAction<FilterForm>>;
-  filterParams: FilterForm;
-};
 
 const { FilterApplicationForm } = lazyImport(
   () => import('./FilterApplicationForm'),
   'FilterApplicationForm'
 );
 
-export function FilterApplication({ setFilterParams, filterParams }: Prop) {
+export function FilterApplication() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
 
   const filterPanel = (
     <Suspense fallback={<SuspenseFallback />}>
-      <FilterApplicationForm
-        setFilterParams={setFilterParams}
-        defaultValues={filterParams}
-      />
+      <FilterApplicationForm />
     </Suspense>
   );
 

@@ -1,30 +1,35 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import { useForm, useController } from 'react-hook-form';
+import { useForm, useController, Control } from 'react-hook-form';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import { useIsFetching } from '@tanstack/react-query';
-import { useEffect } from 'react';
 
-import { applicationKeys } from 'entities/application/api/useApplications';
-import type { FilterForm } from 'entities/application/api/types';
+import { applicationKeys } from 'entities/application/api/queryOptions';
 import CompanyField from 'entities/application/ui/CompanyField';
 
-import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen';
+import {
+  zAppStatus,
+  zGetApplicationsData,
+  zWorkLocation,
+  zWorkType,
+} from 'shared/api/gen/zod.gen';
 import { MultipleSelectField } from 'shared/ui/SelectField';
+import { getRouteApi } from '@tanstack/react-router';
+import z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 type FilterFormParam = {
-  control: NonNullable<Parameters<typeof useController>[0]['control']>;
+  control: Control<FilterForm>;
 };
+const ApplicationFilterSchema = zGetApplicationsData.shape.query;
 
-type Prop = {
-  setFilterParams: React.Dispatch<React.SetStateAction<FilterForm>>;
-  defaultValues: FilterForm;
-};
+const routeApi = getRouteApi('/_authenticated/dashboard');
+type FilterForm = NonNullable<z.infer<typeof ApplicationFilterSchema>>;
 
 function OrderBy({ control }: FilterFormParam) {
   const { field } = useController<FilterForm>({
@@ -119,22 +124,17 @@ function WorkTypeField({ control }: FilterFormParam) {
   );
 }
 
-export function FilterApplicationForm({
-  setFilterParams,
-  defaultValues,
-}: Prop) {
+export function FilterApplicationForm() {
+  const { filter } = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
   const { control, handleSubmit, reset, formState } = useForm<FilterForm>({
-    defaultValues,
+    defaultValues: filter,
+    resolver: zodResolver(ApplicationFilterSchema),
   });
-
-  useEffect(
-    () => setFilterParams(defaultValues),
-    [setFilterParams, defaultValues]
-  );
 
   const applyFilter = (data: FilterForm) => {
     localStorage.setItem('appFilters', JSON.stringify(data));
-    setFilterParams(data);
+    navigate({ search: (s) => ({ ...s, ...data }) });
     reset(data);
   };
 

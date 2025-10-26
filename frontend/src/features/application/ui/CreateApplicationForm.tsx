@@ -1,6 +1,6 @@
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import { useCreateApplication } from 'entities/application/api/useApplications';
+import { applicationCreateOptions } from 'entities/application/api/queryOptions';
 import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
 import { WorkTypeField } from 'entities/application/ui/WorkTypeField';
 import { WorkLocationField } from 'entities/application/ui/WorkLocationField';
@@ -15,6 +15,7 @@ import { zApplicationCreate } from 'shared/api/gen/zod.gen';
 import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
+import { useMutation } from '@tanstack/react-query';
 
 export function CreateApplicationForm() {
   const {
@@ -30,7 +31,7 @@ export function CreateApplicationForm() {
       interview_date: null,
     },
   });
-  const { mutate: createApp } = useCreateApplication();
+  const { mutate: createApp } = useMutation(applicationCreateOptions());
   const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
     event?.preventDefault();
     createApp(data);

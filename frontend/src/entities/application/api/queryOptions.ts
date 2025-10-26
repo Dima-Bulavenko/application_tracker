@@ -12,11 +12,7 @@ import type {
   DeleteApplicationData,
   GetApplicationsData,
 } from 'shared/api/gen/types.gen';
-import {
-  useMutation,
-  useQueryClient,
-  queryOptions,
-} from '@tanstack/react-query';
+import { queryOptions, mutationOptions } from '@tanstack/react-query';
 
 export const applicationKeys = {
   all: ['applications'],
@@ -32,8 +28,7 @@ export const applicationKeys = {
 export function applicationsOptions(filters?: GetApplicationsData['query']) {
   return queryOptions({
     queryKey: applicationKeys.list(filters),
-    queryFn: async () =>
-      getApplications<true>({ query: filters }).then((res) => res.data ?? []),
+    queryFn: () => getApplications<true>().then((res) => res.data ?? []),
   });
 }
 
@@ -48,45 +43,32 @@ export function applicationOptions(application_id: number) {
   });
 }
 
-export function useCreateApplication() {
-  const qc = useQueryClient();
-  return useMutation({
+export function applicationCreateOptions() {
+  return mutationOptions({
+    mutationKey: applicationKeys.all,
     mutationFn: (body: ApplicationCreate) =>
       createApplication({ body }).then((r) => r.data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: applicationKeys.all });
-    },
   });
 }
 
-export function useUpdateApplication(
+export function applicationUpdateOptions(
   application_id: UpdateApplicationData['path']['application_id']
 ) {
-  const qc = useQueryClient();
-  return useMutation({
+  return mutationOptions({
+    mutationKey: applicationKeys.all,
     mutationFn: (body: ApplicationUpdate) =>
       updateApplication<true>({ body, path: { application_id } }).then(
-        (response) => response.data
+        (res) => res.data
       ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: applicationKeys.all });
-    },
   });
 }
 
-export function useDeleteApplication(
+export function applicationDeleteOptions(
   application_id: DeleteApplicationData['path']['application_id']
 ) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      const response = await deleteApplication<true>({
-        path: { application_id },
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: applicationKeys.all });
-    },
+  return mutationOptions({
+    mutationKey: applicationKeys.all,
+    mutationFn: async () =>
+      deleteApplication<true>({ path: { application_id } }),
   });
 }

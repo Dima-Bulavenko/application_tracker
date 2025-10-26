@@ -1,16 +1,19 @@
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { type useApplicationsList } from 'entities/application/api/useApplications';
+import { applicationsOptions } from 'entities/application/api/queryOptions';
 import ApplicationCard from './ApplicationCard';
 import ApplicationCardSkeleton from './ApplicationCardSkeleton';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { getRouteApi } from '@tanstack/react-router';
 
-type Prop = {
-  queryResult: ReturnType<typeof useApplicationsList>;
-};
+const routeApi = getRouteApi('/_authenticated/dashboard');
 
-export function ApplicationList({ queryResult }: Prop) {
-  const { error, isFetching, data } = queryResult;
+export function ApplicationList() {
+  const { filter } = routeApi.useSearch();
+  const { error, isFetching, data } = useSuspenseQuery(
+    applicationsOptions(filter)
+  );
 
   if (error) {
     return (

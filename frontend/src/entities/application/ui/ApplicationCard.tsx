@@ -13,7 +13,8 @@ import { humanizeWorkType } from 'entities/application/lib/humanize';
 import { statusColor } from 'entities/application/lib/status';
 import { UpdateApplication } from 'features/application/ui/UpdateApplication';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useDeleteApplication } from 'entities/application/api/useApplications';
+import { applicationDeleteOptions } from 'entities/application/api/queryOptions';
+import { useMutation } from '@tanstack/react-query';
 
 type Props = { application: ApplicationRead };
 
@@ -22,7 +23,9 @@ function DeleteApplicationButton({
 }: {
   application_id: number;
 }) {
-  const { mutate: deleteApp, isPending } = useDeleteApplication(application_id);
+  const { mutate: deleteApp, isPending } = useMutation(
+    applicationDeleteOptions(application_id)
+  );
   return (
     <Button
       variant='contained'

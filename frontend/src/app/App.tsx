@@ -1,7 +1,11 @@
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { buildTheme } from 'shared/theme';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+  MutationCache,
+  QueryClient,
+  QueryClientProvider,
+} from '@tanstack/react-query';
 import { useAuth } from 'shared/hooks/useAuth';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
@@ -9,13 +13,20 @@ import { AuthProvider } from './AuthProvider';
 import { useLogin, useLogout } from 'features/user/hooks/useUser';
 import { useEffect } from 'react';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onSuccess: (_data, _variables, _context, mutation) => {
+      queryClient.invalidateQueries({
+        queryKey: mutation.options.mutationKey,
+      });
+    },
+  }),
+});
 
 function InnerApp() {
   const auth = useAuth();
   const logout = useLogout();
   const login = useLogin();
-
   useEffect(() => {
     router.invalidate();
   }, [auth.user]);
@@ -23,7 +34,7 @@ function InnerApp() {
   return (
     <RouterProvider
       router={router}
-      context={{ auth: { ...auth, login, logout } }}
+      context={{ auth: { ...auth, login, logout }, queryClient }}
     />
   );
 }

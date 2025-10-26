@@ -8,7 +8,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { zUserCreate } from 'shared/api/gen/zod.gen';
 
-const passwordHelp = zUserCreate.shape.password._def.description;
+const passwordHelp = zUserCreate.shape.password.description;
 
 const PasswordField: FieldComponent = ({ label = 'Password', ...props }) => {
   const [showPassword, setShowPassword] = useState(false);
