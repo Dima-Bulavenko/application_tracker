@@ -12,27 +12,23 @@ import { useIsFetching } from '@tanstack/react-query';
 import { applicationKeys } from 'entities/application/api/queryOptions';
 import CompanyField from 'entities/application/ui/CompanyField';
 
-import {
-  zAppStatus,
-  zGetApplicationsData,
-  zWorkLocation,
-  zWorkType,
-} from 'shared/api/gen/zod.gen';
+import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen';
 import { MultipleSelectField } from 'shared/ui/SelectField';
 import { getRouteApi } from '@tanstack/react-router';
-import z from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  ApplicationFilter,
+  cleanFilterData,
+  filterStorage,
+} from 'features/application/lib/filterStorage';
 
 type FilterFormParam = {
-  control: Control<FilterForm>;
+  control: Control<ApplicationFilter>;
 };
-const ApplicationFilterSchema = zGetApplicationsData.shape.query;
 
 const routeApi = getRouteApi('/_authenticated/dashboard');
-type FilterForm = NonNullable<z.infer<typeof ApplicationFilterSchema>>;
 
 function OrderBy({ control }: FilterFormParam) {
-  const { field } = useController<FilterForm>({
+  const { field } = useController<ApplicationFilter>({
     name: 'order_by',
     control,
   });
@@ -59,7 +55,7 @@ function OrderBy({ control }: FilterFormParam) {
 }
 
 function OrderDirection({ control }: FilterFormParam) {
-  const { field } = useController<FilterForm>({
+  const { field } = useController<ApplicationFilter>({
     name: 'order_direction',
     control,
   });
@@ -93,7 +89,7 @@ function ApplicationStatusField({ control }: FilterFormParam) {
     />
   );
 }
-
+import { DevTool } from '@hookform/devtools';
 function WorkLocationField({ control }: FilterFormParam) {
   const options = zWorkLocation.options;
   const controller = useController({
@@ -127,18 +123,30 @@ function WorkTypeField({ control }: FilterFormParam) {
 export function FilterApplicationForm() {
   const { filter } = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
-  const { control, handleSubmit, reset, formState } = useForm<FilterForm>({
-    defaultValues: filter,
-    resolver: zodResolver(ApplicationFilterSchema),
-  });
-
-  const applyFilter = (data: FilterForm) => {
-    localStorage.setItem('appFilters', JSON.stringify(data));
-    navigate({ search: (s) => ({ ...s, ...data }) });
-    reset(data);
-  };
+  const { control, handleSubmit, formState, reset } =
+    useForm<ApplicationFilter>({
+      defaultValues: filter,
+    });
 
   const isFetching = useIsFetching({ queryKey: applicationKeys.lists() });
+
+  const applyFilter = (data: ApplicationFilter): void => {
+    const cleanedFilters = cleanFilterData(data);
+    const hasActiveFilters = Object.keys(cleanedFilters).length > 0;
+
+    filterStorage.save(cleanedFilters);
+    navigate({
+      search: () => (hasActiveFilters ? { filter: cleanedFilters } : {}),
+    });
+  };
+
+  const clearFilters = (): void => {
+    filterStorage.clear();
+    reset({});
+    navigate({ search: () => ({}) });
+  };
+
+  const hasActiveFilters = Boolean(filter);
 
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
@@ -152,6 +160,14 @@ export function FilterApplicationForm() {
       <CompanyField control={control} name='company_name' />
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Button
+          disabled={!formState.isDirty && !hasActiveFilters}
+          onClick={clearFilters}
+          type='button'
+          variant='outlined'
+          color='secondary'>
+          Clear Filters
+        </Button>
+        <Button
           loading={!!isFetching}
           disabled={!formState.isDirty}
           onClick={handleSubmit(applyFilter)}
@@ -161,6 +177,7 @@ export function FilterApplicationForm() {
           Apply Filters
         </Button>
       </Box>
+      <DevTool control={control} placement='bottom-left' />
     </Stack>
   );
 }

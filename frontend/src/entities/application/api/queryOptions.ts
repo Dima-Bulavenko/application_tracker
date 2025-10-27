@@ -28,7 +28,9 @@ export const applicationKeys = {
 export function applicationsOptions(filters?: GetApplicationsData['query']) {
   return queryOptions({
     queryKey: applicationKeys.list(filters),
-    queryFn: () => getApplications<true>().then((res) => res.data ?? []),
+    queryFn: () =>
+      getApplications<true>({ query: filters }).then((res) => res.data ?? []),
+    staleTime: Infinity,
   });
 }
 

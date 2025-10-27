@@ -63,7 +63,14 @@ export function MultipleSelectField<
         },
       }}
       controller={controller}
-      {...props}>
+      {...props}
+      onChange={(e) => {
+        const value = e.target.value;
+        if (Array.isArray(value) && value.length !== 0)
+          return field.onChange(value);
+        field.onChange(undefined);
+      }}
+      value={Array.isArray(field.value) ? field.value : []}>
       {options.map((opt) => (
         <MenuItem key={opt} value={opt}>
           <Checkbox
