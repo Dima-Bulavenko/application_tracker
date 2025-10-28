@@ -1,11 +1,16 @@
-import { Form, FormError } from 'shared/ui';
-import { UserLogin, zUserLogin, login } from 'shared/api';
-import { Button, Stack } from '@mui/material';
-import { useSession } from 'shared/hooks';
+import { Form } from 'shared/ui/Form';
+import { FormError } from 'shared/ui/FormError';
+import type { UserLogin } from 'shared/api/gen/types.gen';
+import { zUserLogin } from 'shared/api/gen/zod.gen';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { customZodResolver } from 'shared/lib';
-import { useNavigate } from 'react-router-dom';
-import { EmailField, PasswordField } from 'entities/user/ui';
+import { customZodResolver } from 'shared/lib/customZodResolver';
+import { getRouteApi } from '@tanstack/react-router';
+import EmailField from 'entities/user/ui/EmailField';
+import PasswordField from 'entities/user/ui/PasswordField';
+
+const routeApi = getRouteApi('/sign-in');
 
 export default function SignInForm() {
   const {
@@ -16,18 +21,16 @@ export default function SignInForm() {
   } = useForm<UserLogin>({
     resolver: customZodResolver(zUserLogin),
   });
-  const navigate = useNavigate();
-  const { setToken } = useSession();
+  const {
+    auth: { login },
+  } = routeApi.useRouteContext();
   const onSubmit: SubmitHandler<UserLogin> = async (data, event) => {
     event?.preventDefault();
-    const res = await login({ body: data });
-    if (res.status === 200) {
-      setToken(res.data?.access_token);
-      navigate('/dashboard', { replace: true });
-    }
-    if (res.status === 401) {
-      setError('root', { message: 'Invalid email or password' });
-    }
+    login(data).catch((err) => {
+      if (err.status === 401) {
+        setError('root', { message: 'Invalid email or password' });
+      }
+    });
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>

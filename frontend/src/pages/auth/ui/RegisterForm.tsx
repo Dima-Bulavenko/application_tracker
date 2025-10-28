@@ -1,10 +1,15 @@
-import { Form, FormError } from 'shared/ui';
-import { zUserCreate, type UserCreate, createUser } from 'shared/api';
-import { Button, Stack } from '@mui/material';
+import { Form } from 'shared/ui/Form';
+import { FormError } from 'shared/ui/FormError';
+import type { UserCreate } from 'shared/api/gen/types.gen';
+import { createUser } from 'shared/api/gen/sdk.gen';
+import { zUserCreate } from 'shared/api/gen/zod.gen';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { customZodResolver } from 'shared/lib';
-import { useNavigate } from 'react-router-dom';
-import { EmailField, PasswordField } from 'entities/user/ui';
+import { customZodResolver } from 'shared/lib/customZodResolver';
+import { useNavigate } from '@tanstack/react-router';
+import EmailField from 'entities/user/ui/EmailField';
+import PasswordField from 'entities/user/ui/PasswordField';
 
 export default function RegisterForm() {
   const {
@@ -20,7 +25,7 @@ export default function RegisterForm() {
     event?.preventDefault();
     const res = await createUser({ body: data });
     if (res.status === 201) {
-      navigate('/sign-in', { replace: true });
+      navigate({ to: '/sign-in', replace: true });
       return;
     }
     setError('root', { message: 'Registration failed. Please try again.' });

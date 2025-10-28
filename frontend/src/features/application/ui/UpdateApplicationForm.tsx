@@ -1,37 +1,39 @@
-import { Button, Stack } from '@mui/material';
-import { useUpdateApplication } from 'entities/application/api';
-import {
-  ApplicationStatusField,
-  WorkTypeField,
-  WorkLocationField,
-  NoteField,
-  InterviewDateField,
-  RoleField,
-  CompanyField,
-  ApplicationURLField,
-} from 'entities/application/ui';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import { applicationUpdateOptions } from 'entities/application/api/queryOptions';
+import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
+import { WorkTypeField } from 'entities/application/ui/WorkTypeField';
+import { WorkLocationField } from 'entities/application/ui/WorkLocationField';
+import { NoteField } from 'entities/application/ui/NoteField';
+import InterviewDateField from 'entities/application/ui/InterviewDateField';
+import RoleField from 'entities/application/ui/RoleField';
+import CompanyField from 'entities/application/ui/CompanyField';
+import ApplicationURLField from 'entities/application/ui/ApplicationURLField';
 import { SubmitHandler, useForm } from 'react-hook-form';
-import {
+import type {
+  ApplicationUpdate,
   ApplicationRead,
-  getDirtyValues,
-  zApplicationUpdate,
-  type ApplicationUpdate,
-} from 'shared/api';
-import { customZodResolver } from 'shared/lib';
-import { Form, FormError } from 'shared/ui';
-import { DevTool } from '@hookform/devtools';
+} from 'shared/api/gen/types.gen';
+import { getDirtyValues } from 'shared/api/get_dirty_values';
+import { zApplicationUpdate } from 'shared/api/gen/zod.gen';
+import { customZodResolver } from 'shared/lib/customZodResolver';
+import { Form } from 'shared/ui/Form';
+import { FormError } from 'shared/ui/FormError';
+import { useMutation } from '@tanstack/react-query';
 
-export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
+export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
     control,
-
     handleSubmit,
+    reset,
     formState: { errors, dirtyFields, isDirty },
   } = useForm<ApplicationUpdate>({
     resolver: customZodResolver(zApplicationUpdate),
     defaultValues,
   });
-  const { mutate: updateApp } = useUpdateApplication(defaultValues.id);
+  const { mutate: updateApp } = useMutation(
+    applicationUpdateOptions(defaultValues.id)
+  );
   const onSubmit: SubmitHandler<ApplicationUpdate> = async (data, event) => {
     event?.preventDefault();
     const newData = getDirtyValues(dirtyFields, data);
@@ -61,8 +63,16 @@ export default function UpdateApplicationForm(defaultValues: ApplicationRead) {
           variant='contained'>
           UpdateApplicationForm Application
         </Button>
+        <Button
+          sx={{ mt: 3 }}
+          type='button'
+          color='primary'
+          disabled={!isDirty}
+          onClick={() => reset()}
+          variant='contained'>
+          Reset Form
+        </Button>
       </Form>
-      <DevTool control={control} />
     </>
   );
 }

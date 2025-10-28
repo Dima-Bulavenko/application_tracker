@@ -1,4 +1,6 @@
-import { Box, BoxProps, Typography } from '@mui/material';
+import Box from '@mui/material/Box';
+import type { BoxProps } from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { PropsWithChildren } from 'react';
 

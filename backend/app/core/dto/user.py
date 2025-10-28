@@ -57,3 +57,8 @@ class UserChangePassword(BaseModelDTO):
         if value != info.data.get("new_password"):
             raise ValueError("New password and confirmation do not match")
         return value
+
+
+class UserUpdate(BaseModelDTO):
+    first_name: str | None = Field(max_length=40, default=None)
+    second_name: str | None = Field(max_length=40, default=None)

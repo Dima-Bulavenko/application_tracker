@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "client_config.ts"]
+  "include": ["src", "client_config.ts", "openapi-ts.config.ts"]
 }

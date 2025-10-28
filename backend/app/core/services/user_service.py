@@ -1,5 +1,12 @@
 from app.core.domain import User
-from app.core.dto import AccessTokenPayload, UserChangePassword, UserCreate, UserRead, VerificationTokenPayload
+from app.core.dto import (
+    AccessTokenPayload,
+    UserChangePassword,
+    UserCreate,
+    UserRead,
+    UserUpdate,
+    VerificationTokenPayload,
+)
 from app.core.exceptions import (
     InvalidPasswordError,
     UserAlreadyActivatedError,
@@ -76,3 +83,20 @@ class UserService:
         if user is None:
             raise UserNotFoundError("User does not exist")
         return UserRead.model_validate(user, from_attributes=True)
+
+    async def update(self, user_id: int, user_update: UserUpdate) -> UserRead:
+        update_data = user_update.model_dump(exclude_unset=True)
+
+        if not update_data:
+            updated_user = await self.user_repo.get_by_id(user_id)
+        else:
+            updated_user = await self.user_repo.update(user_id, **update_data)
+
+        if updated_user is None:
+            raise UserNotFoundError(f"User with id {user_id} not found")
+        return UserRead.model_validate(updated_user, from_attributes=True)
+
+    async def delete(self, user_id: int) -> None:
+        deleted = await self.user_repo.delete(user_id)
+        if not deleted:
+            raise UserNotFoundError(f"User with id {user_id} not found")

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from sqlalchemy import asc, delete, desc, select, update
+from sqlalchemy import asc, delete, desc, or_, select, update
 
 from app.core.domain import Application
 from app.core.dto import ApplicationFilterParams
 from app.core.repositories import IApplicationRepository
-from app.db.models import Application as ApplicationModel, User
+from app.db.models import Application as ApplicationModel, Company, User
 
 from .config import SQLAlchemyRepository
 
@@ -22,13 +22,26 @@ class ApplicationSQLAlchemyRepository(SQLAlchemyRepository[ApplicationModel], IA
     async def get_by_user_email(self, email: str, filter_param: ApplicationFilterParams) -> list[Application]:
         order_by_clause = getattr(self.model, filter_param.order_by)
         order_direction = asc if filter_param.order_direction == "asc" else desc
+
+        statement = select(self.model).join(User).where(User.email == email)
+        if filter_param.role_name:
+            statement = statement.where(self.model.role.icontains(filter_param.role_name))
+
+        or_statements = []
+        if filter_param.company_name:
+            statement = statement.join(Company)
+            or_statements.append((Company.name.icontains(filter_param.company_name)))
+        if filter_param.status:
+            or_statements.append(self.model.status.in_(filter_param.status))
+        if filter_param.work_type:
+            or_statements.append(self.model.work_type.in_(filter_param.work_type))
+        if filter_param.work_location:
+            or_statements.append(self.model.work_location.in_(filter_param.work_location))
+        if or_statements:
+            statement = statement.where(or_(*or_statements))
+
         statement = (
-            select(self.model)
-            .join(User)
-            .where(User.email == email)
-            .limit(filter_param.limit)
-            .offset(filter_param.offset)
-            .order_by(order_direction(order_by_clause))
+            statement.limit(filter_param.limit).offset(filter_param.offset).order_by(order_direction(order_by_clause))
         )
         apps = await self.session.scalars(statement)
         return [Application.model_validate(app, from_attributes=True) for app in apps]

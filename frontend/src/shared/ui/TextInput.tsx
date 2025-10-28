@@ -1,22 +1,12 @@
-import { TextField, TextFieldProps } from '@mui/material';
-import { FieldPath, FieldValues, UseControllerReturn } from 'react-hook-form';
-
-type TextInputProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> = Omit<TextFieldProps<'outlined'>, 'variant'> &
-  UseControllerReturn<TFieldValues, TName>;
+import TextField from '@mui/material/TextField';
+import type { FieldValues, FieldPath } from 'react-hook-form';
+import { TextInputProps } from 'shared/types/form';
 
 export function TextInput<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
-  label,
-  field,
-  fieldState,
-  formState,
-  ...props
-}: TextInputProps<TFieldValues, TName>) {
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label, controller, children, ...props }: TextInputProps<V, N>) {
+  const { field, fieldState, formState } = controller;
   return (
     <TextField
       variant='outlined'
@@ -39,7 +29,8 @@ export function TextInput<
       name={field.name}
       inputRef={field.ref}
       value={field.value ?? ''}
-      {...props}
-    />
+      {...props}>
+      {children}
+    </TextField>
   );
 }

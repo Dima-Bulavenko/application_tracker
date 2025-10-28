@@ -1,26 +1,41 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  Chip,
-  Divider,
-  Stack,
-  Typography,
-} from '@mui/material';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardHeader from '@mui/material/CardHeader';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { ApplicationReadWithCompany as ApplicationRead } from 'shared/api/gen/types.gen';
-import { formatDate } from 'shared/lib';
-import {
-  humanizeWorkLocation,
-  humanizeWorkType,
-} from 'entities/application/lib/humanize';
+import { formatDate } from 'shared/lib/date';
+import { humanizeWorkLocation } from 'entities/application/lib/humanize';
+import { humanizeWorkType } from 'entities/application/lib/humanize';
 import { statusColor } from 'entities/application/lib/status';
-import { useState } from 'react';
-import {
-  UpdateApplicationButton,
-  UpdateApplicationDialog,
-} from 'features/application';
+import { UpdateApplication } from 'features/application/ui/UpdateApplication';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { applicationDeleteOptions } from 'entities/application/api/queryOptions';
+import { useMutation } from '@tanstack/react-query';
 
 type Props = { application: ApplicationRead };
+
+function DeleteApplicationButton({
+  application_id,
+}: {
+  application_id: number;
+}) {
+  const { mutate: deleteApp, isPending } = useMutation(
+    applicationDeleteOptions(application_id)
+  );
+  return (
+    <Button
+      variant='contained'
+      color='error'
+      onClick={() => deleteApp()}
+      disabled={isPending}>
+      <DeleteForeverIcon />
+    </Button>
+  );
+}
 
 export function ApplicationCard({ application }: Props) {
   const {
@@ -33,7 +48,6 @@ export function ApplicationCard({ application }: Props) {
     time_update,
     company,
   } = application;
-  const [updateOpen, setUpdateOpen] = useState(false);
   return (
     <Card variant='outlined' sx={{ maxWidth: 720 }}>
       <CardHeader
@@ -92,12 +106,8 @@ export function ApplicationCard({ application }: Props) {
             )}
           </Stack>
         )}
-        <UpdateApplicationDialog
-          open={updateOpen}
-          onClose={() => setUpdateOpen(false)}
-          application={application}
-        />
-        <UpdateApplicationButton onClick={() => setUpdateOpen(true)} />
+        <UpdateApplication application={application} />
+        <DeleteApplicationButton application_id={application.id} />
       </CardContent>
     </Card>
   );

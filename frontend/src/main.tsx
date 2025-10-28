@@ -1,5 +1,10 @@
 import { createRoot } from 'react-dom/client';
-import { App } from './app';
+import { StrictMode } from 'react';
+import { App } from './app/App';
 import './shared/theme/index.css';
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);

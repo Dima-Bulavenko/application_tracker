@@ -295,3 +295,5 @@ cython_debug/
 #.idea/
 
 **/openapi.json
+**/test_queries.py
+**/.tanstack

@@ -1,6 +1,6 @@
 import { useController } from 'react-hook-form';
-import { FieldComponent } from 'shared/types';
-import { TextInput } from 'shared/ui';
+import type { FieldComponent } from 'shared/types/form';
+import { TextInput } from 'shared/ui/TextInput';
 
 /**
  * Application status select field integrated with react-hook-form.
@@ -8,7 +8,7 @@ import { TextInput } from 'shared/ui';
  */
 export const NoteField: FieldComponent = ({ label = 'Note', ...props }) => {
   const controller = useController(props);
-  return <TextInput rows={3} multiline label={label} {...controller} />;
+  return <TextInput rows={3} multiline label={label} controller={controller} />;
 };
 
 export default NoteField;

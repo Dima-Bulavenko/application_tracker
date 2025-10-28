@@ -5,50 +5,56 @@ import {
   type TDataShape,
   type Client,
   urlSearchParamsBodySerializer,
-} from '@hey-api/client-axios';
+} from './client';
 import type {
   CreateUserData,
-  CreateUserResponse,
-  CreateUserError,
+  CreateUserResponses,
+  CreateUserErrors,
   ActivateUserData,
-  ActivateUserResponse,
-  ActivateUserError,
+  ActivateUserResponses,
+  ActivateUserErrors,
   ChangePasswordData,
-  ChangePasswordResponse,
-  ChangePasswordError,
+  ChangePasswordResponses,
+  ChangePasswordErrors,
+  DeleteUserData,
+  DeleteUserResponses,
+  DeleteUserErrors,
   GetCurrentUserData,
-  GetCurrentUserResponse,
-  GetCurrentUserError,
+  GetCurrentUserResponses,
+  GetCurrentUserErrors,
+  UpdateUserData,
+  UpdateUserResponses,
+  UpdateUserErrors,
   GetApplicationsData,
-  GetApplicationsResponse,
-  GetApplicationsError,
+  GetApplicationsResponses,
+  GetApplicationsErrors,
   CreateApplicationData,
-  CreateApplicationResponse,
-  CreateApplicationError,
+  CreateApplicationResponses,
+  CreateApplicationErrors,
   DeleteApplicationData,
-  DeleteApplicationResponse,
-  DeleteApplicationError,
+  DeleteApplicationResponses,
+  DeleteApplicationErrors,
   GetApplicationByIdData,
-  GetApplicationByIdResponse,
-  GetApplicationByIdError,
+  GetApplicationByIdResponses,
+  GetApplicationByIdErrors,
   UpdateApplicationData,
-  UpdateApplicationResponse,
-  UpdateApplicationError,
+  UpdateApplicationResponses,
+  UpdateApplicationErrors,
   GetUserCompaniesData,
-  GetUserCompaniesResponse,
-  GetUserCompaniesError,
+  GetUserCompaniesResponses,
+  GetUserCompaniesErrors,
   GetCompanyData,
-  GetCompanyResponse,
-  GetCompanyError,
+  GetCompanyResponses,
+  GetCompanyErrors,
   LoginData,
-  LoginResponse,
-  LoginError,
+  LoginResponses,
+  LoginErrors,
   RefreshTokenData,
-  RefreshTokenResponse,
-  RefreshTokenError,
+  RefreshTokenResponses,
+  RefreshTokenErrors,
   LogoutData,
-  LogoutResponse,
-  LogoutError,
+  LogoutResponses,
+  LogoutErrors,
 } from './types.gen';
 import { client as _heyApiClient } from './client.gen';
 
@@ -81,16 +87,17 @@ export const createUser = <ThrowOnError extends boolean = false>(
   options: Options<CreateUserData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
-    CreateUserResponse,
-    CreateUserError,
+    CreateUserResponses,
+    CreateUserErrors,
     ThrowOnError
   >({
     ...urlSearchParamsBodySerializer,
+    responseType: 'json',
     url: '/users/',
     ...options,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      ...options?.headers,
+      ...options.headers,
     },
   });
 };
@@ -105,10 +112,11 @@ export const activateUser = <ThrowOnError extends boolean = false>(
   options: Options<ActivateUserData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
-    ActivateUserResponse,
-    ActivateUserError,
+    ActivateUserResponses,
+    ActivateUserErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     url: '/users/activate',
     ...options,
   });
@@ -124,11 +132,12 @@ export const changePassword = <ThrowOnError extends boolean = false>(
   options: Options<ChangePasswordData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
-    ChangePasswordResponse,
-    ChangePasswordError,
+    ChangePasswordResponses,
+    ChangePasswordErrors,
     ThrowOnError
   >({
     ...urlSearchParamsBodySerializer,
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -139,8 +148,31 @@ export const changePassword = <ThrowOnError extends boolean = false>(
     ...options,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      ...options?.headers,
+      ...options.headers,
     },
+  });
+};
+
+/**
+ * Delete User
+ */
+export const deleteUser = <ThrowOnError extends boolean = false>(
+  options?: Options<DeleteUserData, ThrowOnError>
+) => {
+  return (options?.client ?? _heyApiClient).delete<
+    DeleteUserResponses,
+    DeleteUserErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    security: [
+      {
+        scheme: 'bearer',
+        type: 'http',
+      },
+    ],
+    url: '/users/me',
+    ...options,
   });
 };
 
@@ -154,10 +186,11 @@ export const getCurrentUser = <ThrowOnError extends boolean = false>(
   options?: Options<GetCurrentUserData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
-    GetCurrentUserResponse,
-    GetCurrentUserError,
+    GetCurrentUserResponses,
+    GetCurrentUserErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -170,16 +203,44 @@ export const getCurrentUser = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * Update User
+ */
+export const updateUser = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateUserData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).patch<
+    UpdateUserResponses,
+    UpdateUserErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    security: [
+      {
+        scheme: 'bearer',
+        type: 'http',
+      },
+    ],
+    url: '/users/me',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+};
+
+/**
  * Get Applications
  */
 export const getApplications = <ThrowOnError extends boolean = false>(
   options?: Options<GetApplicationsData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
-    GetApplicationsResponse,
-    GetApplicationsError,
+    GetApplicationsResponses,
+    GetApplicationsErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -198,10 +259,11 @@ export const createApplication = <ThrowOnError extends boolean = false>(
   options: Options<CreateApplicationData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
-    CreateApplicationResponse,
-    CreateApplicationError,
+    CreateApplicationResponses,
+    CreateApplicationErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -212,7 +274,7 @@ export const createApplication = <ThrowOnError extends boolean = false>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...options.headers,
     },
   });
 };
@@ -224,8 +286,8 @@ export const deleteApplication = <ThrowOnError extends boolean = false>(
   options: Options<DeleteApplicationData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).delete<
-    DeleteApplicationResponse,
-    DeleteApplicationError,
+    DeleteApplicationResponses,
+    DeleteApplicationErrors,
     ThrowOnError
   >({
     security: [
@@ -246,10 +308,11 @@ export const getApplicationById = <ThrowOnError extends boolean = false>(
   options: Options<GetApplicationByIdData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).get<
-    GetApplicationByIdResponse,
-    GetApplicationByIdError,
+    GetApplicationByIdResponses,
+    GetApplicationByIdErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -268,10 +331,11 @@ export const updateApplication = <ThrowOnError extends boolean = false>(
   options: Options<UpdateApplicationData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
-    UpdateApplicationResponse,
-    UpdateApplicationError,
+    UpdateApplicationResponses,
+    UpdateApplicationErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -282,7 +346,7 @@ export const updateApplication = <ThrowOnError extends boolean = false>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...options.headers,
     },
   });
 };
@@ -294,10 +358,11 @@ export const getUserCompanies = <ThrowOnError extends boolean = false>(
   options?: Options<GetUserCompaniesData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
-    GetUserCompaniesResponse,
-    GetUserCompaniesError,
+    GetUserCompaniesResponses,
+    GetUserCompaniesErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     security: [
       {
         scheme: 'bearer',
@@ -316,10 +381,11 @@ export const getCompany = <ThrowOnError extends boolean = false>(
   options: Options<GetCompanyData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).get<
-    GetCompanyResponse,
-    GetCompanyError,
+    GetCompanyResponses,
+    GetCompanyErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     url: '/companies/{company_id}',
     ...options,
   });
@@ -337,16 +403,17 @@ export const login = <ThrowOnError extends boolean = false>(
   options: Options<LoginData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
-    LoginResponse,
-    LoginError,
+    LoginResponses,
+    LoginErrors,
     ThrowOnError
   >({
     ...urlSearchParamsBodySerializer,
+    responseType: 'json',
     url: '/auth/login',
     ...options,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      ...options?.headers,
+      ...options.headers,
     },
   });
 };
@@ -358,10 +425,11 @@ export const refreshToken = <ThrowOnError extends boolean = false>(
   options: Options<RefreshTokenData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
-    RefreshTokenResponse,
-    RefreshTokenError,
+    RefreshTokenResponses,
+    RefreshTokenErrors,
     ThrowOnError
   >({
+    responseType: 'json',
     url: '/auth/refresh',
     ...options,
   });
@@ -374,8 +442,8 @@ export const logout = <ThrowOnError extends boolean = false>(
   options?: Options<LogoutData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).post<
-    LogoutResponse,
-    LogoutError,
+    LogoutResponses,
+    LogoutErrors,
     ThrowOnError
   >({
     url: '/auth/logout',

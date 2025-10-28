@@ -1,16 +1,25 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useController } from 'react-hook-form';
-import { type FieldComponent } from 'shared/types';
-import { CircularProgress } from '@mui/material';
+import { type FieldComponent } from 'shared/types/form';
+import CircularProgress from '@mui/material/CircularProgress';
 import Autocomplete from '@mui/material/Autocomplete';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { getUserCompanies } from 'shared/api';
-import { TextInput } from 'shared/ui';
+import { getUserCompanies } from 'shared/api/gen/sdk.gen';
+import { TextInput } from 'shared/ui/TextInput';
+import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
 
 const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
-  const { field, fieldState, formState } = useController(props);
+  const controller = useController(props);
   const [open, setOpen] = useState(false);
+  const { field } = controller;
 
+  const debouncedFetching = useDebouncedCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value;
+      field.onChange(val.trim() === '' ? null : val);
+    },
+    { wait: 400 }
+  );
   const { data = [], isFetching } = useQuery({
     queryKey: ['companies', field.value],
     queryFn: async ({ queryKey }) => {
@@ -23,7 +32,6 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
     enabled: open,
     staleTime: 30000,
   });
-
   return (
     <Autocomplete
       options={data?.map((c) => c.name)}
@@ -40,10 +48,8 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
         <TextInput
           {...params}
           label={label}
-          field={field}
-          fieldState={fieldState}
-          formState={formState}
-          onChange={(event) => field.onChange(event.target.value)}
+          controller={controller}
+          onChange={debouncedFetching}
           slotProps={{
             input: {
               ...params.InputProps,

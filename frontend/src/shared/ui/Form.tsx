@@ -1,4 +1,5 @@
-import { Box, BoxProps } from '@mui/material';
+import Box from '@mui/material/Box';
+import type { BoxProps } from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import type { SxProps } from '@mui/system';
 
@@ -8,7 +9,6 @@ export function Form({ children, sx, ...props }: BaseFormProps) {
   const baseSx = (theme: Theme) => ({
     p: theme.spacing(3),
     m: 'auto',
-    height: '100%',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',

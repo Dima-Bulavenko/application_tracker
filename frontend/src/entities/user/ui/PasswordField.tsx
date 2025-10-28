@@ -1,12 +1,14 @@
-import { TextInput } from 'shared/ui';
-import { type FieldComponent } from 'shared/types';
+import { TextInput } from 'shared/ui/TextInput';
+import type { FieldComponent } from 'shared/types/form';
 import { useController } from 'react-hook-form';
 import { useState } from 'react';
-import { IconButton, InputAdornment } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { zUserCreate } from 'shared/api';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { zUserCreate } from 'shared/api/gen/zod.gen';
 
-const passwordHelp = zUserCreate.shape.password._def.description;
+const passwordHelp = zUserCreate.shape.password.description;
 
 const PasswordField: FieldComponent = ({ label = 'Password', ...props }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -33,7 +35,7 @@ const PasswordField: FieldComponent = ({ label = 'Password', ...props }) => {
           ),
         },
       }}
-      {...controller}
+      controller={controller}
     />
   );
 };

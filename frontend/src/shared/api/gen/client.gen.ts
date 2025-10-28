@@ -6,7 +6,7 @@ import {
   type ClientOptions as DefaultClientOptions,
   createClient,
   createConfig,
-} from '@hey-api/client-axios';
+} from './client';
 import { createClientConfig } from '../../../../client_config';
 
 /**

@@ -1,9 +1,16 @@
-import { useContext } from 'react';
-import { Box, Typography, Stack, Paper } from '@mui/material';
-import { SessionContext } from 'shared/context/SessionContext';
-import { LinkButton } from 'shared/ui';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
+import { LinkButton } from 'shared/ui/LinkButton';
+import { getRouteApi } from '@tanstack/react-router';
+
+const roteApi = getRouteApi('__root__');
+
 export function HomePage() {
-  const { token } = useContext(SessionContext);
+  const {
+    auth: { isAuthenticated },
+  } = roteApi.useRouteContext();
   return (
     <Stack spacing={8} sx={{ py: 6 }}>
       {/* Hero Section */}
@@ -20,7 +27,7 @@ export function HomePage() {
           Stay on top of every stage—from submission to interviews and offers.
         </Typography>
         <Stack direction='row' spacing={2} justifyContent='center' mt={4}>
-          {token ? (
+          {isAuthenticated ? (
             <LinkButton to='/dashboard' variant='contained' color='primary'>
               Go to Dashboard
             </LinkButton>
@@ -77,7 +84,7 @@ export function HomePage() {
       </Box>
 
       {/* Auth Prompt */}
-      {!token && (
+      {!isAuthenticated && (
         <Box component='section' textAlign='center'>
           <Typography variant='subtitle1' gutterBottom>
             Create a free account to start organizing your applications.

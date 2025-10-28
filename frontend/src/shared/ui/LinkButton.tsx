@@ -1,10 +1,20 @@
-import { Button } from '@mui/material';
-import { Link as RouterLink, type LinkProps } from 'react-router-dom';
+import React from 'react';
+import Button from '@mui/material/Button';
+import { createLink } from '@tanstack/react-router';
+import type { ButtonProps } from '@mui/material';
+import type { LinkComponent } from '@tanstack/react-router';
 
-type AnchorButtonProps = React.ComponentProps<typeof Button<'a'>>;
-export type LinkButtonProps = Omit<AnchorButtonProps, 'component' | 'href'> &
-  LinkProps;
+type MUIButtonLinkProps = ButtonProps<'a'>;
 
-export function LinkButton(props: LinkButtonProps) {
-  return <Button component={RouterLink} {...props} />;
-}
+const MUIButtonLinkComponent = React.forwardRef<
+  HTMLAnchorElement,
+  MUIButtonLinkProps
+>((props, ref) => <Button ref={ref} component='a' {...props} />);
+
+const CreatedButtonLinkComponent = createLink(MUIButtonLinkComponent);
+
+export const LinkButton: LinkComponent<typeof MUIButtonLinkComponent> = (
+  props
+) => {
+  return <CreatedButtonLinkComponent preload={'intent'} {...props} />;
+};

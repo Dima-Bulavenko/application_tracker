@@ -4,184 +4,14 @@ import { z } from 'zod';
 
 export const zAccessTokenResponse = z.object({
   access_token: z.string(),
-  token_type: z.string().default('bearer'),
+  token_type: z.optional(z.string()).default('bearer'),
 });
 
 export const zAppStatus = z.enum(['applied', 'interview', 'offer', 'rejected']);
 
-export const zApplicationCreate = z.object({
-  role: z.string(),
-  company: z.object({ name: z.string().max(40) }),
-  status: z
-    .enum(['applied', 'interview', 'offer', 'rejected'])
-    .default('applied'),
-  work_type: z
-    .enum(['full_time', 'part_time', 'internship', 'contract', 'other'])
-    .default('full_time'),
-  work_location: z.enum(['on_site', 'remote', 'hybrid']).default('on_site'),
-  note: z.union([z.string(), z.null()]).optional(),
-  application_url: z.union([z.string(), z.null()]).optional(),
-  interview_date: z
-    .union([z.string().datetime({ offset: true }), z.null()])
-    .optional(),
-});
-
-export const zApplicationOrderBy = z.enum(['time_create', 'time_update']);
-
-export const zApplicationRead = z.object({
-  role: z.string(),
-  company_id: z.number().int(),
-  user_id: z.number().int(),
-  id: z.number().int(),
-  status: z.enum(['applied', 'interview', 'offer', 'rejected']),
-  work_type: z.enum([
-    'full_time',
-    'part_time',
-    'internship',
-    'contract',
-    'other',
-  ]),
-  work_location: z.enum(['on_site', 'remote', 'hybrid']),
-  note: z.union([z.string(), z.null()]).optional(),
-  application_url: z.union([z.string(), z.null()]).optional(),
-  time_create: z.string().datetime({ offset: true }),
-  time_update: z.string().datetime({ offset: true }),
-  interview_date: z
-    .union([z.string().datetime({ offset: true }), z.null()])
-    .optional(),
-});
-
-export const zApplicationReadWithCompany = z.object({
-  role: z.string(),
-  company_id: z.number().int(),
-  user_id: z.number().int(),
-  id: z.number().int(),
-  status: z.enum(['applied', 'interview', 'offer', 'rejected']),
-  work_type: z.enum([
-    'full_time',
-    'part_time',
-    'internship',
-    'contract',
-    'other',
-  ]),
-  work_location: z.enum(['on_site', 'remote', 'hybrid']),
-  note: z.union([z.string(), z.null()]).optional(),
-  application_url: z.union([z.string(), z.null()]).optional(),
-  time_create: z.string().datetime({ offset: true }),
-  time_update: z.string().datetime({ offset: true }),
-  interview_date: z
-    .union([z.string().datetime({ offset: true }), z.null()])
-    .optional(),
-  company: z.object({ id: z.number().int().gt(0), name: z.string().max(40) }),
-});
-
-export const zApplicationUpdate = z.object({
-  role: z.union([z.string(), z.null()]).optional(),
-  company: z
-    .union([z.object({ name: z.string().max(40) }), z.null()])
-    .optional(),
-  status: z
-    .union([z.enum(['applied', 'interview', 'offer', 'rejected']), z.null()])
-    .optional(),
-  work_type: z
-    .union([
-      z.enum(['full_time', 'part_time', 'internship', 'contract', 'other']),
-      z.null(),
-    ])
-    .optional(),
-  work_location: z
-    .union([z.enum(['on_site', 'remote', 'hybrid']), z.null()])
-    .optional(),
-  note: z.union([z.string(), z.null()]).optional(),
-  application_url: z.union([z.string(), z.null()]).optional(),
-  interview_date: z
-    .union([z.string().datetime({ offset: true }), z.null()])
-    .optional(),
-});
-
-export const zCompanyCreate = z.object({ name: z.string().max(40) });
-
-export const zCompanyOrderBy = z.literal('name');
-
-export const zCompanyRead = z.object({
-  id: z.number().int().gt(0),
+export const zCompanyCreate = z.object({
   name: z.string().max(40),
 });
-
-export const zErrorResponse = z.object({ detail: z.string() });
-
-export const zHTTPValidationError = z.object({
-  detail: z
-    .array(
-      z.object({
-        loc: z.array(z.union([z.string(), z.number().int()])),
-        msg: z.string(),
-        type: z.string(),
-      })
-    )
-    .optional(),
-});
-
-export const zMessageResponse = z.object({ message: z.string() });
-
-export const zUserChangePassword = z.object({
-  old_password: z
-    .string()
-    .regex(new RegExp('^(?=.*[A-Z])(?=.*\\d).{8,}$'))
-    .describe(
-      'Password must be 8 characters long, contain at least one uppercase letter and one number.'
-    ),
-  new_password: z
-    .string()
-    .regex(new RegExp('^(?=.*[A-Z])(?=.*\\d).{8,}$'))
-    .describe(
-      'Password must be 8 characters long, contain at least one uppercase letter and one number.'
-    ),
-  confirm_new_password: z
-    .string()
-    .regex(new RegExp('^(?=.*[A-Z])(?=.*\\d).{8,}$'))
-    .describe(
-      'Password must be 8 characters long, contain at least one uppercase letter and one number.'
-    ),
-});
-
-export const zUserCreate = z.object({
-  username: z.string().email().describe("User's email address"),
-  password: z
-    .string()
-    .regex(new RegExp('^(?=.*[A-Z])(?=.*\\d).{8,}$'))
-    .describe(
-      'Password must be 8 characters long, contain at least one uppercase letter and one number.'
-    ),
-});
-
-export const zUserLogin = z.object({
-  username: z.string().email().describe("User's email address"),
-  password: z
-    .string()
-    .regex(new RegExp('^(?=.*[A-Z])(?=.*\\d).{8,}$'))
-    .describe(
-      'Password must be 8 characters long, contain at least one uppercase letter and one number.'
-    ),
-});
-
-export const zUserRead = z.object({
-  id: z.number().int(),
-  username: z.string().email().describe("User's email address"),
-  first_name: z.union([z.string().max(40), z.null()]).optional(),
-  second_name: z.union([z.string().max(40), z.null()]).optional(),
-  time_create: z.string().datetime({ offset: true }),
-  time_update: z.string().datetime({ offset: true }),
-  is_active: z.boolean().default(true),
-});
-
-export const zValidationError = z.object({
-  loc: z.array(z.union([z.string(), z.number().int()])),
-  msg: z.string(),
-  type: z.string(),
-});
-
-export const zWorkLocation = z.enum(['on_site', 'remote', 'hybrid']);
 
 export const zWorkType = z.enum([
   'full_time',
@@ -190,3 +20,344 @@ export const zWorkType = z.enum([
   'contract',
   'other',
 ]);
+
+export const zWorkLocation = z.enum(['on_site', 'remote', 'hybrid']);
+
+export const zApplicationCreate = z.object({
+  role: z.string(),
+  company: zCompanyCreate,
+  status: z.optional(zAppStatus),
+  work_type: z.optional(zWorkType),
+  work_location: z.optional(zWorkLocation),
+  note: z.optional(z.union([z.string(), z.null()])),
+  application_url: z.optional(z.union([z.string(), z.null()])),
+  interview_date: z.optional(
+    z.union([
+      z.iso.datetime({
+        offset: true,
+      }),
+      z.null(),
+    ])
+  ),
+});
+
+export const zApplicationOrderBy = z.enum(['time_create', 'time_update']);
+
+export const zApplicationRead = z.object({
+  role: z.string(),
+  company_id: z.int(),
+  user_id: z.int(),
+  id: z.int(),
+  status: zAppStatus,
+  work_type: zWorkType,
+  work_location: zWorkLocation,
+  note: z.optional(z.union([z.string(), z.null()])),
+  application_url: z.optional(z.union([z.string(), z.null()])),
+  time_create: z.iso.datetime({
+    offset: true,
+  }),
+  time_update: z.iso.datetime({
+    offset: true,
+  }),
+  interview_date: z.optional(
+    z.union([
+      z.iso.datetime({
+        offset: true,
+      }),
+      z.null(),
+    ])
+  ),
+});
+
+export const zCompanyRead = z.object({
+  id: z.int().gt(0),
+  name: z.string().max(40),
+});
+
+export const zApplicationReadWithCompany = z.object({
+  role: z.string(),
+  company_id: z.int(),
+  user_id: z.int(),
+  id: z.int(),
+  status: zAppStatus,
+  work_type: zWorkType,
+  work_location: zWorkLocation,
+  note: z.optional(z.union([z.string(), z.null()])),
+  application_url: z.optional(z.union([z.string(), z.null()])),
+  time_create: z.iso.datetime({
+    offset: true,
+  }),
+  time_update: z.iso.datetime({
+    offset: true,
+  }),
+  interview_date: z.optional(
+    z.union([
+      z.iso.datetime({
+        offset: true,
+      }),
+      z.null(),
+    ])
+  ),
+  company: zCompanyRead,
+});
+
+export const zApplicationUpdate = z.object({
+  role: z.optional(z.union([z.string(), z.null()])),
+  company: z.optional(z.union([zCompanyCreate, z.null()])),
+  status: z.optional(z.union([zAppStatus, z.null()])),
+  work_type: z.optional(z.union([zWorkType, z.null()])),
+  work_location: z.optional(z.union([zWorkLocation, z.null()])),
+  note: z.optional(z.union([z.string(), z.null()])),
+  application_url: z.optional(z.union([z.string(), z.null()])),
+  interview_date: z.optional(
+    z.union([
+      z.iso.datetime({
+        offset: true,
+      }),
+      z.null(),
+    ])
+  ),
+});
+
+export const zCompanyOrderBy = z.enum(['name']);
+
+export const zErrorResponse = z.object({
+  detail: z.string(),
+});
+
+export const zValidationError = z.object({
+  loc: z.array(z.union([z.string(), z.int()])),
+  msg: z.string(),
+  type: z.string(),
+});
+
+export const zHttpValidationError = z.object({
+  detail: z.optional(z.array(zValidationError)),
+});
+
+export const zMessageResponse = z.object({
+  message: z.string(),
+});
+
+export const zUserChangePassword = z.object({
+  old_password: z
+    .string()
+    .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+    .register(z.globalRegistry, {
+      description:
+        'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+    }),
+  new_password: z
+    .string()
+    .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+    .register(z.globalRegistry, {
+      description:
+        'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+    }),
+  confirm_new_password: z
+    .string()
+    .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+    .register(z.globalRegistry, {
+      description:
+        'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+    }),
+});
+
+export const zUserCreate = z.object({
+  username: z.email().register(z.globalRegistry, {
+    description: "User's email address",
+  }),
+  password: z
+    .string()
+    .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+    .register(z.globalRegistry, {
+      description:
+        'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+    }),
+});
+
+export const zUserLogin = z.object({
+  username: z.email().register(z.globalRegistry, {
+    description: "User's email address",
+  }),
+  password: z
+    .string()
+    .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+    .register(z.globalRegistry, {
+      description:
+        'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+    }),
+});
+
+export const zUserRead = z.object({
+  id: z.int(),
+  username: z.email().register(z.globalRegistry, {
+    description: "User's email address",
+  }),
+  first_name: z.optional(z.union([z.string().max(40), z.null()])),
+  second_name: z.optional(z.union([z.string().max(40), z.null()])),
+  time_create: z.iso.datetime({
+    offset: true,
+  }),
+  time_update: z.iso.datetime({
+    offset: true,
+  }),
+  is_active: z.optional(z.boolean()).default(true),
+});
+
+export const zUserUpdate = z.object({
+  first_name: z.optional(z.union([z.string().max(40), z.null()])),
+  second_name: z.optional(z.union([z.string().max(40), z.null()])),
+});
+
+export const zCreateUserData = z.object({
+  body: zUserCreate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zActivateUserData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    token: z.string(),
+  }),
+});
+
+export const zChangePasswordData = z.object({
+  body: zUserChangePassword,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zDeleteUserData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zGetCurrentUserData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zUpdateUserData = z.object({
+  body: zUserUpdate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zGetApplicationsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      limit: z
+        .optional(
+          z.int().gte(1).lte(50).register(z.globalRegistry, {
+            description: 'Number of items to return',
+          })
+        )
+        .default(10),
+      offset: z
+        .optional(
+          z.int().gte(0).register(z.globalRegistry, {
+            description:
+              'Number of items to skip before starting to collect the result set',
+          })
+        )
+        .default(0),
+      order_by: z.optional(zApplicationOrderBy),
+      order_direction: z.optional(z.enum(['asc', 'desc'])),
+      status: z.optional(z.union([z.array(zAppStatus), z.null()])),
+      work_type: z.optional(z.union([z.array(zWorkType), z.null()])),
+      work_location: z.optional(z.union([z.array(zWorkLocation), z.null()])),
+      role_name: z.optional(z.union([z.string(), z.null()])),
+      company_name: z.optional(z.union([z.string(), z.null()])),
+    })
+  ),
+});
+
+export const zCreateApplicationData = z.object({
+  body: zApplicationCreate,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zDeleteApplicationData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    application_id: z.int(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zGetApplicationByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    application_id: z.int(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zUpdateApplicationData = z.object({
+  body: zApplicationUpdate,
+  path: z.object({
+    application_id: z.int(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zGetUserCompaniesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(
+    z.object({
+      limit: z
+        .optional(
+          z.int().gte(1).lte(50).register(z.globalRegistry, {
+            description: 'Number of items to return',
+          })
+        )
+        .default(10),
+      offset: z
+        .optional(
+          z.int().gte(0).register(z.globalRegistry, {
+            description:
+              'Number of items to skip before starting to collect the result set',
+          })
+        )
+        .default(0),
+      order_by: z.optional(zCompanyOrderBy),
+      order_direction: z.optional(z.enum(['asc', 'desc'])),
+      name_contains: z.optional(z.union([z.string(), z.null()])),
+    })
+  ),
+});
+
+export const zGetCompanyData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    company_id: z.int(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zLoginData = z.object({
+  body: zUserLogin,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRefreshTokenData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLogoutData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
