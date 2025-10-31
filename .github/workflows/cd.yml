@@ -7,9 +7,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
 
     steps:
       - name: Checkout code
@@ -28,6 +25,7 @@ jobs:
 
       - name: Build, tag, and push image to ECR
         id: build-image
+        working-directory: backend
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         run: |
@@ -41,3 +39,24 @@ jobs:
           aws lambda update-function-code \
             --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }} \
             --image-uri ${{ steps.build-image.outputs.image }}
+
+      - name: Build React frontend
+        id: build-frontend
+        env:
+          API_URL: ${{ secrets.API_URL }}
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run generate-client
+          npm run build
+
+      - name: Sync frontend build to S3
+        working-directory: frontend
+        run: |
+          aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
+            --paths "/*"
