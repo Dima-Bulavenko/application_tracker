@@ -25,7 +25,7 @@ jobs:
 
       - name: Build, tag, and push image to ECR
         id: build-image
-        working-directory: backend
+        working-directory: ./backend
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         run: |
@@ -52,14 +52,14 @@ jobs:
         id: build-frontend
         env:
           API_URL: ${{ secrets.API_URL }}
-        working-directory: frontend
+        working-directory: ./frontend
         run: |
           npm ci
           npm run generate-client
           npm run build
 
       - name: Sync frontend build to S3
-        working-directory: frontend
+        working-directory: ./frontend
         run: |
           aws s3 sync build/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
