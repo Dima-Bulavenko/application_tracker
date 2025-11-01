@@ -19,7 +19,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Verify user was created in database
         created_user = await self.get_user_by_email(email)
@@ -40,7 +40,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Verify user was created in database
         created_user = await self.get_user_by_email(email)
@@ -76,7 +76,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -94,7 +94,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -122,7 +122,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -137,7 +137,7 @@ class TestCreateUser(BaseTest):
             "password": "weak",  # Too short, no uppercase, no number
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -152,7 +152,7 @@ class TestCreateUser(BaseTest):
             "password": "testpass123",  # No uppercase letter
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -165,7 +165,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPassword",  # No number
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -178,7 +178,7 @@ class TestCreateUser(BaseTest):
             "password": "Test1",  # Too short
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -190,7 +190,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -207,7 +207,7 @@ class TestCreateUser(BaseTest):
             "email": "test@example.com",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -221,7 +221,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -234,7 +234,7 @@ class TestCreateUser(BaseTest):
             "password": "",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -247,7 +247,7 @@ class TestCreateUser(BaseTest):
             "password": "   ",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -261,7 +261,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # This might succeed or fail depending on email length validation
         # If it succeeds, verify the user is created
@@ -279,7 +279,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123!@#",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         assert response.status_code == 201
         expected_message = "We sent email to test@example.com address, follow link to complete your registration"
@@ -304,7 +304,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response1 = await client.post("/users/", data=form_data1)
+        response1 = await client.post("/users", data=form_data1)
         assert response1.status_code == 201
 
         # Second user with same email but different case
@@ -313,7 +313,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass456",
         }
 
-        response2 = await client.post("/users/", data=form_data2)
+        response2 = await client.post("/users", data=form_data2)
 
         # Should still return success (existing user scenario)
         assert response2.status_code == 201
@@ -326,7 +326,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Should fail due to email validation or be safely handled
         # Most likely will fail email validation
@@ -339,7 +339,7 @@ class TestCreateUser(BaseTest):
             "password": "TestPass123",
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Should handle unicode properly
         if response.status_code == 201:
@@ -357,7 +357,7 @@ class TestCreateUser(BaseTest):
             "password": password,
         }
 
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
         assert response.status_code == 201
 
         # Verify user was created in database with hashed password
@@ -384,7 +384,7 @@ class TestCreateUser(BaseTest):
         }
 
         # Make the request
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Verify API response
         assert response.status_code == 201
@@ -433,7 +433,7 @@ class TestCreateUser(BaseTest):
         }
 
         # Attempt to create duplicate user
-        response = await client.post("/users/", data=form_data)
+        response = await client.post("/users", data=form_data)
 
         # Verify API response (should still be successful for security)
         assert response.status_code == 201
