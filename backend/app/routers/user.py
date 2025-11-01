@@ -18,7 +18,7 @@ from app.dependencies import AccessTokenDep, AccessTokenPayloadDep, UserEmailSer
 router = APIRouter(prefix="/users", tags=[Tags.USER])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_user(
     credentials: Annotated[UserCreate, Form()],
     background_tasks: BackgroundTasks,

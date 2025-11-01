@@ -395,7 +395,7 @@ class TestApplicationList(BaseTest):
 
         access = self.create_access_token(user)
         resp = await client.get(
-            "/applications/",
+            "/applications",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 200
@@ -417,7 +417,7 @@ class TestApplicationList(BaseTest):
 
         # Page 1
         resp1 = await client.get(
-            "/applications/?limit=5&offset=0",
+            "/applications?limit=5&offset=0",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp1.status_code == 200
@@ -425,7 +425,7 @@ class TestApplicationList(BaseTest):
 
         # Last page
         resp3 = await client.get(
-            "/applications/?limit=5&offset=10",
+            "/applications?limit=5&offset=10",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp3.status_code == 200
@@ -444,7 +444,7 @@ class TestApplicationList(BaseTest):
 
         # Desc by default -> newest first -> last created id should appear first by time_create
         resp_desc = await client.get(
-            "/applications/?order_by=time_create&order_direction=desc",
+            "/applications?order_by=time_create&order_direction=desc",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         data_desc = resp_desc.json()
@@ -453,7 +453,7 @@ class TestApplicationList(BaseTest):
 
         # Asc -> oldest first
         resp_asc = await client.get(
-            "/applications/?order_by=time_create&order_direction=asc",
+            "/applications?order_by=time_create&order_direction=asc",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         data_asc = resp_asc.json()
@@ -464,7 +464,7 @@ class TestApplicationList(BaseTest):
         [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
     )
     async def test_list_not_authenticated(self, header: dict | None, error_message: str, client: AsyncClient):
-        resp = await client.get("/applications/", headers=header)
+        resp = await client.get("/applications", headers=header)
         assert resp.status_code == 401
         assert resp.headers.get("www-authenticate") == "Bearer"
         assert resp.json() == {"detail": f"{error_message}"}
@@ -473,7 +473,7 @@ class TestApplicationList(BaseTest):
         user = await self.create_user(is_active=False)
         access = self.create_access_token(user)
         resp = await client.get(
-            "/applications/",
+            "/applications",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 403
@@ -483,7 +483,7 @@ class TestApplicationList(BaseTest):
         user = await self.create_user()
         access = self.create_access_token(user)
         resp = await client.get(
-            "/applications/",
+            "/applications",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 200
@@ -501,7 +501,7 @@ class TestApplicationListFilters(BaseTest):
 
         access = self.create_access_token(user)
         resp = await client.get(
-            "/applications/?role_name=engineer",
+            "/applications?role_name=engineer",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 200
@@ -527,7 +527,7 @@ class TestApplicationListFilters(BaseTest):
         access = self.create_access_token(user)
         # Provide multiple OR-able filters; expect union of matches.
         resp = await client.get(
-            "/applications/?status=offer&work_type=internship&company_name=acme",
+            "/applications?status=offer&work_type=internship&company_name=acme",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 200
@@ -546,7 +546,7 @@ class TestApplicationListFilters(BaseTest):
         await self.create_application(user_id=user.id, company_id=c.id, role="Support Agent", status="interview")
         access = self.create_access_token(user)
         resp = await client.get(
-            "/applications/?role_name=engineer&status=interview",
+            "/applications?role_name=engineer&status=interview",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 200
@@ -563,7 +563,7 @@ class TestApplicationListFilters(BaseTest):
 
         access = self.create_access_token(user)
         resp = await client.get(
-            "/applications/?company_name=acm",
+            "/applications?company_name=acm",
             headers={"Authorization": f"Bearer {access.token}"},
         )
         assert resp.status_code == 200

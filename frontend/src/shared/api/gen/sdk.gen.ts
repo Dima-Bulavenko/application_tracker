@@ -93,7 +93,7 @@ export const createUser = <ThrowOnError extends boolean = false>(
   >({
     ...urlSearchParamsBodySerializer,
     responseType: 'json',
-    url: '/users/',
+    url: '/users',
     ...options,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -247,7 +247,7 @@ export const getApplications = <ThrowOnError extends boolean = false>(
         type: 'http',
       },
     ],
-    url: '/applications/',
+    url: '/applications',
     ...options,
   });
 };
@@ -270,7 +270,7 @@ export const createApplication = <ThrowOnError extends boolean = false>(
         type: 'http',
       },
     ],
-    url: '/applications/',
+    url: '/applications',
     ...options,
     headers: {
       'Content-Type': 'application/json',

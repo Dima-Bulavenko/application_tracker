@@ -365,7 +365,7 @@ export type CreateUserData = {
   body: UserCreate;
   path?: never;
   query?: never;
-  url: '/users/';
+  url: '/users';
 };
 
 export type CreateUserErrors = {
@@ -601,7 +601,7 @@ export type GetApplicationsData = {
      */
     company_name?: string | null;
   };
-  url: '/applications/';
+  url: '/applications';
 };
 
 export type GetApplicationsErrors = {
@@ -633,7 +633,7 @@ export type CreateApplicationData = {
   body: ApplicationCreate;
   path?: never;
   query?: never;
-  url: '/applications/';
+  url: '/applications';
 };
 
 export type CreateApplicationErrors = {
