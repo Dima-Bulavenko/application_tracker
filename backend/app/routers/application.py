@@ -17,7 +17,7 @@ router = APIRouter(prefix="/applications", tags=[Tags.APPLICATION])
 
 
 @router.get(
-    "/",
+    "",
     responses={
         status.HTTP_401_UNAUTHORIZED: {"description": "Access token is invalid", "model": ErrorResponse},
     },
@@ -31,7 +31,7 @@ async def get_applications(
     return apps
 
 
-@router.post("/")
+@router.post("")
 async def create_application(
     app_service: ApplicationServiceDep,
     app: ApplicationCreate,
