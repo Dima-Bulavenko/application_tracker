@@ -51,7 +51,7 @@ jobs:
       - name: Build React frontend
         id: build-frontend
         env:
-          API_URL: ${{ secrets.API_URL }}
+          VITE_API_URL: ${{ secrets.API_URL }}
         working-directory: ./frontend
         run: |
           npm ci
