@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.routing import APIRoute
 from mangum import Mangum
 
-from app import ALLOWED_HOSTS
+from app import ALLOWED_HOSTS, ALLOWED_ORIGINS
 from app.routers import application, auth, company, user
 
 from .db import create_db_tables
@@ -27,10 +28,15 @@ app = FastAPI(lifespan=lifespan, generate_unique_id_function=custom_generate_uni
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_HOSTS,
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=ALLOWED_HOSTS,
 )
 
 

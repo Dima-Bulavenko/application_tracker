@@ -50,7 +50,7 @@ async def cleanup_overrides():
 
 @pytest.fixture(name="client")
 async def get_async_client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
         yield ac
 
 
