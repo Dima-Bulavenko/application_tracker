@@ -117,6 +117,7 @@ jobs:
       REFRESH_TOKEN_EXPIRE_MINUTES: 43200
       ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
       ALLOWED_HOSTS: localhost,testserver
+      DEBUG: True
 
     steps:
       - uses: actions/checkout@v4
