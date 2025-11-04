@@ -31,7 +31,7 @@ class GmailEmailService(IEmailService):
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
                 smtp.login(EMAIL_USER, EMAIL_PASSWORD)
                 smtp.send_message(msg)
-        except Exception as e:
+        except Exception:
             return False
 
         return True
