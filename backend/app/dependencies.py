@@ -7,6 +7,7 @@ from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import DEBUG
 from app.core.dto import AccessTokenPayload, UserRead
 from app.core.exceptions import (
     TokenExpireError,
@@ -14,7 +15,7 @@ from app.core.exceptions import (
     UserNotFoundError,
 )
 from app.core.services import ApplicationService, AuthService, CompanyService, UserEmailService, UserService
-from app.infrastructure.email import DevelopmentEmailService
+from app.infrastructure.email import DevelopmentEmailService, GmailEmailService
 from app.infrastructure.repositories import (
     ApplicationSQLAlchemyRepository,
     CompanySQLAlchemyRepository,
@@ -64,7 +65,7 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
 
 async def get_user_email_service() -> UserEmailService:
     return UserEmailService(
-        email_service=DevelopmentEmailService(),
+        email_service=GmailEmailService() if not DEBUG else DevelopmentEmailService(),
         token_handler=VerificationTokenStrategy(),
     )
 

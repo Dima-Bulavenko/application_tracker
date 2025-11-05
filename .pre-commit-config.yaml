@@ -20,7 +20,7 @@ repos:
       - id: ruff-check
         name: ruff check
         entry: backend/.venv/bin/ruff check
-        args: ['--select', 'I', '--fix']
+        args: ['--fix']
         language: system
         types_or: [python, pyi]
       # ruff formatter
