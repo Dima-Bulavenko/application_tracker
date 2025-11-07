@@ -20,6 +20,7 @@ import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
 import { useMutation } from '@tanstack/react-query';
+import SubmitButton from 'shared/ui/SubmitButton';
 
 export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
@@ -31,7 +32,7 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
     resolver: customZodResolver(zApplicationUpdate),
     defaultValues,
   });
-  const { mutate: updateApp } = useMutation(
+  const { mutate: updateApp, isPending } = useMutation(
     applicationUpdateOptions(defaultValues.id)
   );
   const onSubmit: SubmitHandler<ApplicationUpdate> = async (data, event) => {
@@ -55,14 +56,9 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
           <ApplicationURLField name='application_url' control={control} />
         </Stack>
         <FormError message={errors.root?.message} />
-        <Button
-          sx={{ mt: 5 }}
-          type='submit'
-          color='primary'
-          disabled={!isDirty}
-          variant='contained'>
-          UpdateApplicationForm Application
-        </Button>
+        <SubmitButton isSubmitting={isPending} disabled={!isDirty || isPending}>
+          Update Application
+        </SubmitButton>
         <Button
           sx={{ mt: 3 }}
           type='button'
