@@ -52,6 +52,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="${VIRTUAL_ENV}/bin:$PATH"
 
 COPY ./app ./app
+COPY ./templates ./templates
 # Run the FastAPI application
 CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
 
