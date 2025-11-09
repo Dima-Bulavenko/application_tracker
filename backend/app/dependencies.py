@@ -23,7 +23,7 @@ from app.infrastructure.repositories import (
 )
 from app.infrastructure.security import (
     AccessTokenStrategy,
-    PasslibHasher,
+    PwdlibHasher,
     RefreshTokenStrategy,
     VerificationTokenStrategy,
 )
@@ -40,7 +40,7 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
 async def get_user_service(session: SessionDep) -> UserService:
     return UserService(
         user_repo=UserSQLAlchemyRepository(session),
-        password_hasher=PasslibHasher(),
+        password_hasher=PwdlibHasher(),
         verification_strategy=VerificationTokenStrategy(),
         access_token_strategy=AccessTokenStrategy(),
     )
@@ -49,7 +49,7 @@ async def get_user_service(session: SessionDep) -> UserService:
 async def get_auth_service(session: SessionDep) -> AuthService:
     return AuthService(
         user_repo=UserSQLAlchemyRepository(session),
-        password_hasher=PasslibHasher(),
+        password_hasher=PwdlibHasher(),
         access_strategy=AccessTokenStrategy(),
         refresh_strategy=RefreshTokenStrategy(),
     )
