@@ -6,12 +6,12 @@ import type { FieldComponent } from 'shared/types/form';
 import { z } from 'zod';
 import { TextInput } from 'shared/ui/TextInput';
 import { FormError } from 'shared/ui/FormError';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { DevTool } from '@hookform/devtools';
 import { updateUser } from 'shared/api/gen';
 import { getDirtyValues } from 'shared/api/get_dirty_values';
 import { getRouteApi } from '@tanstack/react-router';
+import SubmitButton from 'shared/ui/SubmitButton';
 
 type FormType = z.infer<typeof zUserUpdate>;
 
@@ -37,7 +37,7 @@ export function UpdateForm() {
   const {
     control,
     handleSubmit,
-    formState: { errors, isDirty, dirtyFields },
+    formState: { errors, isDirty, dirtyFields, isSubmitting },
   } = useForm<FormType>({
     resolver: customZodResolver(zUserUpdate),
     defaultValues: {
@@ -45,10 +45,12 @@ export function UpdateForm() {
       second_name: user.second_name,
     },
   });
-  const onSubmit: SubmitHandler<FormType> = (data, event) => {
+  const onSubmit: SubmitHandler<FormType> = async (data, event) => {
     event?.preventDefault();
     const dirtyData = getDirtyValues(dirtyFields, data);
-    updateUser<true>({ body: dirtyData }).then((res) => setUser(res.data));
+    await updateUser<true>({ body: dirtyData }).then((res) =>
+      setUser(res.data)
+    );
   };
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
@@ -57,14 +59,11 @@ export function UpdateForm() {
         <SecondNameField name='second_name' control={control} />
         <FormError message={errors.root?.message} />
       </Stack>
-      <Button
-        disabled={!isDirty}
-        sx={{ mt: 5 }}
-        type='submit'
-        color='primary'
-        variant='contained'>
+      <SubmitButton
+        disabled={!isDirty || isSubmitting}
+        isSubmitting={isSubmitting}>
         Update
-      </Button>
+      </SubmitButton>
       <DevTool control={control} />
     </Form>
   );

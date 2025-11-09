@@ -1,4 +1,3 @@
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { applicationCreateOptions } from 'entities/application/api/queryOptions';
 import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
@@ -16,6 +15,7 @@ import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
 import { useMutation } from '@tanstack/react-query';
+import SubmitButton from 'shared/ui/SubmitButton';
 
 export function CreateApplicationForm() {
   const {
@@ -31,7 +31,9 @@ export function CreateApplicationForm() {
       interview_date: null,
     },
   });
-  const { mutate: createApp } = useMutation(applicationCreateOptions());
+  const { mutate: createApp, isPending } = useMutation(
+    applicationCreateOptions()
+  );
   const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
     event?.preventDefault();
     createApp(data);
@@ -49,9 +51,7 @@ export function CreateApplicationForm() {
         <ApplicationURLField name='application_url' control={control} />
       </Stack>
       <FormError message={errors.root?.message} />
-      <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>
-        Create Application
-      </Button>
+      <SubmitButton isSubmitting={isPending}>Create Application</SubmitButton>
     </Form>
   );
 }

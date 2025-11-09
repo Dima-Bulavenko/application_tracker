@@ -2,9 +2,9 @@ import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
 import type { UserLogin } from 'shared/api/gen/types.gen';
 import { zUserLogin } from 'shared/api/gen/zod.gen';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { useForm, SubmitHandler } from 'react-hook-form';
+import SubmitButton from 'shared/ui/SubmitButton';
 import { customZodResolver } from 'shared/lib/customZodResolver';
 import { getRouteApi } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
@@ -17,7 +17,7 @@ export default function SignInForm() {
     control,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<UserLogin>({
     resolver: customZodResolver(zUserLogin),
   });
@@ -26,7 +26,7 @@ export default function SignInForm() {
   } = routeApi.useRouteContext();
   const onSubmit: SubmitHandler<UserLogin> = async (data, event) => {
     event?.preventDefault();
-    login(data).catch((err) => {
+    await login(data).catch((err) => {
       if (err.status === 401) {
         setError('root', { message: 'Invalid email or password' });
       }
@@ -39,9 +39,7 @@ export default function SignInForm() {
         <PasswordField name='password' control={control} />
       </Stack>
       <FormError message={errors.root?.message} />
-      <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>
-        Sign In
-      </Button>
+      <SubmitButton isSubmitting={isSubmitting}>Sign In</SubmitButton>
     </Form>
   );
 }

@@ -31,9 +31,11 @@ class TestCreateUser(BaseTest):
         expected_message = "We sent email to newuser@example.com address, follow link to complete your registration"
         assert response.json() == {"message": expected_message}
 
-    @patch("fastapi.BackgroundTasks.add_task")
-    async def test_create_user_success_with_background_task_mock(self, mock_add_task: MagicMock, client: AsyncClient):
-        """Test successful user creation and verify background task is called."""
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_create_user_success_with_background_task_mock(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test successful user creation and verify email service is called."""
         email = "newuser@example.com"
         form_data = {
             "email": email,
@@ -49,22 +51,17 @@ class TestCreateUser(BaseTest):
         assert created_user.email == email
         assert response.status_code == 201
 
-        # Verify background task was called
-        assert mock_add_task.called
-        assert mock_add_task.call_count == 1
+        # Verify email service was called
+        assert mock_send_verification.called
+        assert mock_send_verification.call_count == 1
 
         # Get the call arguments
-        call_args = mock_add_task.call_args
-        task_func = call_args[0][0]  # First argument is the function
-        task_user_arg = call_args[0][1]  # Second argument is the user
-
-        # Verify the correct function was called (send_verification_email)
-        assert hasattr(task_func, "__name__")
-        assert task_func.__name__ == "send_verification_email"
+        call_args = mock_send_verification.call_args
+        user_arg = call_args[0][0]  # First argument is the user
 
         # Verify the user argument has correct properties
-        assert hasattr(task_user_arg, "email")
-        assert task_user_arg.email == email
+        assert hasattr(user_arg, "email")
+        assert user_arg.email == email
 
     async def test_create_user_with_existing_email(self, client: AsyncClient):
         """Test user creation with already existing email address."""
@@ -83,8 +80,10 @@ class TestCreateUser(BaseTest):
         expected_message = f"We sent email to {existing_user.email} address, follow link to complete your registration"
         assert response.json() == {"message": expected_message}
 
-    @patch("fastapi.BackgroundTasks.add_task")
-    async def test_create_user_with_existing_email_background_task(self, mock_add_task: MagicMock, client: AsyncClient):
+    @patch("app.core.services.user_email_service.UserEmailService.send_duplicate_registration_warning")
+    async def test_create_user_with_existing_email_background_task(
+        self, mock_send_warning: MagicMock, client: AsyncClient
+    ):
         """Test user creation with existing email sends duplicate registration warning."""
         # Create an existing user
         existing_user = await self.create_user()
@@ -99,21 +98,16 @@ class TestCreateUser(BaseTest):
         # Should still return success response (security by design)
         assert response.status_code == 201
 
-        # Verify background task was called
-        assert mock_add_task.called
-        assert mock_add_task.call_count == 1
+        # Verify email service was called
+        assert mock_send_warning.called
+        assert mock_send_warning.call_count == 1
 
         # Get the call arguments
-        call_args = mock_add_task.call_args
-        task_func = call_args[0][0]  # First argument is the function
-        task_email_arg = call_args[0][1]  # Second argument is the email
-
-        # Verify the correct function was called (send_duplicate_registration_warning)
-        assert hasattr(task_func, "__name__")
-        assert task_func.__name__ == "send_duplicate_registration_warning"
+        call_args = mock_send_warning.call_args
+        email_arg = call_args[0][0]  # First argument is the email
 
         # Verify the email argument is correct
-        assert task_email_arg == existing_user.email
+        assert email_arg == existing_user.email
 
     async def test_create_user_with_invalid_email_format(self, client: AsyncClient):
         """Test user creation with invalid email format."""
@@ -373,9 +367,9 @@ class TestCreateUser(BaseTest):
         # Verify the password can be validated with the hasher
         assert self.password_hasher.verify(password, created_user.password)
 
-    @patch("fastapi.BackgroundTasks.add_task")
-    async def test_create_user_comprehensive_verification(self, mock_add_task: MagicMock, client: AsyncClient):
-        """Test comprehensive user creation including API response, database, and background tasks."""
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_create_user_comprehensive_verification(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test comprehensive user creation including API response, database, and email service."""
         email = "comprehensive@example.com"
         password = "SecurePass123!"
         form_data = {
@@ -399,21 +393,19 @@ class TestCreateUser(BaseTest):
         assert created_user.password != password  # Should be hashed
         assert self.password_hasher.verify(password, created_user.password)
 
-        # Verify background task was scheduled
-        assert mock_add_task.called
-        assert mock_add_task.call_count == 1
+        # Verify email service was called
+        assert mock_send_verification.called
+        assert mock_send_verification.call_count == 1
 
-        # Verify background task details
-        call_args = mock_add_task.call_args
-        task_func = call_args[0][0]
-        task_user_arg = call_args[0][1]
+        # Verify email service call details
+        call_args = mock_send_verification.call_args
+        user_arg = call_args[0][0]
 
-        assert task_func.__name__ == "send_verification_email"
-        assert task_user_arg.email == email
+        assert user_arg.email == email
 
-    @patch("fastapi.BackgroundTasks.add_task")
-    async def test_create_user_duplicate_email_comprehensive(self, mock_add_task: MagicMock, client: AsyncClient):
-        """Test duplicate email creation including background task verification."""
+    @patch("app.core.services.user_email_service.UserEmailService.send_duplicate_registration_warning")
+    async def test_create_user_duplicate_email_comprehensive(self, mock_send_warning: MagicMock, client: AsyncClient):
+        """Test duplicate email creation including email service verification."""
         from sqlalchemy import func, select
 
         from app.db.models import User as UserModel
@@ -447,17 +439,15 @@ class TestCreateUser(BaseTest):
         final_count = final_count_result.scalar()
         assert final_count == initial_count  # Count should remain the same
 
-        # Verify background task was scheduled (for duplicate warning)
-        assert mock_add_task.called
-        assert mock_add_task.call_count == 1
+        # Verify email service was called (for duplicate warning)
+        assert mock_send_warning.called
+        assert mock_send_warning.call_count == 1
 
-        # Verify it's the duplicate registration warning task
-        call_args = mock_add_task.call_args
-        task_func = call_args[0][0]
-        task_email_arg = call_args[0][1]
+        # Verify it's the duplicate registration warning
+        call_args = mock_send_warning.call_args
+        email_arg = call_args[0][0]
 
-        assert task_func.__name__ == "send_duplicate_registration_warning"
-        assert task_email_arg == existing_user.email
+        assert email_arg == existing_user.email
 
 
 class TestUserActivation(BaseTest):

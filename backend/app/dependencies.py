@@ -15,7 +15,7 @@ from app.core.exceptions import (
     UserNotFoundError,
 )
 from app.core.services import ApplicationService, AuthService, CompanyService, UserEmailService, UserService
-from app.infrastructure.email import DevelopmentEmailService, GmailEmailService
+from app.infrastructure.email import DevelopmentEmailService, SQSEmailService
 from app.infrastructure.repositories import (
     ApplicationSQLAlchemyRepository,
     CompanySQLAlchemyRepository,
@@ -23,7 +23,7 @@ from app.infrastructure.repositories import (
 )
 from app.infrastructure.security import (
     AccessTokenStrategy,
-    PasslibHasher,
+    PwdlibHasher,
     RefreshTokenStrategy,
     VerificationTokenStrategy,
 )
@@ -40,7 +40,7 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
 async def get_user_service(session: SessionDep) -> UserService:
     return UserService(
         user_repo=UserSQLAlchemyRepository(session),
-        password_hasher=PasslibHasher(),
+        password_hasher=PwdlibHasher(),
         verification_strategy=VerificationTokenStrategy(),
         access_token_strategy=AccessTokenStrategy(),
     )
@@ -49,7 +49,7 @@ async def get_user_service(session: SessionDep) -> UserService:
 async def get_auth_service(session: SessionDep) -> AuthService:
     return AuthService(
         user_repo=UserSQLAlchemyRepository(session),
-        password_hasher=PasslibHasher(),
+        password_hasher=PwdlibHasher(),
         access_strategy=AccessTokenStrategy(),
         refresh_strategy=RefreshTokenStrategy(),
     )
@@ -65,7 +65,7 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
 
 async def get_user_email_service() -> UserEmailService:
     return UserEmailService(
-        email_service=GmailEmailService() if not DEBUG else DevelopmentEmailService(),
+        email_service=SQSEmailService() if not DEBUG else DevelopmentEmailService(),
         token_handler=VerificationTokenStrategy(),
     )
 

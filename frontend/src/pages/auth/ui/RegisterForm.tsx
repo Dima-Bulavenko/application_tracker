@@ -3,20 +3,20 @@ import { FormError } from 'shared/ui/FormError';
 import type { UserCreate } from 'shared/api/gen/types.gen';
 import { createUser } from 'shared/api/gen/sdk.gen';
 import { zUserCreate } from 'shared/api/gen/zod.gen';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { customZodResolver } from 'shared/lib/customZodResolver';
 import { useNavigate } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
+import SubmitButton from 'shared/ui/SubmitButton';
 
 export default function RegisterForm() {
   const {
     control,
     handleSubmit,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<UserCreate>({ resolver: customZodResolver(zUserCreate) });
 
   const navigate = useNavigate();
@@ -38,9 +38,7 @@ export default function RegisterForm() {
         <PasswordField name='password' control={control} />
       </Stack>
       <FormError message={errors.root?.message} />
-      <Button sx={{ mt: 5 }} type='submit' color='primary' variant='contained'>
-        Sign Up
-      </Button>
+      <SubmitButton isSubmitting={isSubmitting}>Sign Up</SubmitButton>
     </Form>
   );
 }

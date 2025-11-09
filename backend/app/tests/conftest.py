@@ -9,7 +9,7 @@ from app.db.models import Base
 from app.dependencies import get_session
 from app.infrastructure.security import (
     AccessTokenStrategy,
-    PasslibHasher,
+    PwdlibHasher,
     RefreshTokenStrategy,
     VerificationTokenStrategy,
 )
@@ -71,4 +71,4 @@ def verification_token_strategy() -> VerificationTokenStrategy:
 
 @pytest.fixture(scope="session")
 def password_hasher() -> IPasswordHasher:
-    return PasslibHasher()
+    return PwdlibHasher()

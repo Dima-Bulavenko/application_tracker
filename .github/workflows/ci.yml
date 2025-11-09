@@ -120,6 +120,7 @@ jobs:
       DEBUG: True
       EMAIL_USER: test-email-user
       EMAIL_PASSWORD: test-email-password
+      SQS_QUEUE_URL: some-fake-queue-url-for-tests
 
     steps:
       - uses: actions/checkout@v4
