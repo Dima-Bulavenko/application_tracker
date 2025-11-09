@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, status
+from fastapi import APIRouter, Form, HTTPException, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
@@ -21,7 +21,6 @@ router = APIRouter(prefix="/users", tags=[Tags.USER])
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_user(
     credentials: Annotated[UserCreate, Form()],
-    background_tasks: BackgroundTasks,
     user_service: UserServiceDep,
     email_service: UserEmailServiceDep,
 ) -> MessageResponse:
@@ -34,9 +33,9 @@ async def create_user(
     """
     try:
         user = await user_service.create(credentials)
-        background_tasks.add_task(email_service.send_verification_email, user)
+        await email_service.send_verification_email(user)
     except UserAlreadyExistError:
-        background_tasks.add_task(email_service.send_duplicate_registration_warning, credentials.email)
+        await email_service.send_duplicate_registration_warning(credentials.email)
 
     return MessageResponse(
         message=f"We sent email to {credentials.email} address, follow link to complete your registration"

@@ -15,7 +15,7 @@ from app.core.exceptions import (
     UserNotFoundError,
 )
 from app.core.services import ApplicationService, AuthService, CompanyService, UserEmailService, UserService
-from app.infrastructure.email import DevelopmentEmailService, GmailEmailService
+from app.infrastructure.email import DevelopmentEmailService, SQSEmailService
 from app.infrastructure.repositories import (
     ApplicationSQLAlchemyRepository,
     CompanySQLAlchemyRepository,
@@ -65,7 +65,7 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
 
 async def get_user_email_service() -> UserEmailService:
     return UserEmailService(
-        email_service=GmailEmailService() if not DEBUG else DevelopmentEmailService(),
+        email_service=SQSEmailService() if not DEBUG else DevelopmentEmailService(),
         token_handler=VerificationTokenStrategy(),
     )
 
