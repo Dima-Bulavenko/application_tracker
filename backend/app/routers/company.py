@@ -14,7 +14,7 @@ router = APIRouter(prefix="/companies", tags=[Tags.COMPANY])
     "/user",
     responses={
         status.HTTP_401_UNAUTHORIZED: {"description": "Access token is invalid", "model": ErrorResponse},
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {"description": "Validation error", "model": ErrorResponse},
+        status.HTTP_422_UNPROCESSABLE_CONTENT: {"description": "Validation error", "model": ErrorResponse},
     },
 )
 async def get_user_companies(
