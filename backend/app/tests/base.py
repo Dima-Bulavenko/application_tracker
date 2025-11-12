@@ -1,13 +1,22 @@
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import SECRET_KEY
 from app.core.domain import Application, Company, User
-from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, VerificationTokenPayload
+from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token
 from app.core.security import IPasswordHasher, ITokenStrategy
-from app.db.models import Application as ApplicationModel, Company as CompanyModel, User as UserModel
+from app.db.models import (
+    Application as ApplicationModel,
+    Company as CompanyModel,
+    User as UserModel,
+    VerificationToken as VerificationTokenModel,
+)
 
 
 class BaseTest:
@@ -20,13 +29,11 @@ class BaseTest:
         password_hasher: IPasswordHasher,
         access_token_strategy: ITokenStrategy[AccessTokenPayload],
         refresh_token_strategy: ITokenStrategy[RefreshTokenPayload],
-        verification_token_strategy: ITokenStrategy[VerificationTokenPayload],
     ):
         """Set up common test dependencies and counters."""
         self.session = session
         self.access_token_strategy = access_token_strategy
         self.refresh_token_strategy = refresh_token_strategy
-        self.verification_token_strategy = verification_token_strategy
         self.password_hasher = password_hasher
 
         # Initialize counters for unique test data
@@ -170,24 +177,25 @@ class BaseTest:
         return self.refresh_token_strategy.create_token(payload)
 
     def create_verification_token(self, user: User, exp: datetime | None = None) -> str:
-        """Create a verification token for testing."""
+        """Create a persisted verification token and return its raw value."""
         assert user.id is not None, "User ID must be set to create verification token"
-        payload = VerificationTokenPayload(
-            user_email=user.email,
-            user_id=user.id,
-            exp=exp or datetime.now(timezone.utc) + timedelta(minutes=10),
-        )
-        token = self.verification_token_strategy.create_token(payload)
-        return token.token
+        raw = secrets.token_urlsafe(32)
+        token_hash = hmac.new(SECRET_KEY.encode(), raw.encode(), hashlib.sha256).hexdigest()
+        expires_at = exp or datetime.now(timezone.utc) + timedelta(minutes=10)
+        model = VerificationTokenModel(user_id=user.id, token_hash=token_hash, expires_at=expires_at)
+        self.session.add(model)
+        return raw
 
     def create_verification_token_for_user_data(
         self, user_email: str, user_id: int, exp: datetime | None = None
     ) -> str:
-        """Create a verification token for testing with explicit user data."""
-        payload = VerificationTokenPayload(
-            user_email=user_email,
-            user_id=user_id,
-            exp=exp or datetime.now(timezone.utc) + timedelta(minutes=10),
-        )
-        token = self.verification_token_strategy.create_token(payload)
-        return token.token
+        """Create a persisted verification token for provided user data and return its raw value.
+
+        Note: user_email is unused by the persistence model but kept for API parity with prior helper.
+        """
+        raw = secrets.token_urlsafe(32)
+        token_hash = hmac.new(SECRET_KEY.encode(), raw.encode(), hashlib.sha256).hexdigest()
+        expires_at = exp or datetime.now(timezone.utc) + timedelta(minutes=10)
+        model = VerificationTokenModel(user_id=user_id, token_hash=token_hash, expires_at=expires_at)
+        self.session.add(model)
+        return raw

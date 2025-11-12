@@ -490,14 +490,15 @@ class TestUserActivation(BaseTest):
 
     async def test_activate_with_non_existent_user(self, client: AsyncClient):
         """Test activation with token for non-existent user."""
-        non_existent_email = "nonexistent@example.com"
-        non_existent_id = 99999
-        token = self.create_verification_token_for_user_data(non_existent_email, non_existent_id)
+        # With persisted hashed tokens + FK constraint we cannot create a token for a missing user.
+        # Previous behavior expected 404 after decoding a JWT whose user was gone.
+        # New behavior: any token for a non-existent user cannot exist in storage, so a fabricated token must yield 400.
+        fabricated_token = "non-existent-user-token-value"  # Not in DB -> invalid
 
-        response = await client.patch(f"/users/activate?token={token}")
+        response = await client.patch(f"/users/activate?token={fabricated_token}")
 
-        assert response.status_code == 404
-        assert response.json() == {"detail": "User does not exist"}
+        assert response.status_code == 400
+        assert "Invalid activation token" in response.json()["detail"]
 
     async def test_activate_already_active_user(self, client: AsyncClient):
         """Test activation of user who is already activated."""
@@ -571,8 +572,8 @@ class TestUserActivation(BaseTest):
 
         # Second activation with same token should fail
         response2 = await client.patch(f"/users/activate?token={token}")
-        assert response2.status_code == 409
-        assert response2.json() == {"detail": "User is already activated"}
+        assert response2.status_code == 400
+        assert response2.json() == {"detail": "Invalid activation token: Token already used"}
 
     async def test_activate_with_sql_injection_attempt(self, client: AsyncClient):
         """Test activation endpoint is protected against SQL injection."""
