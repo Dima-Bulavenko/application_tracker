@@ -57,12 +57,8 @@ async def session_fixture(engine):
 @pytest.fixture(autouse=True)
 async def override_session_dependency(session):
     app.dependency_overrides[get_session] = lambda: session
-
-
-@pytest.fixture(autouse=True)
-async def cleanup_overrides():
     yield
-    app.dependency_overrides = {}
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(name="client")
