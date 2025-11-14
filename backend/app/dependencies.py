@@ -14,18 +14,25 @@ from app.core.exceptions import (
     TokenInvalidError,
     UserNotFoundError,
 )
-from app.core.services import ApplicationService, AuthService, CompanyService, UserEmailService, UserService
+from app.core.services import (
+    ApplicationService,
+    AuthService,
+    CompanyService,
+    UserEmailService,
+    UserService,
+    VerificationTokenService,
+)
 from app.infrastructure.email import DevelopmentEmailService, SQSEmailService
 from app.infrastructure.repositories import (
     ApplicationSQLAlchemyRepository,
     CompanySQLAlchemyRepository,
     UserSQLAlchemyRepository,
+    VerificationTokenSQLAlchemyRepository,
 )
 from app.infrastructure.security import (
     AccessTokenStrategy,
     PwdlibHasher,
     RefreshTokenStrategy,
-    VerificationTokenStrategy,
 )
 
 from .db import Session as SessionMaker
@@ -37,11 +44,15 @@ async def get_session() -> AsyncGenerator[AsyncSession]:
         await session.commit()
 
 
-async def get_user_service(session: SessionDep) -> UserService:
+async def get_verification_token_service(session: SessionDep) -> VerificationTokenService:
+    return VerificationTokenService(repo=VerificationTokenSQLAlchemyRepository(session))
+
+
+async def get_user_service(session: SessionDep, verification_token_service: VerificationTokenServiceDep) -> UserService:
     return UserService(
         user_repo=UserSQLAlchemyRepository(session),
         password_hasher=PwdlibHasher(),
-        verification_strategy=VerificationTokenStrategy(),
+        verification_token_service=verification_token_service,
         access_token_strategy=AccessTokenStrategy(),
     )
 
@@ -63,10 +74,12 @@ async def get_application_service(session: SessionDep) -> ApplicationService:
     )
 
 
-async def get_user_email_service() -> UserEmailService:
+async def get_user_email_service(
+    session: SessionDep, verification_token_service: VerificationTokenServiceDep
+) -> UserEmailService:
     return UserEmailService(
         email_service=SQSEmailService() if not DEBUG else DevelopmentEmailService(),
-        token_handler=VerificationTokenStrategy(),
+        verification_token_service=verification_token_service,
     )
 
 
@@ -125,6 +138,7 @@ ActiveUserDep = Annotated[UserRead, Depends(get_active_user)]
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
+VerificationTokenServiceDep = Annotated[VerificationTokenService, Depends(get_verification_token_service)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 ApplicationServiceDep = Annotated[ApplicationService, Depends(get_application_service)]

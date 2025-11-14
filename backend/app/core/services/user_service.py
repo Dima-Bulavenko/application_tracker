@@ -1,12 +1,5 @@
 from app.core.domain import User
-from app.core.dto import (
-    AccessTokenPayload,
-    UserChangePassword,
-    UserCreate,
-    UserRead,
-    UserUpdate,
-    VerificationTokenPayload,
-)
+from app.core.dto import AccessTokenPayload, UserChangePassword, UserCreate, UserRead, UserUpdate
 from app.core.exceptions import (
     InvalidPasswordError,
     UserAlreadyActivatedError,
@@ -16,17 +9,19 @@ from app.core.exceptions import (
 from app.core.repositories import IUserRepository
 from app.core.security import IPasswordHasher, ITokenStrategy
 
+from .verification_token_service import VerificationTokenService
+
 
 class UserService:
     def __init__(
         self,
         user_repo: IUserRepository,
         password_hasher: IPasswordHasher,
-        verification_strategy: ITokenStrategy[VerificationTokenPayload],
+        verification_token_service: VerificationTokenService,
         access_token_strategy: ITokenStrategy[AccessTokenPayload],
     ) -> None:
         self.user_repo = user_repo
-        self.verification_strategy = verification_strategy
+        self.verification_token_service = verification_token_service
         self.access_token_strategy = access_token_strategy
         self.password_hasher = password_hasher
 
@@ -45,16 +40,13 @@ class UserService:
         return UserRead.model_validate(user, from_attributes=True)
 
     async def activate_with_token(self, token: str) -> UserRead:
-        token_object = self.verification_strategy.verify_token(token)
-        user = await self.user_repo.get_by_email(token_object.payload.user_email)
-
-        # FIXME: user.id check only for typechecking, refactor User domain to fix it
+        # Validate token and consume to get user_id
+        user_id = await self.verification_token_service.validate_and_consume(token)
+        user = await self.user_repo.get_by_id(user_id)
         if not user or user.id is None:
             raise UserNotFoundError("User does not exist")
-
         if user.is_active:
             raise UserAlreadyActivatedError("User is already activated")
-
         updated_user = await self.user_repo.update(user.id, is_active=True)
         if updated_user is None:
             raise UserNotFoundError("Failed to update user")

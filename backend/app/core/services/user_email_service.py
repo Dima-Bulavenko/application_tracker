@@ -1,9 +1,11 @@
 """User email service for handling user-related email communications."""
 
-from app.core.dto import UserRead, VerificationTokenPayload
+from app import FRONTEND_ORIGIN
+from app.core.dto import UserRead
 from app.core.repositories.email_service import EmailMessage, IEmailService
-from app.core.security import ITokenStrategy
 from app.utils.template_loader import TemplateLoader
+
+from .verification_token_service import VerificationTokenService
 
 
 class UserEmailService:
@@ -16,9 +18,7 @@ class UserEmailService:
     def __init__(
         self,
         email_service: IEmailService,
-        token_handler: ITokenStrategy[VerificationTokenPayload],
-        # Base URL of the frontend application used in links sent via email
-        base_url: str = "http://localhost:5173",
+        verification_token_service: VerificationTokenService,
     ) -> None:
         """Initialize the user email service.
 
@@ -27,25 +27,21 @@ class UserEmailService:
             base_url: Base URL for generating verification links
         """
         self.email_service = email_service
-        self.base_url = base_url
-        self.token_handler = token_handler
+        self.verification_token_service = verification_token_service
         self.template_loader = TemplateLoader()
 
     async def send_verification_email(self, user: UserRead) -> bool:
         """Send email verification message to user.
 
         Args:
-            email: User's email address
-            user_name: Optional user name for personalization
+            user: User object containing email, ID, and optional first name
 
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
-        verification_token = self.token_handler.create_token(
-            VerificationTokenPayload(user_email=user.email, user_id=user.id)
-        )
-
-        verification_url = f"{self.base_url}/verify-email?token={verification_token.token}"
+        assert user.id is not None, "User ID must be set to issue verification token"
+        raw_token = await self.verification_token_service.issue(user.id)
+        verification_url = f"{FRONTEND_ORIGIN}/verify-email?token={raw_token}"
 
         context = {
             "verification_url": verification_url,
@@ -74,7 +70,7 @@ class UserEmailService:
             bool: True if email was sent successfully, False otherwise
         """
         # Link to the frontend sign-in page
-        login_url = f"{self.base_url}/sign-in"
+        login_url = f"{FRONTEND_ORIGIN}/sign-in"
 
         context = {
             "email": email,

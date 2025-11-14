@@ -6,6 +6,9 @@ from httpx import AsyncClient
 
 from app import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
 from app.core.domain import User
+from app.core.exceptions.generic import InvalidPasswordError
+from app.core.exceptions.user import UserNotActivatedError, UserNotFoundError
+from app.core.services.auth_service import AuthService
 
 from .base import BaseTest
 
@@ -31,7 +34,9 @@ class TestLoginEndpoint(BaseTest):
         assert refresh_cookie is not None
         assert refresh_cookie != ""
 
-    async def test_with_not_existent_user(self, client: AsyncClient):
+    async def test_with_not_existent_user(self, client: AsyncClient, mocker):
+        auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
+
         response = await client.post(
             "/auth/login",
             data={"username": "nonexistent@example.com", "password": "ValidPass123"},
@@ -41,6 +46,7 @@ class TestLoginEndpoint(BaseTest):
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
         assert response.json() == {"detail": "Not authenticated"}
+        assert isinstance(auth_service_spy.spy_exception, UserNotFoundError)
 
     @pytest.mark.parametrize("invalid_email", ["invalidemail", "user@.com", "user@domain", "@domain.com"])
     async def test_with_invalid_email(self, invalid_email: str, client: AsyncClient):
@@ -72,8 +78,10 @@ class TestLoginEndpoint(BaseTest):
         assert detail[0]["loc"] == ["body", "password"]
         assert detail[0]["type"] == "string_pattern_mismatch"
 
-    async def test_with_wrong_password(self, client: AsyncClient):
+    async def test_with_wrong_password(self, client: AsyncClient, mocker):
         user = await self.create_user()
+
+        auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
 
         response = await client.post(
             "/auth/login",
@@ -84,10 +92,27 @@ class TestLoginEndpoint(BaseTest):
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
         assert response.json() == {"detail": "Not authenticated"}
+        assert isinstance(auth_service_spy.spy_exception, InvalidPasswordError)
 
     async def test_with_missing_credentials(self, client: AsyncClient):
         response = await client.post("/auth/login")
         assert response.status_code == 422
+
+    async def test_inactive_user(self, client: AsyncClient, mocker):
+        user = await self.create_user(is_active=False)
+
+        auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
+
+        response = await client.post(
+            "/auth/login",
+            data={"username": user.email, "password": self.get_user_password()},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": "Not authenticated"}
+        assert isinstance(auth_service_spy.spy_exception, UserNotActivatedError)
 
 
 class TestLogoutEndpoint(BaseTest):

@@ -6,3 +6,4 @@ from .application import (
 )
 from .company import Company as Company
 from .user import User as User
+from .verification_token import VerificationToken as VerificationToken

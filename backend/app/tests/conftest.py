@@ -21,31 +21,44 @@ def postgres_url():
     return url_object.set(host=env.str("POSTGRES_HOST_TEST")).render_as_string(hide_password=False)
 
 
-@pytest.fixture(name="session")
-async def async_session(postgres_url):
+@pytest.fixture(name="engine", scope="session")
+async def async_engine(postgres_url):
     engine = create_async_engine(postgres_url)
-    async_session_maker = async_sessionmaker(engine)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with async_session_maker() as session:
-        yield session
+    yield engine
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
 
 
+@pytest.fixture(name="session")
+async def session_fixture(engine):
+    """Provide a session that always rolls back, even if code commits."""
+    connection = await engine.connect()
+    transaction = await connection.begin()
+
+    async_session_maker = async_sessionmaker(
+        bind=connection,
+        expire_on_commit=False,
+        join_transaction_mode="create_savepoint",
+    )
+
+    async with async_session_maker() as session:
+        yield session
+
+    await transaction.rollback()
+    await connection.close()
+
+
 @pytest.fixture(autouse=True)
 async def override_session_dependency(session):
     app.dependency_overrides[get_session] = lambda: session
-
-
-@pytest.fixture(autouse=True)
-async def cleanup_overrides():
     yield
-    app.dependency_overrides = {}
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture(name="client")

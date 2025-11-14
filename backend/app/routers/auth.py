@@ -9,6 +9,7 @@ from app import Tags
 from app.base_schemas import ErrorResponse
 from app.core.dto import AccessTokenResponse, UserLogin
 from app.core.exceptions import InvalidPasswordError, TokenExpireError, TokenInvalidError, UserNotFoundError
+from app.core.exceptions.user import UserNotActivatedError
 from app.dependencies import AuthServiceDep, RefreshTokenDep
 
 
@@ -46,7 +47,7 @@ async def login(
     """
     try:
         access, refresh = await auth_service.login_with_credentials(user_data)
-    except (UserNotFoundError, InvalidPasswordError) as exp:
+    except (UserNotFoundError, InvalidPasswordError, UserNotActivatedError) as exp:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",

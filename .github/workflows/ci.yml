@@ -121,6 +121,7 @@ jobs:
       EMAIL_USER: test-email-user
       EMAIL_PASSWORD: test-email-password
       SQS_QUEUE_URL: some-fake-queue-url-for-tests
+      FRONTEND_ORIGIN: test-frontend-origin
 
     steps:
       - uses: actions/checkout@v4

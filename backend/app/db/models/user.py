@@ -20,5 +20,5 @@ class User(Base):
     second_name: Mapped[str | None] = mapped_column(String(40))
     time_create: Mapped[time_create_tp]
     time_update: Mapped[time_update_tp]
-    is_active: Mapped[bool] = mapped_column(default=True, server_default=sql.true())
+    is_active: Mapped[bool] = mapped_column(default=False, server_default=sql.false())
     applications: Mapped[list["Application"]] = relationship(back_populates="user")

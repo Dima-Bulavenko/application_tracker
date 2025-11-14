@@ -6,7 +6,7 @@ export function useLogin() {
   const { setUser } = useAuth();
 
   return async (data: UserLogin) => {
-    return login<true>({ body: data }).then(async ({ data }) => {
+    return login({ body: data }).then(async ({ data }) => {
       client.setConfig({ auth: data.access_token });
       try {
         const { data: user } = await getCurrentUser<true>();
