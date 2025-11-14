@@ -13,6 +13,7 @@ DEBUG = env.bool("DEBUG", False)
 TOKEN_TYPE = "bearer"
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", subcast=str)
 ALLOWED_ORIGINS = env.list("ALLOWED_ORIGINS", subcast=str)
+FRONTEND_ORIGIN = env.str("FRONTEND_ORIGIN")
 
 
 class Tags(Enum):

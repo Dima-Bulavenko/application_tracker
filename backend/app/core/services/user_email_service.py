@@ -1,5 +1,6 @@
 """User email service for handling user-related email communications."""
 
+from app import FRONTEND_ORIGIN
 from app.core.dto import UserRead
 from app.core.repositories.email_service import EmailMessage, IEmailService
 from app.utils.template_loader import TemplateLoader
@@ -18,8 +19,6 @@ class UserEmailService:
         self,
         email_service: IEmailService,
         verification_token_service: VerificationTokenService,
-        # Base URL of the frontend application used in links sent via email
-        base_url: str = "http://localhost:5173",
     ) -> None:
         """Initialize the user email service.
 
@@ -28,7 +27,6 @@ class UserEmailService:
             base_url: Base URL for generating verification links
         """
         self.email_service = email_service
-        self.base_url = base_url
         self.verification_token_service = verification_token_service
         self.template_loader = TemplateLoader()
 
@@ -36,15 +34,14 @@ class UserEmailService:
         """Send email verification message to user.
 
         Args:
-            email: User's email address
-            user_name: Optional user name for personalization
+            user: User object containing email, ID, and optional first name
 
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
         assert user.id is not None, "User ID must be set to issue verification token"
         raw_token = await self.verification_token_service.issue(user.id)
-        verification_url = f"{self.base_url}/verify-email?token={raw_token}"
+        verification_url = f"{FRONTEND_ORIGIN}/verify-email?token={raw_token}"
 
         context = {
             "verification_url": verification_url,
@@ -73,7 +70,7 @@ class UserEmailService:
             bool: True if email was sent successfully, False otherwise
         """
         # Link to the frontend sign-in page
-        login_url = f"{self.base_url}/sign-in"
+        login_url = f"{FRONTEND_ORIGIN}/sign-in"
 
         context = {
             "email": email,
