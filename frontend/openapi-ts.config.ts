@@ -11,6 +11,7 @@ export default defineConfig({
     {
       name: '@hey-api/client-axios',
       runtimeConfigPath: './client_config.ts',
+      throwOnError: true,
     },
     {
       name: 'zod',

@@ -83,7 +83,7 @@ export type Options<
  *
  * If the user with the email exist, return success response but send warning email to the email address.
  */
-export const createUser = <ThrowOnError extends boolean = false>(
+export const createUser = <ThrowOnError extends boolean = true>(
   options: Options<CreateUserData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
@@ -108,7 +108,7 @@ export const createUser = <ThrowOnError extends boolean = false>(
  *
  * Token is typically sent via email during user registration.
  */
-export const activateUser = <ThrowOnError extends boolean = false>(
+export const activateUser = <ThrowOnError extends boolean = true>(
   options: Options<ActivateUserData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
@@ -128,7 +128,7 @@ export const activateUser = <ThrowOnError extends boolean = false>(
  *
  * Requires valid access token for authentication.
  */
-export const changePassword = <ThrowOnError extends boolean = false>(
+export const changePassword = <ThrowOnError extends boolean = true>(
   options: Options<ChangePasswordData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
@@ -156,7 +156,7 @@ export const changePassword = <ThrowOnError extends boolean = false>(
 /**
  * Delete User
  */
-export const deleteUser = <ThrowOnError extends boolean = false>(
+export const deleteUser = <ThrowOnError extends boolean = true>(
   options?: Options<DeleteUserData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).delete<
@@ -182,7 +182,7 @@ export const deleteUser = <ThrowOnError extends boolean = false>(
  *
  * Requires valid access token for authentication.
  */
-export const getCurrentUser = <ThrowOnError extends boolean = false>(
+export const getCurrentUser = <ThrowOnError extends boolean = true>(
   options?: Options<GetCurrentUserData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
@@ -205,7 +205,7 @@ export const getCurrentUser = <ThrowOnError extends boolean = false>(
 /**
  * Update User
  */
-export const updateUser = <ThrowOnError extends boolean = false>(
+export const updateUser = <ThrowOnError extends boolean = true>(
   options: Options<UpdateUserData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
@@ -232,7 +232,7 @@ export const updateUser = <ThrowOnError extends boolean = false>(
 /**
  * Get Applications
  */
-export const getApplications = <ThrowOnError extends boolean = false>(
+export const getApplications = <ThrowOnError extends boolean = true>(
   options?: Options<GetApplicationsData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
@@ -255,7 +255,7 @@ export const getApplications = <ThrowOnError extends boolean = false>(
 /**
  * Create Application
  */
-export const createApplication = <ThrowOnError extends boolean = false>(
+export const createApplication = <ThrowOnError extends boolean = true>(
   options: Options<CreateApplicationData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
@@ -282,7 +282,7 @@ export const createApplication = <ThrowOnError extends boolean = false>(
 /**
  * Delete Application
  */
-export const deleteApplication = <ThrowOnError extends boolean = false>(
+export const deleteApplication = <ThrowOnError extends boolean = true>(
   options: Options<DeleteApplicationData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).delete<
@@ -304,7 +304,7 @@ export const deleteApplication = <ThrowOnError extends boolean = false>(
 /**
  * Get Application By Id
  */
-export const getApplicationById = <ThrowOnError extends boolean = false>(
+export const getApplicationById = <ThrowOnError extends boolean = true>(
   options: Options<GetApplicationByIdData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).get<
@@ -327,7 +327,7 @@ export const getApplicationById = <ThrowOnError extends boolean = false>(
 /**
  * Update Application
  */
-export const updateApplication = <ThrowOnError extends boolean = false>(
+export const updateApplication = <ThrowOnError extends boolean = true>(
   options: Options<UpdateApplicationData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).patch<
@@ -354,7 +354,7 @@ export const updateApplication = <ThrowOnError extends boolean = false>(
 /**
  * Get User Companies
  */
-export const getUserCompanies = <ThrowOnError extends boolean = false>(
+export const getUserCompanies = <ThrowOnError extends boolean = true>(
   options?: Options<GetUserCompaniesData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).get<
@@ -377,7 +377,7 @@ export const getUserCompanies = <ThrowOnError extends boolean = false>(
 /**
  * Get Company
  */
-export const getCompany = <ThrowOnError extends boolean = false>(
+export const getCompany = <ThrowOnError extends boolean = true>(
   options: Options<GetCompanyData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).get<
@@ -399,7 +399,7 @@ export const getCompany = <ThrowOnError extends boolean = false>(
  *
  * If the user with the email exist, return success response but send warning email to the email address.
  */
-export const login = <ThrowOnError extends boolean = false>(
+export const login = <ThrowOnError extends boolean = true>(
   options: Options<LoginData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
@@ -421,7 +421,7 @@ export const login = <ThrowOnError extends boolean = false>(
 /**
  * Refresh Token
  */
-export const refreshToken = <ThrowOnError extends boolean = false>(
+export const refreshToken = <ThrowOnError extends boolean = true>(
   options: Options<RefreshTokenData, ThrowOnError>
 ) => {
   return (options.client ?? _heyApiClient).post<
@@ -438,7 +438,7 @@ export const refreshToken = <ThrowOnError extends boolean = false>(
 /**
  * Logout
  */
-export const logout = <ThrowOnError extends boolean = false>(
+export const logout = <ThrowOnError extends boolean = true>(
   options?: Options<LogoutData, ThrowOnError>
 ) => {
   return (options?.client ?? _heyApiClient).post<
