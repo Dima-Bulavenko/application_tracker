@@ -15,3 +15,7 @@ class UserNotAuthorizedError(BaseExceptionError):
 
 class UserAlreadyActivatedError(BaseExceptionError):
     pass
+
+
+class UserNotActivatedError(BaseExceptionError):
+    pass

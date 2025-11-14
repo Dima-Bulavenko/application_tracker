@@ -5,6 +5,7 @@ from .generic import InvalidPasswordError as InvalidPasswordError
 from .user import (
     UserAlreadyActivatedError as UserAlreadyActivatedError,
     UserAlreadyExistError as UserAlreadyExistError,
+    UserNotActivatedError as UserNotActivatedError,
     UserNotAuthorizedError as UserNotAuthorizedError,
     UserNotFoundError as UserNotFoundError,
 )

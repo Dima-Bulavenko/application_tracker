@@ -6,6 +6,8 @@ from httpx import AsyncClient
 
 from app import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_MINUTES
 from app.core.domain import User
+from app.core.exceptions.user import UserNotActivatedError
+from app.core.services.auth_service import AuthService
 
 from .base import BaseTest
 
@@ -88,6 +90,22 @@ class TestLoginEndpoint(BaseTest):
     async def test_with_missing_credentials(self, client: AsyncClient):
         response = await client.post("/auth/login")
         assert response.status_code == 422
+
+    async def test_inactive_user(self, client: AsyncClient, mocker):
+        user = await self.create_user(is_active=False)
+
+        auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
+
+        response = await client.post(
+            "/auth/login",
+            data={"username": user.email, "password": self.get_user_password()},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": "Not authenticated"}
+        assert isinstance(auth_service_spy.spy_exception, UserNotActivatedError)
 
 
 class TestLogoutEndpoint(BaseTest):

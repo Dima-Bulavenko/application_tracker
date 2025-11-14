@@ -1,5 +1,6 @@
 from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, UserLogin
 from app.core.exceptions import InvalidPasswordError, UserNotFoundError
+from app.core.exceptions.user import UserNotActivatedError
 from app.core.repositories import IUserRepository
 from app.core.security import IPasswordHasher, ITokenStrategy
 
@@ -24,6 +25,8 @@ class AuthService:
         # TODO: Check is user active to
         if not user or user.id is None:
             raise UserNotFoundError(f"User with {user_creds.email} does not exist")  # noqa: EM102
+        if not user.is_active:
+            raise UserNotActivatedError(f"User with {user_creds.email} is not activated")  # noqa: EM102
         if not self.password_hasher.verify(user_creds.password, user.password):
             raise InvalidPasswordError("Incorrect password")
 
