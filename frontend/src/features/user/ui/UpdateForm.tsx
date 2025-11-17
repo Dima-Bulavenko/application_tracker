@@ -30,7 +30,11 @@ const SecondNameField: FieldComponent = ({
 
 const routeApi = getRouteApi('/_authenticated');
 
-export function UpdateForm() {
+type UpdateFormProps = {
+  onSuccess?: () => void;
+};
+
+export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
   const {
     auth: { user, setUser },
   } = routeApi.useRouteContext();
@@ -48,9 +52,10 @@ export function UpdateForm() {
   const onSubmit: SubmitHandler<FormType> = async (data, event) => {
     event?.preventDefault();
     const dirtyData = getDirtyValues(dirtyFields, data);
-    await updateUser<true>({ body: dirtyData }).then((res) =>
-      setUser(res.data)
-    );
+    await updateUser<true>({ body: dirtyData }).then((res) => {
+      setUser(res.data);
+      onSuccess?.();
+    });
   };
   return (
     <Form

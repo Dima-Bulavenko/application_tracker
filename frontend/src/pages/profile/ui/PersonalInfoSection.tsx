@@ -1,20 +1,33 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import Paper from '@mui/material/Paper';
-import { UpdateForm } from 'features/user/ui/UpdateForm';
+import { getRouteApi } from '@tanstack/react-router';
+import { SectionHeader } from './SectionHeader';
+import { UserInfoList } from './UserInfoList';
+import { EditDrawer } from './EditDrawer';
+
+const routeApi = getRouteApi('/_authenticated');
 
 export function PersonalInfoSection() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const {
+    auth: { user },
+  } = routeApi.useRouteContext();
+
+  const handleOpenDrawer = () => setDrawerOpen(true);
+  const handleCloseDrawer = () => setDrawerOpen(false);
+
   return (
-    <Paper elevation={1} sx={{ p: 3 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant='h6' component='h2' gutterBottom>
-          Personal Information
-        </Typography>
-        <Typography variant='body2' color='text.secondary'>
-          Update your name and personal details
-        </Typography>
-      </Box>
-      <UpdateForm />
-    </Paper>
+    <>
+      <Paper elevation={1} sx={{ p: 3 }}>
+        <SectionHeader
+          title='Personal Information'
+          subtitle='Your profile details'
+          onEditClick={handleOpenDrawer}
+        />
+        <UserInfoList user={user} />
+      </Paper>
+
+      <EditDrawer open={drawerOpen} onClose={handleCloseDrawer} />
+    </>
   );
 }
