@@ -89,7 +89,7 @@ function ApplicationStatusField({ control }: FilterFormParam) {
     />
   );
 }
-import { DevTool } from '@hookform/devtools';
+
 function WorkLocationField({ control }: FilterFormParam) {
   const options = zWorkLocation.options;
   const controller = useController({
@@ -177,7 +177,6 @@ export function FilterApplicationForm() {
           Apply Filters
         </Button>
       </Box>
-      <DevTool control={control} placement='bottom-left' />
     </Stack>
   );
 }
