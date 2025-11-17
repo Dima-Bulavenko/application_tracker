@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { TextInput } from 'shared/ui/TextInput';
 import { FormError } from 'shared/ui/FormError';
 import Stack from '@mui/material/Stack';
-import { DevTool } from '@hookform/devtools';
+import Box from '@mui/material/Box';
 import { updateUser } from 'shared/api/gen';
 import { getDirtyValues } from 'shared/api/get_dirty_values';
 import { getRouteApi } from '@tanstack/react-router';
@@ -30,7 +30,11 @@ const SecondNameField: FieldComponent = ({
 
 const routeApi = getRouteApi('/_authenticated');
 
-export function UpdateForm() {
+type UpdateFormProps = {
+  onSuccess?: () => void;
+};
+
+export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
   const {
     auth: { user, setUser },
   } = routeApi.useRouteContext();
@@ -48,23 +52,27 @@ export function UpdateForm() {
   const onSubmit: SubmitHandler<FormType> = async (data, event) => {
     event?.preventDefault();
     const dirtyData = getDirtyValues(dirtyFields, data);
-    await updateUser<true>({ body: dirtyData }).then((res) =>
-      setUser(res.data)
-    );
+    await updateUser<true>({ body: dirtyData }).then((res) => {
+      setUser(res.data);
+      onSuccess?.();
+    });
   };
   return (
-    <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={5}>
+    <Form
+      onSubmit={handleSubmit(onSubmit)}
+      sx={{ p: 0, m: 0, maxWidth: '100%' }}>
+      <Stack spacing={3}>
         <FirstNameField name='first_name' control={control} />
         <SecondNameField name='second_name' control={control} />
         <FormError message={errors.root?.message} />
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+          <SubmitButton
+            disabled={!isDirty || isSubmitting}
+            isSubmitting={isSubmitting}>
+            Save Changes
+          </SubmitButton>
+        </Box>
       </Stack>
-      <SubmitButton
-        disabled={!isDirty || isSubmitting}
-        isSubmitting={isSubmitting}>
-        Update
-      </SubmitButton>
-      <DevTool control={control} />
     </Form>
   );
 }

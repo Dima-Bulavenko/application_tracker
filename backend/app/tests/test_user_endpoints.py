@@ -1436,3 +1436,24 @@ class TestDeleteUser(BaseTest):
         existing_user2 = await self.get_user(user2.id)
         assert deleted_user1 is None
         assert existing_user2 is not None
+
+    async def test_delete_user_deletes_refresh_token_cookie(self, client: AsyncClient):
+        """Test that deleting user also deletes the refresh token cookie."""
+        user = await self.create_user(is_active=True)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+
+        response = await client.delete(
+            "/users/me",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"message": "User deleted successfully"}
+
+        # Verify refresh token cookie is being deleted
+        set_cookie_header = response.headers.get("set-cookie")
+        assert set_cookie_header is not None
+        assert "refresh=" in set_cookie_header
+        # Cookie deletion is indicated by max-age=0 or expires in the past
+        assert "max-age=0" in set_cookie_header.lower() or "expires=" in set_cookie_header.lower()

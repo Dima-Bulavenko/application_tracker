@@ -1,6 +1,7 @@
+from dataclasses import asdict
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException, status
+from fastapi import APIRouter, Form, HTTPException, Response, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
@@ -14,6 +15,8 @@ from app.core.exceptions import (
     UserNotFoundError,
 )
 from app.dependencies import AccessTokenDep, AccessTokenPayloadDep, UserEmailServiceDep, UserServiceDep
+
+from .auth import RefreshTokenSettings
 
 router = APIRouter(prefix="/users", tags=[Tags.USER])
 
@@ -210,9 +213,12 @@ async def update_user(
         },
     },
 )
-async def delete_user(payload: AccessTokenPayloadDep, user_service: UserServiceDep) -> MessageResponse:
+async def delete_user(
+    response: Response, payload: AccessTokenPayloadDep, user_service: UserServiceDep
+) -> MessageResponse:
     try:
         await user_service.delete(payload.user_id)
+        response.delete_cookie(**asdict(RefreshTokenSettings()))
     except UserNotFoundError as ex:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(ex)) from ex
     return MessageResponse(message="User deleted successfully")
