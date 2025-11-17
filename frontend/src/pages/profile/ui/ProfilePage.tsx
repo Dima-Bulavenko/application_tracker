@@ -1,14 +1,17 @@
-import { UpdateForm } from 'features/user/ui/UpdateForm';
-import { DeleteAccountButton } from 'features/user/ui/DeleteAccountButton';
 import Stack from '@mui/material/Stack';
-import Divider from '@mui/material/Divider';
+import Container from '@mui/material/Container';
+import { ProfileHeader } from './ProfileHeader';
+import { PersonalInfoSection } from './PersonalInfoSection';
+import { DangerZoneSection } from './DangerZoneSection';
 
 export function ProfilePage() {
   return (
-    <Stack spacing={4}>
-      <UpdateForm />
-      <Divider />
-      <DeleteAccountButton />
-    </Stack>
+    <Container maxWidth='md' sx={{ py: 4 }}>
+      <Stack spacing={4}>
+        <ProfileHeader />
+        <PersonalInfoSection />
+        <DangerZoneSection />
+      </Stack>
+    </Container>
   );
 }
