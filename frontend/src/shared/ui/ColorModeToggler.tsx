@@ -35,13 +35,6 @@ export function ColorModeToggler() {
         ml: 1,
         width: 36,
         height: 36,
-        borderRadius: '50%',
-        border: '2px solid',
-        borderColor: 'primary.main',
-        bgcolor: (theme) =>
-          theme.palette.mode === 'light'
-            ? theme.palette.grey[200]
-            : theme.palette.grey[900],
         color: 'text.primary',
         '&:hover': {
           bgcolor: (theme) =>
