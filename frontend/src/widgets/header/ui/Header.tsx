@@ -1,6 +1,5 @@
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -18,13 +17,28 @@ export function Header() {
   return (
     <AppBar position='sticky' color='default' elevation={0}>
       <Toolbar sx={{ gap: 1, minHeight: 64 }}>
-        <Typography
-          variant='h6'
+        <Box
           component={RouterLink}
           to='/'
-          sx={{ textDecoration: 'none', color: 'inherit' }}>
-          App Tracker
-        </Typography>
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            textDecoration: 'none',
+            '&:hover': {
+              opacity: 0.8,
+            },
+            transition: 'opacity 0.2s',
+          }}>
+          <Box
+            component='img'
+            src='/logo.svg'
+            alt='Application Tracker'
+            sx={{
+              height: 30,
+              width: 70,
+            }}
+          />
+        </Box>
 
         <Box sx={{ flex: 1 }} />
 
