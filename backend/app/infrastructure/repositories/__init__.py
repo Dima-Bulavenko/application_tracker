@@ -1,5 +1,6 @@
 from .slq_alchemy.application import ApplicationSQLAlchemyRepository as ApplicationSQLAlchemyRepository
 from .slq_alchemy.company import CompanySQLAlchemyRepository as CompanySQLAlchemyRepository
+from .slq_alchemy.refresh_token import RefreshTokenSQLAlchemyRepository as RefreshTokenSQLAlchemyRepository
 from .slq_alchemy.user import UserSQLAlchemyRepository as UserSQLAlchemyRepository
 from .slq_alchemy.verification_token import (
     VerificationTokenSQLAlchemyRepository as VerificationTokenSQLAlchemyRepository,

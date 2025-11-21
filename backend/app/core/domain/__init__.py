@@ -5,5 +5,6 @@ from .application import (
     WorkType as WorkType,
 )
 from .company import Company as Company
+from .refresh_token import RefreshToken as RefreshToken
 from .user import User as User
 from .verification_token import VerificationToken as VerificationToken
