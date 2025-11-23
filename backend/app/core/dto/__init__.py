@@ -24,5 +24,6 @@ from .user import (
     UserCreate as UserCreate,
     UserLogin as UserLogin,
     UserRead as UserRead,
+    UserResentActivationEmail as UserResentActivationEmail,
     UserUpdate as UserUpdate,
 )

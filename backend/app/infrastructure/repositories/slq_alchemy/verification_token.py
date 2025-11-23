@@ -38,3 +38,10 @@ class VerificationTokenSQLAlchemyRepository(SQLAlchemyRepository[VerificationTok
         )
         model = await self.session.scalar(statement)
         return VerificationTokenDomain.model_validate(model, from_attributes=True) if model else None
+
+    async def get_latest_for_user(self, user_id: int) -> VerificationTokenDomain | None:
+        statement = (
+            select(self.model).where(self.model.user_id == user_id).order_by(self.model.time_create.desc()).limit(1)
+        )
+        model = await self.session.scalar(statement)
+        return VerificationTokenDomain.model_validate(model, from_attributes=True) if model else None

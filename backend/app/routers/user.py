@@ -5,9 +5,10 @@ from fastapi import APIRouter, Form, HTTPException, Response, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
-from app.core.dto import UserChangePassword, UserCreate, UserRead, UserUpdate
+from app.core.dto import UserChangePassword, UserCreate, UserRead, UserResentActivationEmail, UserUpdate
 from app.core.exceptions import (
     InvalidPasswordError,
+    RateLimitExceededError,
     TokenExpireError,
     TokenInvalidError,
     UserAlreadyActivatedError,
@@ -90,6 +91,63 @@ async def activate_user(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(e),
         ) from e
+
+
+@router.post(
+    "/resend-activation",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "User is already activated",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found (hidden for security)",
+            "model": MessageResponse,
+        },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "description": "Too many requests - rate limit exceeded",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def resend_activation_email(
+    form_data: Annotated[UserResentActivationEmail, Form()],
+    user_service: UserServiceDep,
+    email_service: UserEmailServiceDep,
+) -> MessageResponse:
+    """
+    **Resend** activation email to user.
+
+    This endpoint is rate-limited to prevent abuse. Users must wait a few minutes
+    between resend requests. For security reasons, the response doesn't reveal
+    whether the email exists in the system.
+    """
+    print(form_data)
+    try:
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await user_service.resend_activation_email(
+            form_data.email, cooldown_minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES
+        )
+        await email_service.send_verification_email(user)
+        return MessageResponse(
+            message=f"If an account exists with {form_data.email}, an activation email has been sent"
+        )
+    except UserAlreadyActivatedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except RateLimitExceededError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(e),
+        ) from e
+    except UserNotFoundError:
+        return MessageResponse(
+            message=f"If an account exists with {form_data.email}, an activation email has been sent"
+        )
 
 
 @router.patch(

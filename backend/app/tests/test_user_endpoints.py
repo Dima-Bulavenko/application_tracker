@@ -585,6 +585,228 @@ class TestUserActivation(BaseTest):
         assert "Invalid activation token" in response.json()["detail"]
 
 
+class TestResendActivationEmail(BaseTest):
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_success(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test successful resend of activation email for inactive user."""
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        # Create an initial token (simulating first registration)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Move time forward past cooldown period to avoid rate limiting
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 200
+        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert mock_send_verification.called
+        assert mock_send_verification.call_count == 1
+
+    async def test_resend_activation_already_activated_user(self, client: AsyncClient):
+        """Test resend activation email for already activated user returns 400."""
+        user = await self.create_user(is_active=True)
+        form_data = {"email": user.email}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 400
+        assert response.json() == {"detail": "User is already activated"}
+
+    async def test_resend_activation_non_existent_email(self, client: AsyncClient):
+        """Test resend activation for non-existent email returns success (security)."""
+        form_data = {"email": "nonexistent@example.com"}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        # Should return success to prevent email enumeration
+        assert response.status_code == 200
+        assert "If an account exists with nonexistent@example.com" in response.json()["message"]
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_rate_limit_exceeded(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation email enforces rate limiting."""
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        # Create a recent token (simulating recent request)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Try to resend immediately (within cooldown period)
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 429
+        assert "Please wait" in response.json()["detail"]
+        assert "seconds before requesting another activation email" in response.json()["detail"]
+        assert not mock_send_verification.called
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_no_previous_token(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation for user with no previous token."""
+        user = await self.create_user(is_active=False)
+        form_data = {"email": user.email}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        # Should succeed even without previous token
+        assert response.status_code == 200
+        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert mock_send_verification.called
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_after_cooldown_period(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test resend activation succeeds after cooldown period expires."""
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        # Create an old token
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Move time forward exactly past cooldown period
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES + 1)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 200
+        assert mock_send_verification.called
+
+    async def test_resend_activation_missing_email(self, client: AsyncClient):
+        """Test resend activation without email parameter returns 422."""
+        response = await client.post("/users/resend-activation", data={})
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert response_data["detail"][0]["type"] == "missing"
+        assert "username" in response_data["detail"][0]["loc"]
+
+    async def test_resend_activation_empty_email(self, client: AsyncClient):
+        """Test resend activation with empty email."""
+        form_data = {"email": ""}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 422
+
+    async def test_resend_activation_invalid_email_format(self, client: AsyncClient):
+        """Test resend activation with invalid email format."""
+        form_data = {"email": "not-an-email"}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 422
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_case_sensitive_email(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation email is case-sensitive."""
+        user = await self.create_user(is_active=False, email="test@example.com")
+        assert user.id is not None
+
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        # Try with different case
+        form_data = {"email": "TEST@example.com"}
+
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        # Email doesn't match (case-sensitive), so no email sent
+        assert response.status_code == 200
+        assert "If an account exists with TEST@example.com" in response.json()["message"]
+        assert not mock_send_verification.called
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_multiple_users(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation for multiple different users."""
+        user1 = await self.create_user(is_active=False, email="user1@example.com")
+        user2 = await self.create_user(is_active=False, email="user2@example.com")
+        assert user1.id is not None
+        assert user2.id is not None
+
+        self.create_verification_token(user1)
+        self.create_verification_token(user2)
+        await self.session.commit()
+
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
+            # Resend for user1
+            response1 = await client.post("/users/resend-activation", data={"email": user1.email})
+            assert response1.status_code == 200
+
+            # Resend for user2
+            response2 = await client.post("/users/resend-activation", data={"email": user2.email})
+            assert response2.status_code == 200
+
+        assert mock_send_verification.call_count == 2
+
+    async def test_resend_activation_sql_injection_attempt(self, client: AsyncClient):
+        """Test resend activation endpoint is protected against SQL injection."""
+        malicious_email = "'; DROP TABLE users; --"
+        form_data = {"email": malicious_email}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 422
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_exact_cooldown_boundary(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test resend activation at exact cooldown boundary."""
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        current_time = datetime.now(timezone.utc)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Try exactly at cooldown boundary (should still be rate limited)
+        with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        # At exact boundary, should still be rate limited (< not <=)
+        assert response.status_code == 429
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_one_second_after_cooldown(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test resend activation one second after cooldown expires."""
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        current_time = datetime.now(timezone.utc)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Try one second after cooldown
+        with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES, seconds=1)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 200
+        assert mock_send_verification.called
+
+
 class TestUserChangePassword(BaseTest):
     async def test_change_password_success(self, client: AsyncClient):
         """Test successful password change with valid access token and correct old password."""

@@ -19,3 +19,7 @@ class UserAlreadyActivatedError(BaseExceptionError):
 
 class UserNotActivatedError(BaseExceptionError):
     pass
+
+
+class RateLimitExceededError(BaseExceptionError):
+    pass

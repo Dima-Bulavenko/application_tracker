@@ -9,6 +9,7 @@ from .auth import (
 from .company import CompanyNotFoundError as CompanyNotFoundError
 from .generic import InvalidPasswordError as InvalidPasswordError
 from .user import (
+    RateLimitExceededError as RateLimitExceededError,
     UserAlreadyActivatedError as UserAlreadyActivatedError,
     UserAlreadyExistError as UserAlreadyExistError,
     UserNotActivatedError as UserNotActivatedError,

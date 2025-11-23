@@ -2,6 +2,7 @@ from app.core.domain import User
 from app.core.dto import AccessTokenPayload, UserChangePassword, UserCreate, UserRead, UserUpdate
 from app.core.exceptions import (
     InvalidPasswordError,
+    RateLimitExceededError,
     UserAlreadyActivatedError,
     UserAlreadyExistError,
     UserNotFoundError,
@@ -107,3 +108,41 @@ class UserService:
         deleted = await self.user_repo.delete(user_id)
         if not deleted:
             raise UserNotFoundError(f"User with id {user_id} not found")
+
+    async def resend_activation_email(self, email: str, cooldown_minutes: int = 2) -> UserRead:
+        """Resend activation email to user if they haven't activated their account yet.
+
+        Args:
+            email: User's email address
+            cooldown_minutes: Minimum minutes between resend requests
+
+        Returns:
+            UserRead: User information
+
+        Raises:
+            UserNotFoundError: If user doesn't exist
+            UserAlreadyActivatedError: If user is already activated
+            RateLimitExceededError: If resend is requested too soon after the last attempt
+        """
+        from datetime import UTC, datetime, timedelta
+
+        user = await self.user_repo.get_by_email(email)
+        if user is None or user.id is None:
+            raise UserNotFoundError("User does not exist")
+
+        if user.is_active:
+            raise UserAlreadyActivatedError("User is already activated")
+
+        # Check rate limit using the latest verification token creation time
+        latest_token = await self.verification_token_service.repo.get_latest_for_user(user.id)
+        if latest_token is not None:
+            time_since_last_token = datetime.now(UTC) - latest_token.time_create
+            cooldown = timedelta(minutes=cooldown_minutes, seconds=0.1)
+            if time_since_last_token.total_seconds() <= (cooldown.total_seconds()):
+                remaining = cooldown - time_since_last_token
+                remaining_seconds = max(0, int(remaining.total_seconds()))
+                raise RateLimitExceededError(
+                    f"Please wait {remaining_seconds} seconds before requesting another activation email"
+                )
+
+        return UserRead.model_validate(user, from_attributes=True)

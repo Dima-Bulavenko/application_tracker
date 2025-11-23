@@ -62,3 +62,7 @@ class UserChangePassword(BaseModelDTO):
 class UserUpdate(BaseModelDTO):
     first_name: str | None = Field(max_length=40, default=None)
     second_name: str | None = Field(max_length=40, default=None)
+
+
+class UserResentActivationEmail(BaseModelDTO):
+    email: UserEmailField
