@@ -13,6 +13,9 @@ import type {
   ActivateUserData,
   ActivateUserResponses,
   ActivateUserErrors,
+  ResendActivationEmailData,
+  ResendActivationEmailResponses,
+  ResendActivationEmailErrors,
   ChangePasswordData,
   ChangePasswordResponses,
   ChangePasswordErrors,
@@ -119,6 +122,33 @@ export const activateUser = <ThrowOnError extends boolean = true>(
     responseType: 'json',
     url: '/users/activate',
     ...options,
+  });
+};
+
+/**
+ * Resend Activation Email
+ * **Resend** activation email to user.
+ *
+ * This endpoint is rate-limited to prevent abuse. Users must wait a few minutes
+ * between resend requests. For security reasons, the response doesn't reveal
+ * whether the email exists in the system.
+ */
+export const resendActivationEmail = <ThrowOnError extends boolean = true>(
+  options: Options<ResendActivationEmailData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).post<
+    ResendActivationEmailResponses,
+    ResendActivationEmailErrors,
+    ThrowOnError
+  >({
+    ...urlSearchParamsBodySerializer,
+    responseType: 'json',
+    url: '/users/resend-activation',
+    ...options,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...options.headers,
+    },
   });
 };
 

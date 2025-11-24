@@ -315,6 +315,17 @@ export type UserRead = {
 };
 
 /**
+ * UserResentActivationEmail
+ */
+export type UserResentActivationEmail = {
+  /**
+   * Username
+   * User's email address
+   */
+  username: string;
+};
+
+/**
  * UserUpdate
  */
 export type UserUpdate = {
@@ -428,6 +439,45 @@ export type ActivateUserResponses = {
 
 export type ActivateUserResponse =
   ActivateUserResponses[keyof ActivateUserResponses];
+
+export type ResendActivationEmailData = {
+  body: UserResentActivationEmail;
+  path?: never;
+  query?: never;
+  url: '/users/resend-activation';
+};
+
+export type ResendActivationEmailErrors = {
+  /**
+   * User is already activated
+   */
+  400: ErrorResponse;
+  /**
+   * User not found (hidden for security)
+   */
+  404: MessageResponse;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+  /**
+   * Too many requests - rate limit exceeded
+   */
+  429: ErrorResponse;
+};
+
+export type ResendActivationEmailError =
+  ResendActivationEmailErrors[keyof ResendActivationEmailErrors];
+
+export type ResendActivationEmailResponses = {
+  /**
+   * Successful Response
+   */
+  200: MessageResponse;
+};
+
+export type ResendActivationEmailResponse =
+  ResendActivationEmailResponses[keyof ResendActivationEmailResponses];
 
 export type ChangePasswordData = {
   body: UserChangePassword;
