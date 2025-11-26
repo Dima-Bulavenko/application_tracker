@@ -96,6 +96,7 @@ async def activate_user(
 @router.post(
     "/resend-activation",
     status_code=status.HTTP_200_OK,
+    include_in_schema=False,
     responses={
         status.HTTP_400_BAD_REQUEST: {
             "description": "User is already activated",
@@ -123,7 +124,6 @@ async def resend_activation_email(
     between resend requests. For security reasons, the response doesn't reveal
     whether the email exists in the system.
     """
-    print(form_data)
     try:
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 

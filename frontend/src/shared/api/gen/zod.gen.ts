@@ -205,12 +205,6 @@ export const zUserRead = z.object({
   is_active: z.optional(z.boolean()).default(true),
 });
 
-export const zUserResentActivationEmail = z.object({
-  username: z.email().register(z.globalRegistry, {
-    description: "User's email address",
-  }),
-});
-
 export const zUserUpdate = z.object({
   first_name: z.optional(z.union([z.string().max(40), z.null()])),
   second_name: z.optional(z.union([z.string().max(40), z.null()])),
@@ -228,12 +222,6 @@ export const zActivateUserData = z.object({
   query: z.object({
     token: z.string(),
   }),
-});
-
-export const zResendActivationEmailData = z.object({
-  body: zUserResentActivationEmail,
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
 });
 
 export const zChangePasswordData = z.object({
