@@ -29,7 +29,6 @@ export default function RegisterForm() {
         to: '/registration-success',
         search: { registrationEmail: data.username },
         replace: true,
-        mask: { to: '/registration-success' },
       });
       return;
     }
