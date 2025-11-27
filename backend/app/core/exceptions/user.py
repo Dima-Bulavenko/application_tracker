@@ -9,6 +9,10 @@ class UserAlreadyExistError(AlreadyExistError):
     pass
 
 
+class InactiveUserAlreadyExistError(AlreadyExistError):
+    pass
+
+
 class UserNotAuthorizedError(BaseExceptionError):
     pass
 

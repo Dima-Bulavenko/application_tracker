@@ -1,0 +1,27 @@
+{% extends "emails/base.html" %} {% block title %}Resend Verification -
+Application Tracker{% endblock %} {% block header_title %}Email Verification
+Requested{% endblock %} {% block content %}
+<h2>Here's your new verification link</h2>
+
+<p>Hello{% if user_name %}, {{ user_name }}{% endif %},</p>
+
+<p>
+  You requested a new verification link for your Application Tracker account.
+  Click the button below to verify your email address:
+</p>
+
+<a href="{{ verification_url }}" class="button">Verify Email Address</a>
+
+<p>
+  If the button doesn't work, you can also copy and paste this link into your
+  browser:
+</p>
+<p><a href="{{ verification_url }}">{{ verification_url }}</a></p>
+
+<div class="alert alert-warning">
+  <strong>⏰ Important:</strong> This verification link will expire in 24 hours
+  for security reasons. Any previous verification links have been invalidated.
+</div>
+
+<p>If you didn't request this verification email, please ignore this message.</p>
+{% endblock %}

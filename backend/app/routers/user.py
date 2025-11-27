@@ -7,6 +7,7 @@ from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
 from app.core.dto import UserChangePassword, UserCreate, UserRead, UserResentActivationEmail, UserUpdate
 from app.core.exceptions import (
+    InactiveUserAlreadyExistError,
     InvalidPasswordError,
     RateLimitExceededError,
     TokenExpireError,
@@ -40,6 +41,9 @@ async def create_user(
         await email_service.send_verification_email(user)
     except UserAlreadyExistError:
         await email_service.send_duplicate_registration_warning(credentials.email)
+    except InactiveUserAlreadyExistError:
+        user = await user_service.get_by_email(credentials.email)
+        await email_service.resend_activation_email(user)
 
     return MessageResponse(
         message=f"We sent email to {credentials.email} address, follow link to complete your registration"

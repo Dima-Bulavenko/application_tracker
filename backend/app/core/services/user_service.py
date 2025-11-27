@@ -1,6 +1,7 @@
 from app.core.domain import User
 from app.core.dto import AccessTokenPayload, UserChangePassword, UserCreate, UserRead, UserUpdate
 from app.core.exceptions import (
+    InactiveUserAlreadyExistError,
     InvalidPasswordError,
     RateLimitExceededError,
     UserAlreadyActivatedError,
@@ -32,6 +33,8 @@ class UserService:
     async def create(self, user_data: UserCreate) -> UserRead:
         existing_user = await self.user_repo.get_by_email(user_data.email)
         if existing_user is not None:
+            if not existing_user.is_active:
+                raise InactiveUserAlreadyExistError("Inactive user already exists")
             raise UserAlreadyExistError("User already exists")
         hashed_password = self.password_hasher.hash(user_data.password)
         user = await self.user_repo.create(User(email=user_data.email, password=hashed_password))

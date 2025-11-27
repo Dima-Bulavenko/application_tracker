@@ -109,6 +109,182 @@ class TestCreateUser(BaseTest):
         # Verify the email argument is correct
         assert email_arg == existing_user.email
 
+    async def test_create_user_with_inactive_existing_email(self, client: AsyncClient):
+        """Test user creation with inactive existing email resends activation email."""
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False)
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "NewTestPass456",
+        }
+
+        response = await client.post("/users", data=form_data)
+
+        # Should still return success response (security by design)
+        assert response.status_code == 201
+        expected_message = f"We sent email to {inactive_user.email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+    @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
+    async def test_create_user_with_inactive_existing_email_resends_activation(
+        self, mock_resend_activation: MagicMock, client: AsyncClient
+    ):
+        """Test user creation with inactive existing email triggers resend_activation_email."""
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False)
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "NewTestPass456",
+        }
+
+        response = await client.post("/users", data=form_data)
+
+        # Should still return success response (security by design)
+        assert response.status_code == 201
+
+        # Verify resend_activation_email was called
+        assert mock_resend_activation.called
+        assert mock_resend_activation.call_count == 1
+
+        # Get the call arguments
+        call_args = mock_resend_activation.call_args
+        user_arg = call_args[0][0]  # First argument is the user
+
+        # Verify the user argument has correct properties
+        assert hasattr(user_arg, "email")
+        assert user_arg.email == inactive_user.email
+        assert hasattr(user_arg, "id")
+        assert user_arg.id == inactive_user.id
+
+    @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_create_user_inactive_vs_new_user_email_service(
+        self, mock_send_verification: MagicMock, mock_resend_activation: MagicMock, client: AsyncClient
+    ):
+        """Test that inactive users get resend_activation_email while new users get send_verification_email."""
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False)
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "TestPass123",
+        }
+
+        # Try to register with inactive user's email
+        response1 = await client.post("/users", data=form_data)
+        assert response1.status_code == 201
+
+        # Verify resend_activation_email was called, not send_verification_email
+        assert mock_resend_activation.called
+        assert mock_resend_activation.call_count == 1
+        assert not mock_send_verification.called
+
+        # Reset mocks
+        mock_resend_activation.reset_mock()
+        mock_send_verification.reset_mock()
+
+        # Now create a new user
+        form_data2 = {
+            "email": "newuser@example.com",
+            "password": "TestPass123",
+        }
+
+        response2 = await client.post("/users", data=form_data2)
+        assert response2.status_code == 201
+
+        # Verify send_verification_email was called, not resend_activation_email
+        assert mock_send_verification.called
+        assert mock_send_verification.call_count == 1
+        assert not mock_resend_activation.called
+
+    async def test_create_user_inactive_user_password_not_updated(self, client: AsyncClient):
+        """Test that trying to register with inactive user's email doesn't update their password."""
+        # Create an inactive user with a known password
+        original_password = "OriginalPass123"
+        inactive_user = await self.create_user(is_active=False)
+        assert inactive_user.id is not None
+
+        # Get the original password hash
+        original_user_db = await self.get_user(inactive_user.id)
+        assert original_user_db is not None
+        original_password_hash = original_user_db.password
+        original_password_from_helper = self.get_user_password()  # The actual password used by create_user
+
+        # Try to register with the same email but different password
+        form_data = {
+            "email": inactive_user.email,
+            "password": original_password,  # Different from what was used to create the user
+        }
+
+        response = await client.post("/users", data=form_data)
+        assert response.status_code == 201
+
+        # Verify password was NOT updated
+        updated_user_db = await self.get_user(inactive_user.id)
+        assert updated_user_db is not None
+        assert updated_user_db.password == original_password_hash
+
+        # Verify the original password still works
+        assert self.password_hasher.verify(original_password_from_helper, updated_user_db.password)
+        # Verify the new password does NOT work
+        assert not self.password_hasher.verify(original_password, updated_user_db.password)
+
+    @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
+    async def test_create_user_inactive_user_comprehensive_check(
+        self, mock_resend_activation: MagicMock, client: AsyncClient
+    ):
+        """Comprehensive test for inactive user registration flow."""
+        from sqlalchemy import func, select
+
+        from app.db.models import User as UserModel
+
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False, first_name="John", second_name="Doe")
+        assert inactive_user.id is not None
+
+        # Count users with this email before request
+        initial_count_result = await self.session.execute(
+            select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
+        )
+        initial_count = initial_count_result.scalar()
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "DifferentPass123",
+        }
+
+        response = await client.post("/users", data=form_data)
+
+        # Verify API response
+        assert response.status_code == 201
+        expected_message = f"We sent email to {inactive_user.email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+        # Verify no new user was created
+        final_count_result = await self.session.execute(
+            select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
+        )
+        final_count = final_count_result.scalar()
+        assert final_count == initial_count
+
+        # Verify user data remains unchanged
+        unchanged_user = await self.get_user(inactive_user.id)
+        assert unchanged_user is not None
+        assert unchanged_user.is_active is False
+        assert unchanged_user.first_name == "John"
+        assert unchanged_user.second_name == "Doe"
+
+        # Verify resend_activation_email was called
+        assert mock_resend_activation.called
+        assert mock_resend_activation.call_count == 1
+
+        call_args = mock_resend_activation.call_args
+        user_arg = call_args[0][0]
+        assert user_arg.email == inactive_user.email
+        assert user_arg.id == inactive_user.id
+
     async def test_create_user_with_invalid_email_format(self, client: AsyncClient):
         """Test user creation with invalid email format."""
         form_data = {
