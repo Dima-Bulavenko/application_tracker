@@ -59,6 +59,20 @@ class UserChangePassword(BaseModelDTO):
         return value
 
 
+class UserSetPassword(BaseModelDTO):
+    """For OAuth users who want to set a password for the first time"""
+
+    new_password: UserPasswordField
+    confirm_new_password: UserPasswordField
+
+    @field_validator("confirm_new_password", mode="after")
+    @classmethod
+    def validate_confirm_password(cls, value: str, info: ValidationInfo) -> str:
+        if value != info.data.get("new_password"):
+            raise ValueError("New password and confirmation do not match")
+        return value
+
+
 class UserUpdate(BaseModelDTO):
     first_name: str | None = Field(max_length=40, default=None)
     second_name: str | None = Field(max_length=40, default=None)
