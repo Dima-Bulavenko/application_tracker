@@ -5,7 +5,14 @@ from fastapi import APIRouter, Form, HTTPException, Response, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
-from app.core.dto import UserChangePassword, UserCreate, UserRead, UserResentActivationEmail, UserUpdate
+from app.core.dto import (
+    UserChangePassword,
+    UserCreate,
+    UserRead,
+    UserResentActivationEmail,
+    UserSetPassword,
+    UserUpdate,
+)
 from app.core.exceptions import (
     InactiveUserAlreadyExistError,
     InvalidPasswordError,
@@ -183,6 +190,54 @@ async def change_password(
     try:
         await user_service.change_password_with_token(access_token, password_form)
         return MessageResponse(message="Password changed successfully")
+    except (TokenExpireError, TokenInvalidError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid access token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
+    except InvalidPasswordError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+
+@router.post(
+    "/set-password",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "User already has a password",
+            "model": ErrorResponse,
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing, invalid, or expired access token",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def set_password(
+    access_token: AccessTokenDep, password_form: Annotated[UserSetPassword, Form()], user_service: UserServiceDep
+) -> MessageResponse:
+    """
+    **Set** password for OAuth users who don't have a password yet.
+
+    This allows OAuth users to add password-based authentication to their account.
+    Requires valid access token for authentication.
+    """
+    try:
+        await user_service.set_password_with_token(access_token, password_form.new_password)
+        return MessageResponse(message="Password set successfully")
     except (TokenExpireError, TokenInvalidError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

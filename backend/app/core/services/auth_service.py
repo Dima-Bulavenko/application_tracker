@@ -27,6 +27,13 @@ class AuthService:
             raise UserNotFoundError(f"User with {user_creds.email} does not exist")  # noqa: EM102
         if not user.is_active:
             raise UserNotActivatedError(f"User with {user_creds.email} is not activated")  # noqa: EM102
+
+        # Check if user has a password (OAuth users may not have one)
+        if user.password is None:
+            raise InvalidPasswordError(
+                "This account uses OAuth authentication. Please sign in with your OAuth provider or set a password first."
+            )
+
         if not self.password_hasher.verify(user_creds.password, user.password):
             raise InvalidPasswordError("Incorrect password")
 

@@ -67,6 +67,10 @@ class UserService:
         if user is None or user.id is None:
             raise UserNotFoundError("User does not exist")
 
+        # Check if user has a password (OAuth users may not have one)
+        if user.password is None:
+            raise InvalidPasswordError("This account uses OAuth authentication and does not have a password")
+
         if not self.password_hasher.verify(passwords.old_password, user.password):
             raise InvalidPasswordError("Old password is incorrect")
 
@@ -77,6 +81,37 @@ class UserService:
 
         # Revoke all refresh tokens when password is changed for security
         await self.refresh_token_service.revoke_all_for_user(user.id)
+
+        return UserRead.model_validate(updated_user, from_attributes=True)
+
+    async def set_password_with_token(self, access_token: str, passwords: str) -> UserRead:
+        """Set password for OAuth users who don't have one yet.
+
+        Args:
+            access_token: User's access token
+            passwords: New password
+
+        Returns:
+            UserRead: Updated user information
+
+        Raises:
+            UserNotFoundError: If user doesn't exist
+            InvalidPasswordError: If user already has a password
+        """
+        access_token_object = self.access_token_strategy.verify_token(access_token)
+
+        user = await self.user_repo.get_by_email(access_token_object.payload.user_email)
+        if user is None or user.id is None:
+            raise UserNotFoundError("User does not exist")
+
+        # Check if user already has a password
+        if user.password is not None:
+            raise InvalidPasswordError("This account already has a password. Use change password instead.")
+
+        new_hashed_password = self.password_hasher.hash(passwords)
+        updated_user = await self.user_repo.update(user.id, password=new_hashed_password)
+        if updated_user is None:
+            raise UserNotFoundError("Failed to update user")
 
         return UserRead.model_validate(updated_user, from_attributes=True)
 
