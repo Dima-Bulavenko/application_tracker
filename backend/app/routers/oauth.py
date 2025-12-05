@@ -2,11 +2,10 @@ from dataclasses import asdict
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
-from fastapi.responses import RedirectResponse
 
-from app import FRONTEND_ORIGIN, Tags
+from app import Tags
 from app.core.domain.user import OAuthProvider
-from app.core.dto.oauth import OAuthAuthorizeResponse
+from app.core.dto import OAuthAuthorizeResponse, OAuthLoginResponse
 from app.core.exceptions import UserAlreadyExistError
 from app.core.exceptions.oauth import (
     OAuthAccountAlreadyLinkedError,
@@ -68,7 +67,7 @@ async def google_callback(
     response: Response,
     oauth_service: OAuthServiceDep,
     oauth_state_cookie: str | None = Cookie(None, alias="oauth_state"),
-) -> RedirectResponse:
+) -> OAuthLoginResponse:
     """Handle Google OAuth callback
 
     This endpoint receives the authorization code from Google and:
@@ -107,15 +106,7 @@ async def google_callback(
             **asdict(RefreshTokenSettings()), value=refresh_token.token, expires=refresh_token.payload.exp
         )
 
-        redirect_url = (
-            f"{FRONTEND_ORIGIN}/auth/callback?"
-            f"access_token={access_token.token}&"
-            f"user_id={access_token.payload.user_id}&"
-            f"email={access_token.payload.user_email}&"
-            f"is_new_user={str(is_new_user).lower()}"
-        )
-
-        return RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+        return OAuthLoginResponse(access_token=access_token.token, is_new_user=is_new_user)
 
     except OAuthTokenExchangeError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

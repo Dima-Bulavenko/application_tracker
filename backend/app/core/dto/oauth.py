@@ -17,8 +17,6 @@ class OAuthLoginResponse(BaseModelDTO):
 
     access_token: str = Field(description="JWT access token")
     token_type: Literal["bearer"] = Field(default="bearer", description="Token type")
-    user_id: int = Field(description="User ID")
-    email: str = Field(description="User email")
     is_new_user: bool = Field(description="Whether this is a new user registration")
 
 
