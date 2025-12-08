@@ -21,7 +21,7 @@ GOOGLE_CLIENT_ID = env.str("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = env.str("GOOGLE_CLIENT_SECRET", "")
 GITHUB_CLIENT_ID = env.str("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = env.str("GITHUB_CLIENT_SECRET", "")
-OAUTH_REDIRECT_URI = env.str("OAUTH_REDIRECT_URI", "http://localhost:8000/auth/oauth")
+OAUTH_REDIRECT_URI = env.str("OAUTH_REDIRECT_URI", "http://localhost:5173/oauth")
 
 
 class Tags(Enum):

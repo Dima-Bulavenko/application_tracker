@@ -17,7 +17,7 @@ class GoogleOAuthProvider(IOAuthProvider):
     def __init__(self):
         self.client_id = GOOGLE_CLIENT_ID
         self.client_secret = GOOGLE_CLIENT_SECRET
-        self.redirect_uri = f"{OAUTH_REDIRECT_URI}/google/callback"
+        self.redirect_uri = f"{OAUTH_REDIRECT_URI}/google"
 
     def get_authorization_url(self, state: str) -> str:
         """Generate Google OAuth authorization URL"""
