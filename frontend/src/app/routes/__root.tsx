@@ -11,6 +11,10 @@ interface RouterContext {
   auth: AuthContextType & {
     logout: () => Promise<void>;
     login: (data: UserLogin) => Promise<AccessTokenResponse>;
+    loginWithGoogle: (
+      code: string,
+      state: string
+    ) => Promise<AccessTokenResponse>;
   };
   queryClient: QueryClient;
 }

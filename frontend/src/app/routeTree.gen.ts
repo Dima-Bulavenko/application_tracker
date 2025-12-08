@@ -8,87 +8,96 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as RegistrationSuccessRouteImport } from './routes/registration-success'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as VerifyEmailRouteImport } from './routes/verify-email';
+import { Route as SignInRouteImport } from './routes/sign-in';
+import { Route as RegistrationSuccessRouteImport } from './routes/registration-success';
+import { Route as RegisterRouteImport } from './routes/register';
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as OauthGoogleRouteImport } from './routes/oauth/google';
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile';
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard';
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RegistrationSuccessRoute = RegistrationSuccessRouteImport.update({
   id: '/registration-success',
   path: '/registration-success',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const OauthGoogleRoute = OauthGoogleRouteImport.update({
+  id: '/oauth/google',
+  path: '/oauth/google',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => AuthenticatedRoute,
-} as any)
+} as any);
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/register': typeof RegisterRoute
-  '/registration-success': typeof RegistrationSuccessRoute
-  '/sign-in': typeof SignInRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/profile': typeof AuthenticatedProfileRoute
+  '/': typeof IndexRoute;
+  '/register': typeof RegisterRoute;
+  '/registration-success': typeof RegistrationSuccessRoute;
+  '/sign-in': typeof SignInRoute;
+  '/verify-email': typeof VerifyEmailRoute;
+  '/dashboard': typeof AuthenticatedDashboardRoute;
+  '/profile': typeof AuthenticatedProfileRoute;
+  '/oauth/google': typeof OauthGoogleRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/register': typeof RegisterRoute
-  '/registration-success': typeof RegistrationSuccessRoute
-  '/sign-in': typeof SignInRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/profile': typeof AuthenticatedProfileRoute
+  '/': typeof IndexRoute;
+  '/register': typeof RegisterRoute;
+  '/registration-success': typeof RegistrationSuccessRoute;
+  '/sign-in': typeof SignInRoute;
+  '/verify-email': typeof VerifyEmailRoute;
+  '/dashboard': typeof AuthenticatedDashboardRoute;
+  '/profile': typeof AuthenticatedProfileRoute;
+  '/oauth/google': typeof OauthGoogleRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/register': typeof RegisterRoute
-  '/registration-success': typeof RegistrationSuccessRoute
-  '/sign-in': typeof SignInRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/_authenticated': typeof AuthenticatedRouteWithChildren;
+  '/register': typeof RegisterRoute;
+  '/registration-success': typeof RegistrationSuccessRoute;
+  '/sign-in': typeof SignInRoute;
+  '/verify-email': typeof VerifyEmailRoute;
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute;
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute;
+  '/oauth/google': typeof OauthGoogleRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/register'
@@ -97,7 +106,8 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/dashboard'
     | '/profile'
-  fileRoutesByTo: FileRoutesByTo
+    | '/oauth/google';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
     | '/register'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/dashboard'
     | '/profile'
+    | '/oauth/google';
   id:
     | '__root__'
     | '/'
@@ -116,91 +127,100 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
-  fileRoutesById: FileRoutesById
+    | '/oauth/google';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  RegisterRoute: typeof RegisterRoute
-  RegistrationSuccessRoute: typeof RegistrationSuccessRoute
-  SignInRoute: typeof SignInRoute
-  VerifyEmailRoute: typeof VerifyEmailRoute
+  IndexRoute: typeof IndexRoute;
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren;
+  RegisterRoute: typeof RegisterRoute;
+  RegistrationSuccessRoute: typeof RegistrationSuccessRoute;
+  SignInRoute: typeof SignInRoute;
+  VerifyEmailRoute: typeof VerifyEmailRoute;
+  OauthGoogleRoute: typeof OauthGoogleRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
-      preLoaderRoute: typeof VerifyEmailRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/verify-email';
+      path: '/verify-email';
+      fullPath: '/verify-email';
+      preLoaderRoute: typeof VerifyEmailRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/sign-in';
+      path: '/sign-in';
+      fullPath: '/sign-in';
+      preLoaderRoute: typeof SignInRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/registration-success': {
-      id: '/registration-success'
-      path: '/registration-success'
-      fullPath: '/registration-success'
-      preLoaderRoute: typeof RegistrationSuccessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/registration-success';
+      path: '/registration-success';
+      fullPath: '/registration-success';
+      preLoaderRoute: typeof RegistrationSuccessRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/register';
+      path: '/register';
+      fullPath: '/register';
+      preLoaderRoute: typeof RegisterRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthenticatedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/_authenticated';
+      path: '';
+      fullPath: '';
+      preLoaderRoute: typeof AuthenticatedRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/oauth/google': {
+      id: '/oauth/google';
+      path: '/oauth/google';
+      fullPath: '/oauth/google';
+      preLoaderRoute: typeof OauthGoogleRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_authenticated/profile': {
-      id: '/_authenticated/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
+      id: '/_authenticated/profile';
+      path: '/profile';
+      fullPath: '/profile';
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport;
+      parentRoute: typeof AuthenticatedRoute;
+    };
     '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
+      id: '/_authenticated/dashboard';
+      path: '/dashboard';
+      fullPath: '/dashboard';
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport;
+      parentRoute: typeof AuthenticatedRoute;
+    };
   }
 }
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute;
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute;
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
-}
+};
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
-)
+  AuthenticatedRouteChildren
+);
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -209,7 +229,8 @@ const rootRouteChildren: RootRouteChildren = {
   RegistrationSuccessRoute: RegistrationSuccessRoute,
   SignInRoute: SignInRoute,
   VerifyEmailRoute: VerifyEmailRoute,
-}
+  OauthGoogleRoute: OauthGoogleRoute,
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
