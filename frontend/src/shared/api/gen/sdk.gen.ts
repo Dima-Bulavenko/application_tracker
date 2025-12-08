@@ -16,6 +16,9 @@ import type {
   ChangePasswordData,
   ChangePasswordResponses,
   ChangePasswordErrors,
+  SetPasswordData,
+  SetPasswordResponses,
+  SetPasswordErrors,
   DeleteUserData,
   DeleteUserResponses,
   DeleteUserErrors,
@@ -55,6 +58,11 @@ import type {
   LogoutData,
   LogoutResponses,
   LogoutErrors,
+  GoogleAuthorizeData,
+  GoogleAuthorizeResponses,
+  GoogleCallbackData,
+  GoogleCallbackResponses,
+  GoogleCallbackErrors,
 } from './types.gen';
 import { client as _heyApiClient } from './client.gen';
 
@@ -145,6 +153,38 @@ export const changePassword = <ThrowOnError extends boolean = true>(
       },
     ],
     url: '/users/change-password',
+    ...options,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      ...options.headers,
+    },
+  });
+};
+
+/**
+ * Set Password
+ * **Set** password for OAuth users who don't have a password yet.
+ *
+ * This allows OAuth users to add password-based authentication to their account.
+ * Requires valid access token for authentication.
+ */
+export const setPassword = <ThrowOnError extends boolean = true>(
+  options: Options<SetPasswordData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).post<
+    SetPasswordResponses,
+    SetPasswordErrors,
+    ThrowOnError
+  >({
+    ...urlSearchParamsBodySerializer,
+    responseType: 'json',
+    security: [
+      {
+        scheme: 'bearer',
+        type: 'http',
+      },
+    ],
+    url: '/users/set-password',
     ...options,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -447,6 +487,55 @@ export const logout = <ThrowOnError extends boolean = true>(
     ThrowOnError
   >({
     url: '/auth/logout',
+    ...options,
+  });
+};
+
+/**
+ * Google Authorize
+ * Initiate Google OAuth flow
+ *
+ * Redirects user to Google authorization page.
+ * State token is stored in HTTPOnly cookie for CSRF protection.
+ */
+export const googleAuthorize = <ThrowOnError extends boolean = true>(
+  options?: Options<GoogleAuthorizeData, ThrowOnError>
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GoogleAuthorizeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    url: '/auth/oauth/google/authorize',
+    ...options,
+  });
+};
+
+/**
+ * Google Callback
+ * Handle Google OAuth callback
+ *
+ * This endpoint receives the authorization code from Google and:
+ * 1. Validates the state token (CSRF protection via cookie comparison)
+ * 2. Exchanges code for access token
+ * 3. Fetches user info from Google
+ * 4. Creates or logs in user
+ * 5. Issues JWT tokens
+ * 6. Redirects to frontend with access token
+ *
+ * The refresh token is set as an HTTPOnly secure cookie.
+ */
+export const googleCallback = <ThrowOnError extends boolean = true>(
+  options: Options<GoogleCallbackData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GoogleCallbackResponses,
+    GoogleCallbackErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    url: '/auth/oauth/google/callback',
     ...options,
   });
 };

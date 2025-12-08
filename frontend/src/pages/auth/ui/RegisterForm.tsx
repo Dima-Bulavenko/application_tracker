@@ -10,6 +10,7 @@ import { useNavigate } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
 import SubmitButton from 'shared/ui/SubmitButton';
+import GoogleAuthorizationButton from 'shared/ui/GoogleAuthorizationButton';
 
 export default function RegisterForm() {
   const {
@@ -43,6 +44,7 @@ export default function RegisterForm() {
       </Stack>
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Sign Up</SubmitButton>
+      <GoogleAuthorizationButton />
     </Form>
   );
 }

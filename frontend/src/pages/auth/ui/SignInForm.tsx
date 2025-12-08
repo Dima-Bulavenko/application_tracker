@@ -9,6 +9,7 @@ import { customZodResolver } from 'shared/lib/customZodResolver';
 import { getRouteApi } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
+import GoogleAuthorizationButton from 'shared/ui/GoogleAuthorizationButton';
 
 const routeApi = getRouteApi('/sign-in');
 
@@ -40,6 +41,7 @@ export default function SignInForm() {
       </Stack>
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Sign In</SubmitButton>
+      <GoogleAuthorizationButton />
     </Form>
   );
 }
