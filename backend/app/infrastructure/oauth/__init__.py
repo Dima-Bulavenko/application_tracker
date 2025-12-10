@@ -1,2 +1,1 @@
-from .github_provider import GitHubOAuthProvider as GitHubOAuthProvider
 from .google_provider import GoogleOAuthProvider as GoogleOAuthProvider
