@@ -5,9 +5,18 @@ from fastapi import APIRouter, Form, HTTPException, Response, status
 
 from app import Tags
 from app.base_schemas import ErrorResponse, MessageResponse
-from app.core.dto import UserChangePassword, UserCreate, UserRead, UserUpdate
+from app.core.dto import (
+    UserChangePassword,
+    UserCreate,
+    UserRead,
+    UserResentActivationEmail,
+    UserSetPassword,
+    UserUpdate,
+)
 from app.core.exceptions import (
+    InactiveUserAlreadyExistError,
     InvalidPasswordError,
+    RateLimitExceededError,
     TokenExpireError,
     TokenInvalidError,
     UserAlreadyActivatedError,
@@ -39,6 +48,9 @@ async def create_user(
         await email_service.send_verification_email(user)
     except UserAlreadyExistError:
         await email_service.send_duplicate_registration_warning(credentials.email)
+    except InactiveUserAlreadyExistError:
+        user = await user_service.get_by_email(credentials.email)
+        await email_service.resend_activation_email(user)
 
     return MessageResponse(
         message=f"We sent email to {credentials.email} address, follow link to complete your registration"
@@ -92,6 +104,63 @@ async def activate_user(
         ) from e
 
 
+@router.post(
+    "/resend-activation",
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "User is already activated",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found (hidden for security)",
+            "model": MessageResponse,
+        },
+        status.HTTP_429_TOO_MANY_REQUESTS: {
+            "description": "Too many requests - rate limit exceeded",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def resend_activation_email(
+    form_data: Annotated[UserResentActivationEmail, Form()],
+    user_service: UserServiceDep,
+    email_service: UserEmailServiceDep,
+) -> MessageResponse:
+    """
+    **Resend** activation email to user.
+
+    This endpoint is rate-limited to prevent abuse. Users must wait a few minutes
+    between resend requests. For security reasons, the response doesn't reveal
+    whether the email exists in the system.
+    """
+    try:
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await user_service.resend_activation_email(
+            form_data.email, cooldown_minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES
+        )
+        await email_service.send_verification_email(user)
+        return MessageResponse(
+            message=f"If an account exists with {form_data.email}, an activation email has been sent"
+        )
+    except UserAlreadyActivatedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except RateLimitExceededError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(e),
+        ) from e
+    except UserNotFoundError:
+        return MessageResponse(
+            message=f"If an account exists with {form_data.email}, an activation email has been sent"
+        )
+
+
 @router.patch(
     "/change-password",
     status_code=status.HTTP_200_OK,
@@ -121,6 +190,54 @@ async def change_password(
     try:
         await user_service.change_password_with_token(access_token, password_form)
         return MessageResponse(message="Password changed successfully")
+    except (TokenExpireError, TokenInvalidError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid access token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    except UserNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
+    except InvalidPasswordError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+
+@router.post(
+    "/set-password",
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "User already has a password",
+            "model": ErrorResponse,
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "description": "Missing, invalid, or expired access token",
+            "model": ErrorResponse,
+        },
+        status.HTTP_404_NOT_FOUND: {
+            "description": "User not found",
+            "model": ErrorResponse,
+        },
+    },
+)
+async def set_password(
+    access_token: AccessTokenDep, password_form: Annotated[UserSetPassword, Form()], user_service: UserServiceDep
+) -> MessageResponse:
+    """
+    **Set** password for OAuth users who don't have a password yet.
+
+    This allows OAuth users to add password-based authentication to their account.
+    Requires valid access token for authentication.
+    """
+    try:
+        await user_service.set_password_with_token(access_token, password_form.new_password)
+        return MessageResponse(message="Password set successfully")
     except (TokenExpireError, TokenInvalidError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -9,6 +9,10 @@ class UserAlreadyExistError(AlreadyExistError):
     pass
 
 
+class InactiveUserAlreadyExistError(AlreadyExistError):
+    pass
+
+
 class UserNotAuthorizedError(BaseExceptionError):
     pass
 
@@ -18,4 +22,8 @@ class UserAlreadyActivatedError(BaseExceptionError):
 
 
 class UserNotActivatedError(BaseExceptionError):
+    pass
+
+
+class RateLimitExceededError(BaseExceptionError):
     pass

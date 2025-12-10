@@ -9,14 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import SECRET_KEY
 from app.core.domain import Application, Company, User
-from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token
+from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, TokenType
 from app.core.security import IPasswordHasher, ITokenStrategy
+from app.core.services import RefreshTokenService
 from app.db.models import (
     Application as ApplicationModel,
     Company as CompanyModel,
     User as UserModel,
     VerificationToken as VerificationTokenModel,
 )
+from app.infrastructure.repositories import RefreshTokenSQLAlchemyRepository
 
 
 class BaseTest:
@@ -28,13 +30,12 @@ class BaseTest:
         session: AsyncSession,
         password_hasher: IPasswordHasher,
         access_token_strategy: ITokenStrategy[AccessTokenPayload],
-        refresh_token_strategy: ITokenStrategy[RefreshTokenPayload],
     ):
         """Set up common test dependencies and counters."""
         self.session = session
         self.access_token_strategy = access_token_strategy
-        self.refresh_token_strategy = refresh_token_strategy
         self.password_hasher = password_hasher
+        self.refresh_token_repo = RefreshTokenSQLAlchemyRepository(session)
 
         # Initialize counters for unique test data
         self.user_counter = 0
@@ -171,10 +172,19 @@ class BaseTest:
         payload = AccessTokenPayload(user_email=user.email, user_id=user.id)
         return self.access_token_strategy.create_token(payload)
 
-    def create_refresh_token(self, user: User) -> Token[RefreshTokenPayload]:
+    async def create_refresh_token(self, user: User) -> Token[RefreshTokenPayload]:
+        """Create a database-backed refresh token and return a Token object with raw token.
+
+        This creates an actual refresh token in the database using RefreshTokenService,
+        and returns a Token[RefreshTokenPayload] for test compatibility.
+        """
         assert user.id is not None, "User ID must be set to create refresh token"
+        service = RefreshTokenService(self.refresh_token_repo)
+        raw_token = await service.issue(user.id)
+
+        # Return Token object with raw token and payload for compatibility
         payload = RefreshTokenPayload(user_email=user.email, user_id=user.id)
-        return self.refresh_token_strategy.create_token(payload)
+        return Token(token=raw_token, type=TokenType.refresh, payload=payload)
 
     def create_verification_token(self, user: User, exp: datetime | None = None) -> str:
         """Create a persisted verification token and return its raw value."""

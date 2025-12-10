@@ -8,7 +8,14 @@ from typing_extensions import Annotated, Literal
 from app import Tags
 from app.base_schemas import ErrorResponse
 from app.core.dto import AccessTokenResponse, UserLogin
-from app.core.exceptions import InvalidPasswordError, TokenExpireError, TokenInvalidError, UserNotFoundError
+from app.core.exceptions import (
+    InvalidPasswordError,
+    RefreshTokenReuseError,
+    RefreshTokenRevokedError,
+    TokenExpireError,
+    TokenInvalidError,
+    UserNotFoundError,
+)
 from app.core.exceptions.user import UserNotActivatedError
 from app.dependencies import AuthServiceDep, RefreshTokenDep
 
@@ -76,7 +83,7 @@ async def refresh_token(
 ) -> AccessTokenResponse:
     try:
         access, refresh = await auth_service.refresh_token(refresh_token)
-    except (TokenExpireError, TokenInvalidError) as e:
+    except (TokenExpireError, TokenInvalidError, RefreshTokenRevokedError, RefreshTokenReuseError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
@@ -91,7 +98,6 @@ async def refresh_token(
     return AccessTokenResponse(access_token=access.token)
 
 
-# FIXME: Review logout logic, because it don't has refresh token rotation, and I need to delete refresh token even if access token is not valid
 @router.post(
     "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -102,5 +108,5 @@ async def logout(
     refresh: Annotated[str | None, Cookie()] = None,
 ):
     if refresh:
-        auth_service.logout(refresh)
+        await auth_service.logout(refresh)
     response.delete_cookie(**asdict(RefreshTokenSettings()))

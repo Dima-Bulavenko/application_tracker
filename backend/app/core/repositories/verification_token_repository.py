@@ -19,3 +19,6 @@ class IVerificationTokenRepository(ABC):
 
     @abstractmethod
     async def mark_used(self, token_id: int) -> VerificationToken | None: ...
+
+    @abstractmethod
+    async def get_latest_for_user(self, user_id: int) -> VerificationToken | None: ...

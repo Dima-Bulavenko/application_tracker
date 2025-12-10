@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from enum import Enum
 
 from pydantic import BaseModel, Field
 
 
+class OAuthProvider(str, Enum):
+    LOCAL = "local"
+    GOOGLE = "google"
+
+
 class User(BaseModel):
     email: str
-    password: str
+    password: str | None = None
+    oauth_provider: OAuthProvider = OAuthProvider.LOCAL
+    oauth_id: str | None = None
     id: int | None = None
     first_name: str | None = None
     second_name: str | None = None

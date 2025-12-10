@@ -88,3 +88,33 @@ class UserEmailService:
         )
 
         return await self.email_service.send_email(message)
+
+    async def resend_activation_email(self, user: UserRead) -> bool:
+        """Resend account activation email to user.
+
+        Args:
+            user: User object containing email, ID, and optional first name
+            raw_token: Raw verification token to include in the email
+
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        raw_token = await self.verification_token_service.issue(user.id)
+        verification_url = f"{FRONTEND_ORIGIN}/verify-email?token={raw_token}"
+
+        context = {
+            "verification_url": verification_url,
+            "user_name": user.first_name or "User",
+        }
+
+        html_body = self.template_loader.render_template("emails/resend_activation.html", context)
+        text_body = self.template_loader.render_template("emails/resend_activation.txt", context)
+
+        message = EmailMessage(
+            to_emails=[user.email],
+            subject="Email Verification Link - Application Tracker",
+            body=text_body,
+            html_body=html_body,
+        )
+
+        return await self.email_service.send_email(message)

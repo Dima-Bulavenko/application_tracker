@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import delete, select, update
 
 from app.core.domain import User
+from app.core.domain.user import OAuthProvider
 from app.core.repositories import IUserRepository
 from app.db.models import User as UserModel
 
@@ -19,6 +20,20 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
 
     async def get_by_id(self, user_id: int) -> User | None:
         statement = select(self.model).where(self.model.id == user_id)
+        user = await self.session.scalar(statement)
+        return User.model_validate(user, from_attributes=True) if user else None
+
+    async def get_by_oauth_id(self, oauth_provider: OAuthProvider, oauth_id: str) -> User | None:
+        statement = select(self.model).where(
+            self.model.oauth_provider == oauth_provider.value, self.model.oauth_id == oauth_id
+        )
+        user = await self.session.scalar(statement)
+        return User.model_validate(user, from_attributes=True) if user else None
+
+    async def get_by_email_and_provider(self, email: str, oauth_provider: OAuthProvider) -> User | None:
+        statement = select(self.model).where(
+            self.model.email == email, self.model.oauth_provider == oauth_provider.value
+        )
         user = await self.session.scalar(statement)
         return User.model_validate(user, from_attributes=True) if user else None
 

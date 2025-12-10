@@ -18,6 +18,7 @@ from app.core.services import (
     ApplicationService,
     AuthService,
     CompanyService,
+    RefreshTokenService,
     UserEmailService,
     UserService,
     VerificationTokenService,
@@ -26,13 +27,13 @@ from app.infrastructure.email import DevelopmentEmailService, SQSEmailService
 from app.infrastructure.repositories import (
     ApplicationSQLAlchemyRepository,
     CompanySQLAlchemyRepository,
+    RefreshTokenSQLAlchemyRepository,
     UserSQLAlchemyRepository,
     VerificationTokenSQLAlchemyRepository,
 )
 from app.infrastructure.security import (
     AccessTokenStrategy,
     PwdlibHasher,
-    RefreshTokenStrategy,
 )
 
 from .db import Session as SessionMaker
@@ -48,21 +49,30 @@ async def get_verification_token_service(session: SessionDep) -> VerificationTok
     return VerificationTokenService(repo=VerificationTokenSQLAlchemyRepository(session))
 
 
-async def get_user_service(session: SessionDep, verification_token_service: VerificationTokenServiceDep) -> UserService:
+async def get_refresh_token_service(session: SessionDep) -> RefreshTokenService:
+    return RefreshTokenService(repo=RefreshTokenSQLAlchemyRepository(session))
+
+
+async def get_user_service(
+    session: SessionDep,
+    verification_token_service: VerificationTokenServiceDep,
+    refresh_token_service: RefreshTokenServiceDep,
+) -> UserService:
     return UserService(
         user_repo=UserSQLAlchemyRepository(session),
         password_hasher=PwdlibHasher(),
         verification_token_service=verification_token_service,
         access_token_strategy=AccessTokenStrategy(),
+        refresh_token_service=refresh_token_service,
     )
 
 
-async def get_auth_service(session: SessionDep) -> AuthService:
+async def get_auth_service(session: SessionDep, refresh_token_service: RefreshTokenServiceDep) -> AuthService:
     return AuthService(
         user_repo=UserSQLAlchemyRepository(session),
         password_hasher=PwdlibHasher(),
         access_strategy=AccessTokenStrategy(),
-        refresh_strategy=RefreshTokenStrategy(),
+        refresh_token_service=refresh_token_service,
     )
 
 
@@ -132,15 +142,13 @@ def get_access_token_payload(token: AccessTokenDep) -> AccessTokenPayload:
 RefreshTokenDep = Annotated[str, Depends(get_refresh_token)]
 AccessTokenDep = Annotated[str, Depends(get_access_token)]
 AccessTokenPayloadDep = Annotated[AccessTokenPayload, Depends(get_access_token_payload)]
-
-UserDep = Annotated[UserRead, Depends(get_user)]
-ActiveUserDep = Annotated[UserRead, Depends(get_active_user)]
-
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
 VerificationTokenServiceDep = Annotated[VerificationTokenService, Depends(get_verification_token_service)]
+RefreshTokenServiceDep = Annotated[RefreshTokenService, Depends(get_refresh_token_service)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 ApplicationServiceDep = Annotated[ApplicationService, Depends(get_application_service)]
-UserEmailServiceDep = Annotated[UserEmailService, Depends(get_user_email_service)]
 CompanyServiceDep = Annotated[CompanyService, Depends(get_company_service)]
+UserEmailServiceDep = Annotated[UserEmailService, Depends(get_user_email_service)]
+UserDep = Annotated[UserRead, Depends(get_user)]
+ActiveUserDep = Annotated[UserRead, Depends(get_active_user)]

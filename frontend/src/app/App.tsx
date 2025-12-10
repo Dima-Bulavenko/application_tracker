@@ -10,7 +10,11 @@ import { useAuth } from 'shared/hooks/useAuth';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './router';
 import { AuthProvider } from './AuthProvider';
-import { useLogin, useLogout } from 'features/user/hooks/useUser';
+import {
+  useLogin,
+  useLoginWithGoogle,
+  useLogout,
+} from 'features/user/hooks/useUser';
 import { useEffect } from 'react';
 
 const queryClient = new QueryClient({
@@ -27,6 +31,7 @@ function InnerApp() {
   const auth = useAuth();
   const logout = useLogout();
   const login = useLogin();
+  const loginWithGoogle = useLoginWithGoogle();
   useEffect(() => {
     router.invalidate();
   }, [auth.user]);
@@ -34,7 +39,10 @@ function InnerApp() {
   return (
     <RouterProvider
       router={router}
-      context={{ auth: { ...auth, login, logout }, queryClient }}
+      context={{
+        auth: { ...auth, login, logout, loginWithGoogle },
+        queryClient,
+      }}
     />
   );
 }

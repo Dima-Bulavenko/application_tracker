@@ -139,6 +139,39 @@ export const zMessageResponse = z.object({
   message: z.string(),
 });
 
+export const zOAuthAuthorizeResponse = z
+  .object({
+    authorization_url: z.string().register(z.globalRegistry, {
+      description: 'URL to redirect user to for OAuth authorization',
+    }),
+    state: z.string().register(z.globalRegistry, {
+      description: 'CSRF protection state token',
+    }),
+  })
+  .register(z.globalRegistry, {
+    description: 'OAuth authorization URL response',
+  });
+
+export const zOAuthLoginResponse = z
+  .object({
+    access_token: z.string().register(z.globalRegistry, {
+      description: 'JWT access token',
+    }),
+    token_type: z
+      .optional(
+        z.literal('bearer').register(z.globalRegistry, {
+          description: 'Token type',
+        })
+      )
+      .default('bearer'),
+    is_new_user: z.boolean().register(z.globalRegistry, {
+      description: 'Whether this is a new user registration',
+    }),
+  })
+  .register(z.globalRegistry, {
+    description: 'OAuth login/signup response with JWT tokens',
+  });
+
 export const zUserChangePassword = z.object({
   old_password: z
     .string()
@@ -205,6 +238,28 @@ export const zUserRead = z.object({
   is_active: z.optional(z.boolean()).default(true),
 });
 
+export const zUserSetPassword = z
+  .object({
+    new_password: z
+      .string()
+      .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+      .register(z.globalRegistry, {
+        description:
+          'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+      }),
+    confirm_new_password: z
+      .string()
+      .regex(/^(?=.*[A-Z])(?=.*\d).{8,}$/)
+      .register(z.globalRegistry, {
+        description:
+          'Password must be 8 characters long, contain at least one uppercase letter and one number.',
+      }),
+  })
+  .register(z.globalRegistry, {
+    description:
+      'For OAuth users who want to set a password for the first time',
+  });
+
 export const zUserUpdate = z.object({
   first_name: z.optional(z.union([z.string().max(40), z.null()])),
   second_name: z.optional(z.union([z.string().max(40), z.null()])),
@@ -226,6 +281,12 @@ export const zActivateUserData = z.object({
 
 export const zChangePasswordData = z.object({
   body: zUserChangePassword,
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSetPasswordData = z.object({
+  body: zUserSetPassword,
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
@@ -360,4 +421,19 @@ export const zLogoutData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
+});
+
+export const zGoogleAuthorizeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zGoogleCallbackData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    code: z.string(),
+    state: z.string(),
+  }),
 });

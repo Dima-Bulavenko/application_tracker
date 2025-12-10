@@ -6,5 +6,6 @@ from .application import (
     WorkType as WorkType,
 )
 from .config import Base as Base, pk_tp as pk_tp, time_create_tp as time_create_tp, time_update_tp as time_update_tp
+from .refresh_token import RefreshToken as RefreshToken
 from .user import User as User
 from .verification_token import VerificationToken as VerificationToken

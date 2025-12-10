@@ -1,5 +1,7 @@
 from .application_repository import IApplicationRepository as IApplicationRepository
 from .company_repository import ICompanyRepository as ICompanyRepository
 from .email_service import EmailMessage as EmailMessage, IEmailService as IEmailService
+from .oauth_provider import IOAuthProvider as IOAuthProvider, OAuthUserInfo as OAuthUserInfo
+from .refresh_token_repository import IRefreshTokenRepository as IRefreshTokenRepository
 from .user_repository import IUserRepository as IUserRepository
 from .verification_token_repository import IVerificationTokenRepository as IVerificationTokenRepository

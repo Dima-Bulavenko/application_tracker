@@ -227,6 +227,45 @@ export type MessageResponse = {
 };
 
 /**
+ * OAuthAuthorizeResponse
+ * OAuth authorization URL response
+ */
+export type OAuthAuthorizeResponse = {
+  /**
+   * Authorization Url
+   * URL to redirect user to for OAuth authorization
+   */
+  authorization_url: string;
+  /**
+   * State
+   * CSRF protection state token
+   */
+  state: string;
+};
+
+/**
+ * OAuthLoginResponse
+ * OAuth login/signup response with JWT tokens
+ */
+export type OAuthLoginResponse = {
+  /**
+   * Access Token
+   * JWT access token
+   */
+  access_token: string;
+  /**
+   * Token Type
+   * Token type
+   */
+  token_type?: 'bearer';
+  /**
+   * Is New User
+   * Whether this is a new user registration
+   */
+  is_new_user: boolean;
+};
+
+/**
  * UserChangePassword
  */
 export type UserChangePassword = {
@@ -312,6 +351,23 @@ export type UserRead = {
    * Is Active
    */
   is_active?: boolean;
+};
+
+/**
+ * UserSetPassword
+ * For OAuth users who want to set a password for the first time
+ */
+export type UserSetPassword = {
+  /**
+   * New Password
+   * Password must be 8 characters long, contain at least one uppercase letter and one number.
+   */
+  new_password: string;
+  /**
+   * Confirm New Password
+   * Password must be 8 characters long, contain at least one uppercase letter and one number.
+   */
+  confirm_new_password: string;
 };
 
 /**
@@ -467,6 +523,44 @@ export type ChangePasswordResponses = {
 
 export type ChangePasswordResponse =
   ChangePasswordResponses[keyof ChangePasswordResponses];
+
+export type SetPasswordData = {
+  body: UserSetPassword;
+  path?: never;
+  query?: never;
+  url: '/users/set-password';
+};
+
+export type SetPasswordErrors = {
+  /**
+   * User already has a password
+   */
+  400: ErrorResponse;
+  /**
+   * Missing, invalid, or expired access token
+   */
+  401: ErrorResponse;
+  /**
+   * User not found
+   */
+  404: ErrorResponse;
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SetPasswordError = SetPasswordErrors[keyof SetPasswordErrors];
+
+export type SetPasswordResponses = {
+  /**
+   * Successful Response
+   */
+  200: MessageResponse;
+};
+
+export type SetPasswordResponse =
+  SetPasswordResponses[keyof SetPasswordResponses];
 
 export type DeleteUserData = {
   body?: never;
@@ -961,6 +1055,59 @@ export type LogoutResponses = {
 };
 
 export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
+
+export type GoogleAuthorizeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/auth/oauth/google/authorize';
+};
+
+export type GoogleAuthorizeResponses = {
+  /**
+   * Successful Response
+   */
+  200: OAuthAuthorizeResponse;
+};
+
+export type GoogleAuthorizeResponse =
+  GoogleAuthorizeResponses[keyof GoogleAuthorizeResponses];
+
+export type GoogleCallbackData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * State
+     */
+    state: string;
+  };
+  url: '/auth/oauth/google/callback';
+};
+
+export type GoogleCallbackErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GoogleCallbackError =
+  GoogleCallbackErrors[keyof GoogleCallbackErrors];
+
+export type GoogleCallbackResponses = {
+  /**
+   * Successful Response
+   */
+  200: OAuthLoginResponse;
+};
+
+export type GoogleCallbackResponse =
+  GoogleCallbackResponses[keyof GoogleCallbackResponses];
 
 export type ClientOptions = {
   baseURL: `${string}://${string}` | (string & {});

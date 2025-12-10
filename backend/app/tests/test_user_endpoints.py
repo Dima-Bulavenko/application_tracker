@@ -109,6 +109,182 @@ class TestCreateUser(BaseTest):
         # Verify the email argument is correct
         assert email_arg == existing_user.email
 
+    async def test_create_user_with_inactive_existing_email(self, client: AsyncClient):
+        """Test user creation with inactive existing email resends activation email."""
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False)
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "NewTestPass456",
+        }
+
+        response = await client.post("/users", data=form_data)
+
+        # Should still return success response (security by design)
+        assert response.status_code == 201
+        expected_message = f"We sent email to {inactive_user.email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+    @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
+    async def test_create_user_with_inactive_existing_email_resends_activation(
+        self, mock_resend_activation: MagicMock, client: AsyncClient
+    ):
+        """Test user creation with inactive existing email triggers resend_activation_email."""
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False)
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "NewTestPass456",
+        }
+
+        response = await client.post("/users", data=form_data)
+
+        # Should still return success response (security by design)
+        assert response.status_code == 201
+
+        # Verify resend_activation_email was called
+        assert mock_resend_activation.called
+        assert mock_resend_activation.call_count == 1
+
+        # Get the call arguments
+        call_args = mock_resend_activation.call_args
+        user_arg = call_args[0][0]  # First argument is the user
+
+        # Verify the user argument has correct properties
+        assert hasattr(user_arg, "email")
+        assert user_arg.email == inactive_user.email
+        assert hasattr(user_arg, "id")
+        assert user_arg.id == inactive_user.id
+
+    @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_create_user_inactive_vs_new_user_email_service(
+        self, mock_send_verification: MagicMock, mock_resend_activation: MagicMock, client: AsyncClient
+    ):
+        """Test that inactive users get resend_activation_email while new users get send_verification_email."""
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False)
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "TestPass123",
+        }
+
+        # Try to register with inactive user's email
+        response1 = await client.post("/users", data=form_data)
+        assert response1.status_code == 201
+
+        # Verify resend_activation_email was called, not send_verification_email
+        assert mock_resend_activation.called
+        assert mock_resend_activation.call_count == 1
+        assert not mock_send_verification.called
+
+        # Reset mocks
+        mock_resend_activation.reset_mock()
+        mock_send_verification.reset_mock()
+
+        # Now create a new user
+        form_data2 = {
+            "email": "newuser@example.com",
+            "password": "TestPass123",
+        }
+
+        response2 = await client.post("/users", data=form_data2)
+        assert response2.status_code == 201
+
+        # Verify send_verification_email was called, not resend_activation_email
+        assert mock_send_verification.called
+        assert mock_send_verification.call_count == 1
+        assert not mock_resend_activation.called
+
+    async def test_create_user_inactive_user_password_not_updated(self, client: AsyncClient):
+        """Test that trying to register with inactive user's email doesn't update their password."""
+        # Create an inactive user with a known password
+        original_password = "OriginalPass123"
+        inactive_user = await self.create_user(is_active=False)
+        assert inactive_user.id is not None
+
+        # Get the original password hash
+        original_user_db = await self.get_user(inactive_user.id)
+        assert original_user_db is not None
+        original_password_hash = original_user_db.password
+        original_password_from_helper = self.get_user_password()  # The actual password used by create_user
+
+        # Try to register with the same email but different password
+        form_data = {
+            "email": inactive_user.email,
+            "password": original_password,  # Different from what was used to create the user
+        }
+
+        response = await client.post("/users", data=form_data)
+        assert response.status_code == 201
+
+        # Verify password was NOT updated
+        updated_user_db = await self.get_user(inactive_user.id)
+        assert updated_user_db is not None
+        assert updated_user_db.password == original_password_hash
+
+        # Verify the original password still works
+        assert self.password_hasher.verify(original_password_from_helper, updated_user_db.password)
+        # Verify the new password does NOT work
+        assert not self.password_hasher.verify(original_password, updated_user_db.password)
+
+    @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
+    async def test_create_user_inactive_user_comprehensive_check(
+        self, mock_resend_activation: MagicMock, client: AsyncClient
+    ):
+        """Comprehensive test for inactive user registration flow."""
+        from sqlalchemy import func, select
+
+        from app.db.models import User as UserModel
+
+        # Create an inactive user
+        inactive_user = await self.create_user(is_active=False, first_name="John", second_name="Doe")
+        assert inactive_user.id is not None
+
+        # Count users with this email before request
+        initial_count_result = await self.session.execute(
+            select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
+        )
+        initial_count = initial_count_result.scalar()
+
+        form_data = {
+            "email": inactive_user.email,
+            "password": "DifferentPass123",
+        }
+
+        response = await client.post("/users", data=form_data)
+
+        # Verify API response
+        assert response.status_code == 201
+        expected_message = f"We sent email to {inactive_user.email} address, follow link to complete your registration"
+        assert response.json() == {"message": expected_message}
+
+        # Verify no new user was created
+        final_count_result = await self.session.execute(
+            select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
+        )
+        final_count = final_count_result.scalar()
+        assert final_count == initial_count
+
+        # Verify user data remains unchanged
+        unchanged_user = await self.get_user(inactive_user.id)
+        assert unchanged_user is not None
+        assert unchanged_user.is_active is False
+        assert unchanged_user.first_name == "John"
+        assert unchanged_user.second_name == "Doe"
+
+        # Verify resend_activation_email was called
+        assert mock_resend_activation.called
+        assert mock_resend_activation.call_count == 1
+
+        call_args = mock_resend_activation.call_args
+        user_arg = call_args[0][0]
+        assert user_arg.email == inactive_user.email
+        assert user_arg.id == inactive_user.id
+
     async def test_create_user_with_invalid_email_format(self, client: AsyncClient):
         """Test user creation with invalid email format."""
         form_data = {
@@ -583,6 +759,228 @@ class TestUserActivation(BaseTest):
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
+
+
+class TestResendActivationEmail(BaseTest):
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_success(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test successful resend of activation email for inactive user."""
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        # Create an initial token (simulating first registration)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Move time forward past cooldown period to avoid rate limiting
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 200
+        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert mock_send_verification.called
+        assert mock_send_verification.call_count == 1
+
+    async def test_resend_activation_already_activated_user(self, client: AsyncClient):
+        """Test resend activation email for already activated user returns 400."""
+        user = await self.create_user(is_active=True)
+        form_data = {"email": user.email}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 400
+        assert response.json() == {"detail": "User is already activated"}
+
+    async def test_resend_activation_non_existent_email(self, client: AsyncClient):
+        """Test resend activation for non-existent email returns success (security)."""
+        form_data = {"email": "nonexistent@example.com"}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        # Should return success to prevent email enumeration
+        assert response.status_code == 200
+        assert "If an account exists with nonexistent@example.com" in response.json()["message"]
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_rate_limit_exceeded(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation email enforces rate limiting."""
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        # Create a recent token (simulating recent request)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Try to resend immediately (within cooldown period)
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 429
+        assert "Please wait" in response.json()["detail"]
+        assert "seconds before requesting another activation email" in response.json()["detail"]
+        assert not mock_send_verification.called
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_no_previous_token(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation for user with no previous token."""
+        user = await self.create_user(is_active=False)
+        form_data = {"email": user.email}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        # Should succeed even without previous token
+        assert response.status_code == 200
+        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert mock_send_verification.called
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_after_cooldown_period(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test resend activation succeeds after cooldown period expires."""
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        # Create an old token
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Move time forward exactly past cooldown period
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES + 1)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 200
+        assert mock_send_verification.called
+
+    async def test_resend_activation_missing_email(self, client: AsyncClient):
+        """Test resend activation without email parameter returns 422."""
+        response = await client.post("/users/resend-activation", data={})
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert response_data["detail"][0]["type"] == "missing"
+        assert "username" in response_data["detail"][0]["loc"]
+
+    async def test_resend_activation_empty_email(self, client: AsyncClient):
+        """Test resend activation with empty email."""
+        form_data = {"email": ""}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 422
+
+    async def test_resend_activation_invalid_email_format(self, client: AsyncClient):
+        """Test resend activation with invalid email format."""
+        form_data = {"email": "not-an-email"}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 422
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_case_sensitive_email(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation email is case-sensitive."""
+        user = await self.create_user(is_active=False, email="test@example.com")
+        assert user.id is not None
+
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        # Try with different case
+        form_data = {"email": "TEST@example.com"}
+
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        # Email doesn't match (case-sensitive), so no email sent
+        assert response.status_code == 200
+        assert "If an account exists with TEST@example.com" in response.json()["message"]
+        assert not mock_send_verification.called
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_multiple_users(self, mock_send_verification: MagicMock, client: AsyncClient):
+        """Test resend activation for multiple different users."""
+        user1 = await self.create_user(is_active=False, email="user1@example.com")
+        user2 = await self.create_user(is_active=False, email="user2@example.com")
+        assert user1.id is not None
+        assert user2.id is not None
+
+        self.create_verification_token(user1)
+        self.create_verification_token(user2)
+        await self.session.commit()
+
+        with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
+            # Resend for user1
+            response1 = await client.post("/users/resend-activation", data={"email": user1.email})
+            assert response1.status_code == 200
+
+            # Resend for user2
+            response2 = await client.post("/users/resend-activation", data={"email": user2.email})
+            assert response2.status_code == 200
+
+        assert mock_send_verification.call_count == 2
+
+    async def test_resend_activation_sql_injection_attempt(self, client: AsyncClient):
+        """Test resend activation endpoint is protected against SQL injection."""
+        malicious_email = "'; DROP TABLE users; --"
+        form_data = {"email": malicious_email}
+
+        response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 422
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_exact_cooldown_boundary(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test resend activation at exact cooldown boundary."""
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        current_time = datetime.now(timezone.utc)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Try exactly at cooldown boundary (should still be rate limited)
+        with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        # At exact boundary, should still be rate limited (< not <=)
+        assert response.status_code == 429
+
+    @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
+    async def test_resend_activation_one_second_after_cooldown(
+        self, mock_send_verification: MagicMock, client: AsyncClient
+    ):
+        """Test resend activation one second after cooldown expires."""
+        from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
+
+        user = await self.create_user(is_active=False)
+        assert user.id is not None
+
+        current_time = datetime.now(timezone.utc)
+        self.create_verification_token(user)
+        await self.session.commit()
+
+        form_data = {"email": user.email}
+
+        # Try one second after cooldown
+        with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES, seconds=1)):
+            response = await client.post("/users/resend-activation", data=form_data)
+
+        assert response.status_code == 200
+        assert mock_send_verification.called
 
 
 class TestUserChangePassword(BaseTest):
@@ -1272,6 +1670,557 @@ class TestUpdateUser(BaseTest):
         assert updated_user is not None
         assert updated_user.first_name == "John"
         assert updated_user.second_name == "Doe"
+
+
+class TestSetPassword(BaseTest):
+    async def test_set_password_success(self, client: AsyncClient):
+        """Test successful password setting for OAuth user without password."""
+        # Create a user without password (OAuth user)
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        new_password = "NewTestPass123"
+
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"message": "Password set successfully"}
+
+        # Verify password was set in database
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert updated_user.password is not None
+        assert self.password_hasher.verify(new_password, updated_user.password)
+
+    async def test_set_password_user_already_has_password(self, client: AsyncClient):
+        """Test set password fails when user already has a password."""
+        # Create a user with a password
+        user = await self.create_user(is_active=True)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        new_password = "NewTestPass123"
+
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 400
+        assert "already has a password" in response.json()["detail"]
+
+        # Verify password was not changed
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert self.password_hasher.verify(self.get_user_password(), updated_user.password)
+
+    async def test_set_password_with_invalid_access_token(self, client: AsyncClient):
+        """Test set password with invalid access token."""
+        invalid_token = "invalid.token.here"
+        form_data = {
+            "new_password": "NewPass123",
+            "confirm_new_password": "NewPass123",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {invalid_token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 401
+        assert "Invalid access token" in response.json()["detail"]
+
+    async def test_set_password_with_expired_access_token(self, client: AsyncClient):
+        """Test set password with expired access token."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "NewPass123",
+            "confirm_new_password": "NewPass123",
+        }
+
+        with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
+            response = await client.post(
+                "/users/set-password",
+                headers={"Authorization": f"Bearer {access_token.token}"},
+                data=form_data,
+            )
+
+        assert response.status_code == 401
+        assert "Invalid access token" in response.json()["detail"]
+
+    async def test_set_password_with_missing_access_token(self, client: AsyncClient):
+        """Test set password without access token."""
+        form_data = {
+            "new_password": "NewPass123",
+            "confirm_new_password": "NewPass123",
+        }
+
+        response = await client.post("/users/set-password", data=form_data)
+
+        assert response.status_code == 401
+
+    async def test_set_password_with_non_existent_user(self, client: AsyncClient):
+        """Test set password with access token for non-existent user."""
+        non_existent_email = "nonexistent@example.com"
+        non_existent_id = 99999
+        user = User(id=non_existent_id, email=non_existent_email, password=None)
+        token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "NewPass123",
+            "confirm_new_password": "NewPass123",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 404
+        assert "User does not exist" in response.json()["detail"]
+
+    async def test_set_password_with_mismatched_confirmation(self, client: AsyncClient):
+        """Test set password when new password and confirmation don't match."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "NewPass123",
+            "confirm_new_password": "DifferentPass123",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert any("New password and confirmation do not match" in str(error) for error in response_data["detail"])
+
+    async def test_set_password_with_missing_form_fields(self, client: AsyncClient):
+        """Test set password with missing required form fields."""
+        user = await self.create_user(is_active=True, password=None)
+        access_token = self.create_access_token(user)
+
+        # Test missing new_password
+        form_data = {
+            "confirm_new_password": "NewPass123",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert response_data["detail"][0]["type"] == "missing"
+        assert "new_password" in response_data["detail"][0]["loc"]
+
+    async def test_set_password_with_empty_form_fields(self, client: AsyncClient):
+        """Test set password with empty form fields."""
+        user = await self.create_user(is_active=True, password=None)
+        access_token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "",
+            "confirm_new_password": "",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        # Should have validation errors for password requirements
+        assert len(response_data["detail"]) > 0
+
+    async def test_set_password_with_weak_password(self, client: AsyncClient):
+        """Test set password with weak password."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        weak_password = "123"  # Too short and weak
+
+        form_data = {
+            "new_password": weak_password,
+            "confirm_new_password": weak_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        # Should have validation errors for password requirements
+        assert len(response_data["detail"]) > 0
+
+    async def test_set_password_with_password_missing_uppercase(self, client: AsyncClient):
+        """Test set password with password missing uppercase letter."""
+        user = await self.create_user(is_active=True, password=None)
+        access_token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "testpass123",  # No uppercase letter
+            "confirm_new_password": "testpass123",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_set_password_with_password_missing_number(self, client: AsyncClient):
+        """Test set password with password missing number."""
+        user = await self.create_user(is_active=True, password=None)
+        access_token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "TestPassword",  # No number
+            "confirm_new_password": "TestPassword",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_set_password_with_password_too_short(self, client: AsyncClient):
+        """Test set password with password shorter than 8 characters."""
+        user = await self.create_user(is_active=True, password=None)
+        access_token = self.create_access_token(user)
+
+        form_data = {
+            "new_password": "Test1",  # Too short
+            "confirm_new_password": "Test1",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 422
+        response_data = response.json()
+        assert "detail" in response_data
+
+    async def test_set_password_with_wrong_token_type(self, client: AsyncClient):
+        """Test set password with verification token instead of access token."""
+        user = await self.create_user(is_active=True, password=None)
+        verification_token = self.create_verification_token(user)
+
+        form_data = {
+            "new_password": "NewPass123",
+            "confirm_new_password": "NewPass123",
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {verification_token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 401
+        assert "Invalid access token" in response.json()["detail"]
+
+    async def test_set_password_with_inactive_user(self, client: AsyncClient):
+        """Test set password for inactive OAuth user."""
+        user = await self.create_user(is_active=False, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        new_password = "NewPass123"
+
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        # Should work regardless of user activation status
+        assert response.status_code == 200
+        assert response.json() == {"message": "Password set successfully"}
+
+        # Verify password was set
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert updated_user.password is not None
+        assert self.password_hasher.verify(new_password, updated_user.password)
+
+    async def test_set_password_with_special_characters(self, client: AsyncClient):
+        """Test set password with special characters in password."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        new_password = "TestPass123!@#$%"
+
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"message": "Password set successfully"}
+
+        # Verify password was set correctly
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert updated_user.password is not None
+        assert self.password_hasher.verify(new_password, updated_user.password)
+        # Verify password is hashed (not plain text)
+        assert updated_user.password != new_password
+        assert len(updated_user.password) > 50  # Hashed passwords are much longer
+
+    async def test_set_password_idempotency(self, client: AsyncClient):
+        """Test that setting password twice fails on second attempt."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        first_password = "FirstPass123"
+        second_password = "SecondPass456"
+
+        # First set password should succeed
+        form_data1 = {
+            "new_password": first_password,
+            "confirm_new_password": first_password,
+        }
+
+        response1 = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data1,
+        )
+
+        assert response1.status_code == 200
+        assert response1.json() == {"message": "Password set successfully"}
+
+        # Second set password attempt should fail
+        form_data2 = {
+            "new_password": second_password,
+            "confirm_new_password": second_password,
+        }
+
+        response2 = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data2,
+        )
+
+        assert response2.status_code == 400
+        assert "already has a password" in response2.json()["detail"]
+
+        # Verify first password is still active
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert self.password_hasher.verify(first_password, updated_user.password)
+        assert not self.password_hasher.verify(second_password, updated_user.password)
+
+    async def test_set_password_password_hashing(self, client: AsyncClient):
+        """Test that password is properly hashed and not stored in plain text."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        password = "TestPass123"
+
+        form_data = {
+            "new_password": password,
+            "confirm_new_password": password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 200
+
+        # Verify password is hashed, not plain text
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert updated_user.password != password
+        assert len(updated_user.password) > 50  # Hashed passwords are much longer
+        assert updated_user.password.startswith("$")  # Common hash format indicator
+
+        # Verify the password can be validated with the hasher
+        assert self.password_hasher.verify(password, updated_user.password)
+
+    async def test_set_password_with_very_long_password(self, client: AsyncClient):
+        """Test set password with very long but valid password."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        long_password = "TestPass123" + "a" * 100  # Very long password
+
+        form_data = {
+            "new_password": long_password,
+            "confirm_new_password": long_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        # Should succeed if password meets requirements
+        assert response.status_code == 200
+        assert response.json() == {"message": "Password set successfully"}
+
+        # Verify password was set
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert self.password_hasher.verify(long_password, updated_user.password)
+
+    async def test_set_password_oauth_user_workflow(self, client: AsyncClient):
+        """Test complete OAuth user workflow: login via OAuth, then set password."""
+        # Simulate OAuth user (no password)
+        oauth_user = await self.create_user(is_active=True, password=None, email="oauth@example.com")
+        assert oauth_user.id is not None
+
+        # Verify user has no password initially
+        db_user = await self.get_user(oauth_user.id)
+        assert db_user is not None
+        assert db_user.password is None
+
+        # User gets access token (would be from OAuth flow)
+        access_token = self.create_access_token(oauth_user)
+
+        # User sets password
+        new_password = "MyNewPass123"
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"message": "Password set successfully"}
+
+        # Verify user now has password and can use it to login
+        updated_user = await self.get_user(oauth_user.id)
+        assert updated_user is not None
+        assert updated_user.password is not None
+        assert self.password_hasher.verify(new_password, updated_user.password)
+
+    async def test_set_password_preserves_other_user_fields(self, client: AsyncClient):
+        """Test that setting password doesn't affect other user fields."""
+        user = await self.create_user(
+            is_active=True, password=None, first_name="John", second_name="Doe", email="preserve@example.com"
+        )
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        original_email = user.email
+        original_first_name = user.first_name
+        original_second_name = user.second_name
+        original_is_active = user.is_active
+
+        new_password = "NewPass123"
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 200
+
+        # Verify other fields are preserved
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        assert updated_user.email == original_email
+        assert updated_user.first_name == original_first_name
+        assert updated_user.second_name == original_second_name
+        assert updated_user.is_active == original_is_active
+        # Only password should be changed
+        assert updated_user.password is not None
+        assert self.password_hasher.verify(new_password, updated_user.password)
+
+    async def test_set_password_updates_time_update_field(self, client: AsyncClient):
+        """Test that setting password updates the time_update field."""
+        user = await self.create_user(is_active=True, password=None)
+        assert user.id is not None
+        access_token = self.create_access_token(user)
+        original_time_update = user.time_update
+
+        new_password = "NewPass123"
+        form_data = {
+            "new_password": new_password,
+            "confirm_new_password": new_password,
+        }
+
+        response = await client.post(
+            "/users/set-password",
+            headers={"Authorization": f"Bearer {access_token.token}"},
+            data=form_data,
+        )
+
+        assert response.status_code == 200
+
+        # Verify time_update was updated
+        updated_user = await self.get_user(user.id)
+        assert updated_user is not None
+        # The time_update should be greater than or equal to the original
+        assert updated_user.time_update >= original_time_update
 
 
 class TestDeleteUser(BaseTest):

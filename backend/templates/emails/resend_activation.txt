@@ -1,0 +1,19 @@
+Email Verification Requested
+
+Here's your new verification link
+
+Hello{% if user_name %}, {{ user_name }}{% endif %},
+
+You requested a new verification link for your Application Tracker account. Please verify your email address by visiting the following link:
+
+{{ verification_url }}
+
+⏰ IMPORTANT: This verification link will expire in 24 hours for security reasons. Any previous verification links have been invalidated.
+
+If you didn't request this verification email, please ignore this message.
+
+Best regards,
+The Application Tracker Team
+
+---
+This is an automated email. Please do not reply to this message.

@@ -19,10 +19,17 @@ from .company import (
     CompanyRead as CompanyRead,
 )
 from .config import BaseModelDTO as BaseModelDTO
+from .oauth import (
+    OAuthAuthorizeResponse as OAuthAuthorizeResponse,
+    OAuthCallbackRequest as OAuthCallbackRequest,
+    OAuthLoginResponse as OAuthLoginResponse,
+)
 from .user import (
     UserChangePassword as UserChangePassword,
     UserCreate as UserCreate,
     UserLogin as UserLogin,
     UserRead as UserRead,
+    UserResentActivationEmail as UserResentActivationEmail,
+    UserSetPassword as UserSetPassword,
     UserUpdate as UserUpdate,
 )

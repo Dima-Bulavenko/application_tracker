@@ -9,7 +9,7 @@ from fastapi.routing import APIRoute
 from mangum import Mangum
 
 from app import ALLOWED_HOSTS, ALLOWED_ORIGINS
-from app.routers import application, auth, company, user
+from app.routers import application, auth, company, oauth, user
 
 from .db import create_db_tables
 
@@ -49,5 +49,6 @@ app.include_router(user.router)
 app.include_router(application.router)
 app.include_router(company.router)
 app.include_router(auth.router)
+app.include_router(oauth.router)
 
 handler = Mangum(app)
