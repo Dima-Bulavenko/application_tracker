@@ -13,7 +13,6 @@ RESEND_ACTIVATION_COOLDOWN_MINUTES = env.int("RESEND_ACTIVATION_COOLDOWN_MINUTES
 DEBUG = env.bool("DEBUG", False)
 TOKEN_TYPE = "bearer"
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", subcast=str)
-ALLOWED_ORIGINS = env.list("ALLOWED_ORIGINS", subcast=str)
 FRONTEND_ORIGIN = env.str("FRONTEND_ORIGIN")
 
 # OAuth Configuration

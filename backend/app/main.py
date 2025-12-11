@@ -1,38 +1,19 @@
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.routing import APIRoute
 from mangum import Mangum
 
-from app import ALLOWED_HOSTS, ALLOWED_ORIGINS
+from app import ALLOWED_HOSTS
 from app.routers import application, auth, company, oauth, user
-
-from .db import create_db_tables
-
-
-@asynccontextmanager
-async def lifespan(_):
-    await create_db_tables()
-    yield
 
 
 def custom_generate_unique_id(route: APIRoute):
     return f"{route.name}"
 
 
-app = FastAPI(lifespan=lifespan, generate_unique_id_function=custom_generate_unique_id)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(generate_unique_id_function=custom_generate_unique_id, root_path="/api/v1")
 
 app.add_middleware(
     TrustedHostMiddleware,

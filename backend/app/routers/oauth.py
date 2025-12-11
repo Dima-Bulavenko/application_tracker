@@ -53,7 +53,7 @@ async def google_authorize(oauth_service: OAuthServiceDep, response: Response) -
         value=state,
         httponly=True,
         secure=True,
-        samesite="lax",
+        samesite="none",
         max_age=600,
     )
 
