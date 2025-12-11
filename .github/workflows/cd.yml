@@ -44,9 +44,11 @@ jobs:
         run: |
           aws lambda wait function-updated --function-name ${{ secrets.LAMBDA_FUNCTION_NAME }}
 
-      - name: Download OpenAPI schema from deployed backend
+      - name: Generate OpenAPI schema from backend code
+        working-directory: ./backend
         run: |
-          curl -s ${{ vars.API_URL }}/openapi.json -o frontend/openapi.json
+          python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ../openapi.json
+          mv ../openapi.json ../frontend/
 
       - name: Build React frontend
         id: build-frontend
