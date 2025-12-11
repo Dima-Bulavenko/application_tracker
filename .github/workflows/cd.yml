@@ -46,12 +46,12 @@ jobs:
 
       - name: Download OpenAPI schema from deployed backend
         run: |
-          curl -s ${{ var.API_URL }}/openapi.json -o frontend/openapi.json
+          curl -s ${{ vars.API_URL }}/openapi.json -o frontend/openapi.json
 
       - name: Build React frontend
         id: build-frontend
         env:
-          VITE_API_URL: ${{ var.API_URL }}
+          VITE_API_URL: ${{ vars.API_URL }}
         working-directory: ./frontend
         run: |
           npm ci
