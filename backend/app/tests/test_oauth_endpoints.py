@@ -59,7 +59,7 @@ class TestGoogleAuthorizeEndpoint(BaseTest):
         set_cookie_header = response.headers.get("set-cookie", "")
         assert "oauth_state=" in set_cookie_header
         assert "HttpOnly" in set_cookie_header
-        assert "SameSite=lax" in set_cookie_header or "samesite=lax" in set_cookie_header.lower()
+        assert "SameSite=none" in set_cookie_header or "samesite=none" in set_cookie_header.lower()
         assert "Max-Age=600" in set_cookie_header
 
     async def test_state_token_is_unique_per_request(self, client: AsyncClient):

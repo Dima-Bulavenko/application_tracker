@@ -4,8 +4,7 @@ from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
 from app import env
-
-from .models import Base
+from app.db.models import Base
 
 url_object = URL.create(
     "postgresql+asyncpg",

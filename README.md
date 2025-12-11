@@ -23,7 +23,6 @@ Before starting, you need to configure the environment variables:
 
    **Other important variables:**
    - `POSTGRES_USER`, `POSTGRES_DB` - Database name and user (can keep defaults)
-   - `ALLOWED_ORIGINS` - CORS allowed hosts (adjust if needed)
    - `DEBUG` - Enable/disable debug mode
 
 ## Frontend API Client Generation
