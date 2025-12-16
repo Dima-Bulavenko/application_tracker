@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 class OAuthProvider(str, Enum):
     LOCAL = "local"
     GOOGLE = "google"
+    LINKEDIN = "linkedin"
 
 
 class User(BaseModel):
