@@ -15,6 +15,7 @@ import { Route as RegistrationSuccessRouteImport } from './routes/registration-s
 import { Route as RegisterRouteImport } from './routes/register';
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated';
 import { Route as IndexRouteImport } from './routes/index';
+import { Route as OauthLinkedinRouteImport } from './routes/oauth/linkedin';
 import { Route as OauthGoogleRouteImport } from './routes/oauth/google';
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile';
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard';
@@ -48,6 +49,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any);
+const OauthLinkedinRoute = OauthLinkedinRouteImport.update({
+  id: '/oauth/linkedin',
+  path: '/oauth/linkedin',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const OauthGoogleRoute = OauthGoogleRouteImport.update({
   id: '/oauth/google',
   path: '/oauth/google',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute;
   '/profile': typeof AuthenticatedProfileRoute;
   '/oauth/google': typeof OauthGoogleRoute;
+  '/oauth/linkedin': typeof OauthLinkedinRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute;
   '/profile': typeof AuthenticatedProfileRoute;
   '/oauth/google': typeof OauthGoogleRoute;
+  '/oauth/linkedin': typeof OauthLinkedinRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute;
   '/_authenticated/profile': typeof AuthenticatedProfileRoute;
   '/oauth/google': typeof OauthGoogleRoute;
+  '/oauth/linkedin': typeof OauthLinkedinRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -106,7 +115,8 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/dashboard'
     | '/profile'
-    | '/oauth/google';
+    | '/oauth/google'
+    | '/oauth/linkedin';
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
@@ -116,7 +126,8 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/dashboard'
     | '/profile'
-    | '/oauth/google';
+    | '/oauth/google'
+    | '/oauth/linkedin';
   id:
     | '__root__'
     | '/'
@@ -127,7 +138,8 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
-    | '/oauth/google';
+    | '/oauth/google'
+    | '/oauth/linkedin';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -138,6 +150,7 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute;
   VerifyEmailRoute: typeof VerifyEmailRoute;
   OauthGoogleRoute: typeof OauthGoogleRoute;
+  OauthLinkedinRoute: typeof OauthLinkedinRoute;
 }
 
 declare module '@tanstack/react-router' {
@@ -182,6 +195,13 @@ declare module '@tanstack/react-router' {
       path: '/';
       fullPath: '/';
       preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/oauth/linkedin': {
+      id: '/oauth/linkedin';
+      path: '/oauth/linkedin';
+      fullPath: '/oauth/linkedin';
+      preLoaderRoute: typeof OauthLinkedinRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/oauth/google': {
@@ -230,6 +250,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   OauthGoogleRoute: OauthGoogleRoute,
+  OauthLinkedinRoute: OauthLinkedinRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

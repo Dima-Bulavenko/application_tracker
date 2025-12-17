@@ -63,6 +63,11 @@ import type {
   GoogleCallbackData,
   GoogleCallbackResponses,
   GoogleCallbackErrors,
+  LinkedinAuthorizeData,
+  LinkedinAuthorizeResponses,
+  LinkedinCallbackData,
+  LinkedinCallbackResponses,
+  LinkedinCallbackErrors,
 } from './types.gen';
 import { client as _heyApiClient } from './client.gen';
 
@@ -536,6 +541,55 @@ export const googleCallback = <ThrowOnError extends boolean = true>(
   >({
     responseType: 'json',
     url: '/auth/oauth/google/callback',
+    ...options,
+  });
+};
+
+/**
+ * Linkedin Authorize
+ * Initiate LinkedIn OAuth flow
+ *
+ * Redirects user to LinkedIn authorization page.
+ * State token is stored in HTTPOnly cookie for CSRF protection.
+ */
+export const linkedinAuthorize = <ThrowOnError extends boolean = true>(
+  options?: Options<LinkedinAuthorizeData, ThrowOnError>
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    LinkedinAuthorizeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    url: '/auth/oauth/linkedin/authorize',
+    ...options,
+  });
+};
+
+/**
+ * Linkedin Callback
+ * Handle LinkedIn OAuth callback
+ *
+ * This endpoint receives the authorization code from LinkedIn and:
+ * 1. Validates the state token (CSRF protection via cookie comparison)
+ * 2. Exchanges code for access token
+ * 3. Fetches user info from LinkedIn
+ * 4. Creates or logs in user
+ * 5. Issues JWT tokens
+ * 6. Redirects to frontend with access token
+ *
+ * The refresh token is set as an HTTPOnly secure cookie.
+ */
+export const linkedinCallback = <ThrowOnError extends boolean = true>(
+  options: Options<LinkedinCallbackData, ThrowOnError>
+) => {
+  return (options.client ?? _heyApiClient).get<
+    LinkedinCallbackResponses,
+    LinkedinCallbackErrors,
+    ThrowOnError
+  >({
+    responseType: 'json',
+    url: '/auth/oauth/linkedin/callback',
     ...options,
   });
 };

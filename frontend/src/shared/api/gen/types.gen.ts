@@ -1109,6 +1109,59 @@ export type GoogleCallbackResponses = {
 export type GoogleCallbackResponse =
   GoogleCallbackResponses[keyof GoogleCallbackResponses];
 
+export type LinkedinAuthorizeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/auth/oauth/linkedin/authorize';
+};
+
+export type LinkedinAuthorizeResponses = {
+  /**
+   * Successful Response
+   */
+  200: OAuthAuthorizeResponse;
+};
+
+export type LinkedinAuthorizeResponse =
+  LinkedinAuthorizeResponses[keyof LinkedinAuthorizeResponses];
+
+export type LinkedinCallbackData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Code
+     */
+    code: string;
+    /**
+     * State
+     */
+    state: string;
+  };
+  url: '/auth/oauth/linkedin/callback';
+};
+
+export type LinkedinCallbackErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type LinkedinCallbackError =
+  LinkedinCallbackErrors[keyof LinkedinCallbackErrors];
+
+export type LinkedinCallbackResponses = {
+  /**
+   * Successful Response
+   */
+  200: OAuthLoginResponse;
+};
+
+export type LinkedinCallbackResponse =
+  LinkedinCallbackResponses[keyof LinkedinCallbackResponses];
+
 export type ClientOptions = {
   baseURL: `${string}://${string}` | (string & {});
 };

@@ -13,6 +13,7 @@ import { AuthProvider } from './AuthProvider';
 import {
   useLogin,
   useLoginWithGoogle,
+  useLoginWithLinkedIn,
   useLogout,
 } from 'features/user/hooks/useUser';
 import { useEffect } from 'react';
@@ -32,6 +33,7 @@ function InnerApp() {
   const logout = useLogout();
   const login = useLogin();
   const loginWithGoogle = useLoginWithGoogle();
+  const loginWithLinkedIn = useLoginWithLinkedIn();
   useEffect(() => {
     router.invalidate();
   }, [auth.user]);
@@ -40,7 +42,7 @@ function InnerApp() {
     <RouterProvider
       router={router}
       context={{
-        auth: { ...auth, login, logout, loginWithGoogle },
+        auth: { ...auth, login, logout, loginWithGoogle, loginWithLinkedIn },
         queryClient,
       }}
     />

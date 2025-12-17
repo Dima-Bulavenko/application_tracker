@@ -437,3 +437,18 @@ export const zGoogleCallbackData = z.object({
     state: z.string(),
   }),
 });
+
+export const zLinkedinAuthorizeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLinkedinCallbackData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    code: z.string(),
+    state: z.string(),
+  }),
+});

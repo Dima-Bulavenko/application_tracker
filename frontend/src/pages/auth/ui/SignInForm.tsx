@@ -10,6 +10,7 @@ import { getRouteApi } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
 import GoogleAuthorizationButton from 'shared/ui/GoogleAuthorizationButton';
+import LinkedInAuthorizationButton from 'shared/ui/LinkedInAuthorizationButton';
 
 const routeApi = getRouteApi('/sign-in');
 
@@ -42,6 +43,7 @@ export default function SignInForm() {
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Sign In</SubmitButton>
       <GoogleAuthorizationButton />
+      <LinkedInAuthorizationButton />
     </Form>
   );
 }
