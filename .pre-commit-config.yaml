@@ -55,6 +55,8 @@ repos:
             '--ignore-unknown',
             '--config',
             './frontend/prettier.config.js',
+            '--ignore-path',
+            './frontend/.prettierignore',
           ]
         files: ^frontend/
         language: system
