@@ -11,6 +11,7 @@ import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
 import SubmitButton from 'shared/ui/SubmitButton';
 import GoogleAuthorizationButton from 'shared/ui/GoogleAuthorizationButton';
+import LinkedInAuthorizationButton from 'shared/ui/LinkedInAuthorizationButton';
 
 export default function RegisterForm() {
   const {
@@ -45,6 +46,7 @@ export default function RegisterForm() {
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Sign Up</SubmitButton>
       <GoogleAuthorizationButton />
+      <LinkedInAuthorizationButton />
     </Form>
   );
 }

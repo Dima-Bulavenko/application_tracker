@@ -1,6 +1,7 @@
 import {
   getCurrentUser,
   googleCallback,
+  linkedinCallback,
   login,
   logout,
   type UserLogin,
@@ -53,5 +54,26 @@ export function useLoginWithGoogle() {
         throw err;
       }
     });
+  };
+}
+
+export function useLoginWithLinkedIn() {
+  const { setUser } = useAuth();
+
+  return async (code: string, state: string) => {
+    return linkedinCallback({ query: { code, state } }).then(
+      async ({ data }) => {
+        client.setConfig({ auth: data.access_token });
+        try {
+          const { data: user } = await getCurrentUser<true>();
+          setUser(user);
+          return data;
+        } catch (err) {
+          client.setConfig({ auth: undefined });
+          setUser(null);
+          throw err;
+        }
+      }
+    );
   };
 }

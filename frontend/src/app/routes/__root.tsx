@@ -15,6 +15,10 @@ interface RouterContext {
       code: string,
       state: string
     ) => Promise<AccessTokenResponse>;
+    loginWithLinkedIn: (
+      code: string,
+      state: string
+    ) => Promise<AccessTokenResponse>;
   };
   queryClient: QueryClient;
 }

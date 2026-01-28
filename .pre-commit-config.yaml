@@ -2,7 +2,6 @@
 # See https://pre-commit.com/hooks.html for more hooks
 default_install_hook_types:
   - pre-commit
-  - pre-push
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -55,22 +54,14 @@ repos:
             '--ignore-unknown',
             '--config',
             './frontend/prettier.config.js',
+            '--ignore-path',
+            './frontend/.prettierignore',
           ]
         files: ^frontend/
         language: system
         types_or: [javascript, ts, tsx, jsx, json, yaml, html, css]
 
-      # Generate OpenAPI schema and Hey API client (pre-push)
-      - id: generate-openapi-and-client
-        name: generate openapi and heyapi client
-        language: system
-        entry: bash -lc './scripts/generate-client.sh'
-        pass_filenames: false
-        always_run: true
-        stages: [pre-push]
-        require_serial: true
-
-      # TypeScript typecheck (pre-push)
+      # TypeScript typecheck
       - id: ts-typecheck
         name: typescript typecheck
         language: system
@@ -78,5 +69,5 @@ repos:
         entry: bash -lc 'cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && ./node_modules/.bin/tsc -p tsconfig.json --noEmit'
         pass_filenames: false
         always_run: true
-        stages: [pre-push]
         require_serial: true
+        types_or: [javascript, ts, tsx, jsx]

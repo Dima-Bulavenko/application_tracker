@@ -297,3 +297,4 @@ cython_debug/
 **/openapi.json
 **/test_queries.py
 **/.tanstack
+**/src/shared/api/gen

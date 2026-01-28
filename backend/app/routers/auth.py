@@ -23,10 +23,10 @@ from app.dependencies import AuthServiceDep, RefreshTokenDep
 @dataclass
 class RefreshTokenSettings:
     key: str = "refresh"
-    path: str = "/auth"
+    path: str = "/api/v1/auth"
     secure: bool = True
     httponly: bool = True
-    samesite: Literal["lax", "strict", "none"] = "none"
+    samesite: Literal["lax", "strict", "none"] = "strict"
 
 
 router = APIRouter(prefix="/auth", tags=[Tags.AUTHENTICATION])

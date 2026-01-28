@@ -1,1 +1,2 @@
 from .google_provider import GoogleOAuthProvider as GoogleOAuthProvider
+from .linkedin_provider import LinkedInOAuthProvider as LinkedInOAuthProvider
