@@ -10,14 +10,18 @@ import { zUserCreate } from 'shared/api/gen/zod.gen';
 
 const passwordHelp = zUserCreate.shape.password.description;
 
-const PasswordField: FieldComponent = ({ label = 'Password', ...props }) => {
+const PasswordField: FieldComponent = ({
+  label = 'Password',
+  helperText,
+  ...props
+}) => {
   const [showPassword, setShowPassword] = useState(false);
   const handleClickShowPassword = () => setShowPassword((show) => !show);
   const controller = useController(props);
   return (
     <TextInput
       label={label}
-      helperText={passwordHelp}
+      helperText={helperText ?? passwordHelp}
       type={showPassword ? 'text' : 'password'}
       slotProps={{
         input: {
