@@ -39,6 +39,7 @@ class UserRead(BaseModelDTO):
     time_create: datetime
     time_update: datetime
     is_active: bool = True
+    is_password_set: bool
 
 
 class UserLogin(BaseModelDTO):

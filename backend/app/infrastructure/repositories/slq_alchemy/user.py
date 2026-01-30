@@ -43,7 +43,7 @@ class UserSQLAlchemyRepository(SQLAlchemyRepository[UserModel], IUserRepository)
         return User.model_validate(updated_user, from_attributes=True) if updated_user else None
 
     async def create(self, user: User) -> User:
-        user_model = self.model(**user.model_dump())
+        user_model = self.model(**user.model_dump(exclude_computed_fields=True))
         self.session.add(user_model)
         await self.session.flush()
         return User.model_validate(user_model, from_attributes=True)

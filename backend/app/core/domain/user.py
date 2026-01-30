@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 class OAuthProvider(str, Enum):
@@ -23,3 +23,8 @@ class User(BaseModel):
     time_create: datetime = Field(default_factory=lambda: datetime.now(UTC))
     time_update: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_active: bool = False
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_password_set(self) -> bool:
+        return self.password is not None
