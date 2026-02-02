@@ -5,6 +5,7 @@ import { PersonalInfoSection } from './PersonalInfoSection';
 import { DangerZoneSection } from './DangerZoneSection';
 import { ChangePasswordSection } from './ChangePasswordSection';
 import { getRouteApi } from '@tanstack/react-router';
+import { SetPasswordSection } from './SetPasswordSection';
 
 const routeApi = getRouteApi('/_authenticated');
 
@@ -19,6 +20,7 @@ export function ProfilePage() {
         <ProfileHeader />
         <PersonalInfoSection />
         {user.is_password_set && <ChangePasswordSection />}
+        {!user.is_password_set && <SetPasswordSection />}
         <DangerZoneSection />
       </Stack>
     </Container>

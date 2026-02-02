@@ -1,7 +1,7 @@
 import PasswordField from 'entities/user/ui/PasswordField';
 import { type SubmitHandler, useForm } from 'react-hook-form';
-import { changePassword } from 'shared/api/gen';
-import { zUserChangePassword } from 'shared/api/gen/zod.gen';
+import { setPassword } from 'shared/api/gen';
+import { zUserSetPassword } from 'shared/api/gen/zod.gen';
 import { Form } from 'shared/ui/Form';
 import z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack';
 import SubmitButton from 'shared/ui/SubmitButton';
 import { FormError } from 'shared/ui/FormError';
 
-type FormType = z.infer<typeof zUserChangePassword>;
+type FormType = z.infer<typeof zUserSetPassword>;
 
 // Extend schema to validate password confirmation
 const passwordHelperText =
@@ -20,7 +20,6 @@ const zPasswordFiled = z
 
 const validationSchema = z
   .object({
-    old_password: zPasswordFiled,
     new_password: zPasswordFiled,
     confirm_new_password: zPasswordFiled,
   })
@@ -29,11 +28,11 @@ const validationSchema = z
     path: ['confirm_new_password'],
   });
 
-type ChangePasswordForm = {
+type SetPasswordForm = {
   onSuccess?: () => void;
 };
 
-export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
+export function SetPasswordForm({ onSuccess }: SetPasswordForm) {
   const {
     control,
     handleSubmit,
@@ -42,7 +41,6 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
   } = useForm<FormType>({
     resolver: zodResolver(validationSchema),
     defaultValues: {
-      old_password: '',
       new_password: '',
       confirm_new_password: '',
     },
@@ -50,15 +48,11 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
 
   const onSubmit: SubmitHandler<FormType> = async (data, event) => {
     event?.preventDefault();
-    const response = await changePassword<false>({
+    const response = await setPassword<false>({
       body: data,
       throwOnError: false,
     });
     if (response.status === 200) return onSuccess?.();
-    if (response.status === 400)
-      return setError('old_password', {
-        message: 'Current password is incorrect',
-      });
     if (response.status === 422 && Array.isArray(response.error?.detail)) {
       response.error.detail.forEach((err) => {
         const fieldName = err.loc[err.loc.length - 1];
@@ -78,12 +72,6 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
     <Form onSubmit={handleSubmit(onSubmit)}>
       <Stack spacing={2}>
         <PasswordField
-          name='old_password'
-          control={control}
-          label='Current Password'
-          helperText={passwordHelperText}
-        />
-        <PasswordField
           name='new_password'
           control={control}
           label='New Password'
@@ -97,7 +85,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
         />
       </Stack>
       <FormError message={errors.root?.message} />
-      <SubmitButton isSubmitting={isSubmitting}>Change Password</SubmitButton>
+      <SubmitButton isSubmitting={isSubmitting}>Set Password</SubmitButton>
     </Form>
   );
 }
