@@ -29,7 +29,11 @@ const validationSchema = z
     path: ['confirm_new_password'],
   });
 
-export function ChangePasswordForm() {
+type ChangePasswordForm = {
+  onSuccess?: () => void;
+};
+
+export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
   const {
     control,
     handleSubmit,
@@ -50,7 +54,7 @@ export function ChangePasswordForm() {
       body: data,
       throwOnError: false,
     });
-    if (response.status === 200) return;
+    if (response.status === 200) return onSuccess?.();
     if (response.status === 400)
       return setError('old_password', {
         message: 'Current password is incorrect',
