@@ -3,9 +3,8 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import Link from '@mui/material/Link';
-import { Link as RouterLink } from '@tanstack/react-router';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { Link } from 'shared/ui/Link';
 
 export interface AuthPageProps {
   title: string;
@@ -62,7 +61,7 @@ export function AuthPage({
                 textAlign='center'>
                 {footerText}{' '}
                 {footerLinkText && footerTo && (
-                  <Link component={RouterLink} to={footerTo} underline='hover'>
+                  <Link to={footerTo} underline='hover'>
                     {footerLinkText}
                   </Link>
                 )}
