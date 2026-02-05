@@ -14,6 +14,7 @@ export type BaseInputProps<
 > = Omit<UseControllerProps<V, N>, 'control'> & {
   control: Control<V, N>;
   label?: string;
+  helperText?: string;
 };
 
 export type FieldComponent = <

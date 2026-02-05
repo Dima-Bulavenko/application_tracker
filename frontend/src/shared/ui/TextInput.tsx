@@ -5,7 +5,7 @@ import { TextInputProps } from 'shared/types/form';
 export function TextInput<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label, controller, children, ...props }: TextInputProps<V, N>) {
+>({ label, controller, children, helperText, ...props }: TextInputProps<V, N>) {
   const { field, fieldState, formState } = controller;
   return (
     <TextField
@@ -14,8 +14,8 @@ export function TextInput<
       helperText={
         fieldState?.error?.message
           ? fieldState.error?.message
-          : props.helperText
-            ? props.helperText
+          : helperText
+            ? helperText
             : ''
       }
       error={!!fieldState?.error}

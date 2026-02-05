@@ -7,8 +7,8 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import { useState } from 'react';
-import Link from '@mui/material/Link';
-import { getRouteApi, Link as RouterLink } from '@tanstack/react-router';
+import { getRouteApi } from '@tanstack/react-router';
+import { LinkButton } from 'shared/ui/LinkButton';
 
 const MenuStyle = {
   paper: {
@@ -77,14 +77,18 @@ export function AccountMenu() {
         slotProps={MenuStyle}
         transformOrigin={{ horizontal: 'center', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
+        <Divider />
         <MenuItem onClick={handleClose}>
-          <Link
-            component={RouterLink}
+          <LinkButton
             to='/profile'
-            underline='none'
-            sx={{ display: 'flex', alignItems: 'center', color: 'inherit' }}>
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              color: 'inherit',
+              padding: 0,
+            }}>
             <Avatar /> Profile
-          </Link>
+          </LinkButton>
         </MenuItem>
         <Divider />
         <MenuItem
