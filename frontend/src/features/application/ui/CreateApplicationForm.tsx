@@ -11,11 +11,11 @@ import ApplicationURLField from 'entities/application/ui/ApplicationURLField';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { type ApplicationCreate } from 'shared/api/gen/types.gen';
 import { zApplicationCreate } from 'shared/api/gen/zod.gen';
-import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
 import { useMutation } from '@tanstack/react-query';
 import SubmitButton from 'shared/ui/SubmitButton';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export function CreateApplicationForm() {
   const {
@@ -23,7 +23,7 @@ export function CreateApplicationForm() {
     handleSubmit,
     formState: { errors },
   } = useForm<ApplicationCreate>({
-    resolver: customZodResolver(zApplicationCreate),
+    resolver: zodResolver(zApplicationCreate),
     defaultValues: {
       status: 'applied',
       work_type: 'full_time',

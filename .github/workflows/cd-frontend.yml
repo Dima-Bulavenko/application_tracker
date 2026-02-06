@@ -6,96 +6,43 @@ on:
     paths:
       - "frontend/**"
       - ".github/workflows/cd-frontend.yml"
-      - "!backend/**"
-
-  workflow_run:
-    workflows: ["Deploy Backend"]
-    types:
-      - completed
 
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
 
-    if: |
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success')
-
-    defaults:
-      run:
-        working-directory: ./frontend
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download OpenAPI schema from deployed backend
-        run: |
-          curl -f -sS ${{ vars.API_URL }}/openapi.json -o openapi.json
-
-      - name: Compute checksum of OpenAPI schema
-        run: |
-          sha256sum openapi.json | awk '{print $1}' > openapi.sha256
-
-      - name: Download last OpenAPI checksum artifact
-        id: download
-        continue-on-error: true
-        uses: actions/download-artifact@v4
-        with:
-          name: openapi-checksum
-          path: frontend/openapi-checksum
-
-      - name: Decide whether frontend deploy is needed
-        id: should-deploy
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "deploy=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          if [ ! -f openapi-checksum/openapi.sha256 ]; then
-            echo "deploy=true" >> $GITHUB_OUTPUT
-          elif cmp -s openapi.sha256 openapi-checksum/openapi.sha256; then
-            echo "deploy=false" >> $GITHUB_OUTPUT
-          else
-            echo "deploy=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build React frontend
-        id: build-frontend
-        if: steps.should-deploy.outputs.deploy == 'true'
-        env:
-          VITE_API_URL: ${{ vars.API_URL }}
-        run: |
-          npm ci
-          npm run generate-client
-          npm run build
-
       - name: Configure AWS credentials
-        if: steps.should-deploy.outputs.deploy == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Download OpenAPI schema from deployed backend
+        run: |
+          curl -f -sS ${{ vars.API_URL }}/openapi.json -o frontend/openapi.json
+
+      - name: Build React frontend
+        id: build-frontend
+        env:
+          VITE_API_URL: ${{ vars.API_URL }}
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run generate-client
+          npm run build
+
       - name: Sync frontend build to S3
-        if: steps.should-deploy.outputs.deploy == 'true'
+        working-directory: ./frontend
         run: |
           aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
       - name: Invalidate CloudFront cache
-        if: steps.should-deploy.outputs.deploy == 'true'
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
             --paths "/*"
-
-      - name: Upload OpenAPI checksum artifact
-        if: steps.should-deploy.outputs.deploy == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi-checksum
-          path: frontend/openapi.sha256
-          retention-days: 90

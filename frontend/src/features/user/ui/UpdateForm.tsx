@@ -1,6 +1,5 @@
 import { useForm, useController, SubmitHandler } from 'react-hook-form';
 import { zUserUpdate } from 'shared/api/gen/zod.gen';
-import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import type { FieldComponent } from 'shared/types/form';
 import { z } from 'zod';
@@ -12,6 +11,7 @@ import { updateUser } from 'shared/api/gen';
 import { getDirtyValues } from 'shared/api/get_dirty_values';
 import { getRouteApi } from '@tanstack/react-router';
 import SubmitButton from 'shared/ui/SubmitButton';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 type FormType = z.infer<typeof zUserUpdate>;
 
@@ -43,7 +43,7 @@ export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
     handleSubmit,
     formState: { errors, isDirty, dirtyFields, isSubmitting },
   } = useForm<FormType>({
-    resolver: customZodResolver(zUserUpdate),
+    resolver: zodResolver(zUserUpdate),
     defaultValues: {
       first_name: user.first_name,
       second_name: user.second_name,
