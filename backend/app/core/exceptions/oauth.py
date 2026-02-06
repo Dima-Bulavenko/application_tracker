@@ -29,3 +29,9 @@ class OAuthAccountAlreadyLinkedError(OAuthError):
     """Exception raised when OAuth account is already linked to another user"""
 
     pass
+
+
+class OAuthAccountAlreadyLinkedToProviderError(OAuthError):
+    """Exception raised when OAuth account is already linked to a different provider"""
+
+    pass

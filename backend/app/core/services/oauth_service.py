@@ -5,8 +5,7 @@ import secrets
 from app.core.domain import User
 from app.core.domain.user import OAuthProvider
 from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, TokenType
-from app.core.exceptions import UserAlreadyExistError
-from app.core.exceptions.oauth import OAuthAccountAlreadyLinkedError
+from app.core.exceptions.oauth import OAuthAccountAlreadyLinkedError, OAuthAccountAlreadyLinkedToProviderError
 from app.core.repositories import IOAuthProvider, IUserRepository, OAuthUserInfo
 from app.core.security import ITokenStrategy
 from app.core.services.refresh_token_service import RefreshTokenService
@@ -84,8 +83,9 @@ class OAuthService:
                 return tokens, False
             else:
                 # User exists with different OAuth provider
-                raise UserAlreadyExistError(
-                    f"User with email {oauth_user_info.email} already exists with {existing_email_user.oauth_provider.value} provider"
+                provider = existing_email_user.oauth_provider.value.capitalize()
+                raise OAuthAccountAlreadyLinkedToProviderError(
+                    f"This account was created with {provider}. Please use {provider} to sign in."
                 )
 
         # Create new OAuth user
