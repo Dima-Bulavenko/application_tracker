@@ -5,12 +5,12 @@ import { zUserLogin } from 'shared/api/gen/zod.gen';
 import Stack from '@mui/material/Stack';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import SubmitButton from 'shared/ui/SubmitButton';
-import { customZodResolver } from 'shared/lib/customZodResolver';
 import { getRouteApi } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
 import GoogleAuthorizationButton from 'shared/ui/GoogleAuthorizationButton';
 import LinkedInAuthorizationButton from 'shared/ui/LinkedInAuthorizationButton';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const routeApi = getRouteApi('/sign-in');
 
@@ -21,7 +21,7 @@ export default function SignInForm() {
     setError,
     formState: { errors, isSubmitting },
   } = useForm<UserLogin>({
-    resolver: customZodResolver(zUserLogin),
+    resolver: zodResolver(zUserLogin),
   });
   const {
     auth: { login },

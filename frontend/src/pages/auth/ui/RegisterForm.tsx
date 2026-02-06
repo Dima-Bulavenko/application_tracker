@@ -5,13 +5,13 @@ import { createUser } from 'shared/api/gen/sdk.gen';
 import { zUserCreate } from 'shared/api/gen/zod.gen';
 import Stack from '@mui/material/Stack';
 import { useForm, type SubmitHandler } from 'react-hook-form';
-import { customZodResolver } from 'shared/lib/customZodResolver';
 import { useNavigate } from '@tanstack/react-router';
 import EmailField from 'entities/user/ui/EmailField';
 import PasswordField from 'entities/user/ui/PasswordField';
 import SubmitButton from 'shared/ui/SubmitButton';
 import GoogleAuthorizationButton from 'shared/ui/GoogleAuthorizationButton';
 import LinkedInAuthorizationButton from 'shared/ui/LinkedInAuthorizationButton';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export default function RegisterForm() {
   const {
@@ -19,7 +19,7 @@ export default function RegisterForm() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<UserCreate>({ resolver: customZodResolver(zUserCreate) });
+  } = useForm<UserCreate>({ resolver: zodResolver(zUserCreate) });
 
   const navigate = useNavigate();
 

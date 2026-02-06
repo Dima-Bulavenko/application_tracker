@@ -16,11 +16,11 @@ import type {
 } from 'shared/api/gen/types.gen';
 import { getDirtyValues } from 'shared/api/get_dirty_values';
 import { zApplicationUpdate } from 'shared/api/gen/zod.gen';
-import { customZodResolver } from 'shared/lib/customZodResolver';
 import { Form } from 'shared/ui/Form';
 import { FormError } from 'shared/ui/FormError';
 import { useMutation } from '@tanstack/react-query';
 import SubmitButton from 'shared/ui/SubmitButton';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
@@ -29,7 +29,7 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
     reset,
     formState: { errors, dirtyFields, isDirty },
   } = useForm<ApplicationUpdate>({
-    resolver: customZodResolver(zApplicationUpdate),
+    resolver: zodResolver(zApplicationUpdate),
     defaultValues,
   });
   const { mutate: updateApp, isPending } = useMutation(
