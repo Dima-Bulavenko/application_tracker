@@ -6,9 +6,9 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from app import Tags
 from app.core.domain.user import OAuthProvider
 from app.core.dto import OAuthAuthorizeResponse, OAuthLoginResponse
-from app.core.exceptions import UserAlreadyExistError
 from app.core.exceptions.oauth import (
     OAuthAccountAlreadyLinkedError,
+    OAuthAccountAlreadyLinkedToProviderError,
     OAuthError,
     OAuthProviderError,
     OAuthTokenExchangeError,
@@ -114,7 +114,7 @@ async def google_callback(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
     except OAuthAccountAlreadyLinkedError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
-    except UserAlreadyExistError as e:
+    except OAuthAccountAlreadyLinkedToProviderError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except OAuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
@@ -198,7 +198,7 @@ async def linkedin_callback(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
     except OAuthAccountAlreadyLinkedError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
-    except UserAlreadyExistError as e:
+    except OAuthAccountAlreadyLinkedToProviderError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except OAuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

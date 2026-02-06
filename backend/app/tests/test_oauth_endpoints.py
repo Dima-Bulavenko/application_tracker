@@ -594,6 +594,38 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert data["token_type"] == "bearer"
         assert isinstance(data["is_new_user"], bool)
 
+    async def test_user_tries_authenticate_with_another_provider_returns_409(self, client: AsyncClient, mocker):
+        """Test that trying to authenticate with a different provider for the same email returns 409 Conflict"""
+        await self.create_user(
+            email="original@example.com",
+            oauth_provider=OAuthProvider.LINKEDIN,
+            oauth_id="linkedin_12345",
+            is_active=True,
+            password=None,
+        )
+
+        mock_access_token = "mock_access_token"
+        mock_oauth_user_info = OAuthUserInfo(
+            email="original@example.com",
+            oauth_id="linkedin_12345",
+            email_verified=True,
+        )
+
+        mocker.patch.object(GoogleOAuthProvider, "exchange_code_for_token", return_value=mock_access_token)
+        mocker.patch.object(GoogleOAuthProvider, "get_user_info", return_value=mock_oauth_user_info)
+
+        state = "test_state_token"
+        code = "test_code"
+
+        # Act: Call callback endpoint
+        response = await client.get(
+            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+        )
+
+        # Assert
+        assert response.status_code == 409
+        assert "This account was created with Linkedin. Please use Linkedin to sign in." in response.json()["detail"]
+
 
 class TestLinkedInAuthorizeEndpoint(BaseTest):
     """Tests for the LinkedIn OAuth authorization endpoint"""
@@ -1172,3 +1204,35 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert isinstance(data["access_token"], str)
         assert data["token_type"] == "bearer"
         assert isinstance(data["is_new_user"], bool)
+
+    async def test_user_tries_authenticate_with_another_provider_returns_409(self, client: AsyncClient, mocker):
+        """Test that trying to authenticate with a different provider for the same email returns 409 Conflict"""
+        await self.create_user(
+            email="original@example.com",
+            oauth_provider=OAuthProvider.GOOGLE,
+            oauth_id="google_12345",
+            is_active=True,
+            password=None,
+        )
+
+        mock_access_token = "mock_access_token"
+        mock_oauth_user_info = OAuthUserInfo(
+            email="original@example.com",
+            oauth_id="google_12345",
+            email_verified=True,
+        )
+
+        mocker.patch.object(LinkedInOAuthProvider, "exchange_code_for_token", return_value=mock_access_token)
+        mocker.patch.object(LinkedInOAuthProvider, "get_user_info", return_value=mock_oauth_user_info)
+
+        state = "test_state_token"
+        code = "test_code"
+
+        # Act: Call callback endpoint
+        response = await client.get(
+            f"/auth/oauth/linkedin/callback?code={code}&state={state}", cookies={"oauth_state": state}
+        )
+
+        # Assert
+        assert response.status_code == 409
+        assert "This account was created with Google. Please use Google to sign in." in response.json()["detail"]
