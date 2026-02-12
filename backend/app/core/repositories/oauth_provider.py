@@ -17,11 +17,13 @@ class IOAuthProvider(ABC):
     """Abstract interface for OAuth providers"""
 
     @abstractmethod
-    def get_authorization_url(self, state: str) -> str:
+    def get_authorization_url(self, state: str, code_challenge: str, code_challenge_method: str) -> str:
         """Generate authorization URL for OAuth flow
 
         Args:
             state: CSRF protection state token
+            code_challenge: Challenge code for PKCE protection
+            code_challenge_method: Hashing method that was used to get code challenge
 
         Returns:
             Authorization URL to redirect user to
@@ -29,12 +31,12 @@ class IOAuthProvider(ABC):
         ...
 
     @abstractmethod
-    async def exchange_code_for_token(self, code: str, state: str) -> str:
+    async def exchange_code_for_token(self, code: str, code_verifier: str) -> str:
         """Exchange authorization code for access token
 
         Args:
             code: Authorization code from OAuth callback
-            state: CSRF protection state token
+            code_verifier: code verifier for PKCE protection
 
         Returns:
             Access token from OAuth provider

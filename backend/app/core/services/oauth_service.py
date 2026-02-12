@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import hashlib
 import secrets
 
 from app.core.domain import User
@@ -30,8 +32,17 @@ class OAuthService:
         """Generate CSRF protection state token"""
         return secrets.token_urlsafe(32)
 
+    def generate_code_verifier(self) -> str:
+        """Generate code verified for PKCE protection"""
+        return secrets.token_urlsafe(64)
+
+    def generate_code_challenge(self, verifier: str) -> str:
+        """Generate code challenge for PKCE protection"""
+        sha256 = hashlib.sha256(verifier.encode()).digest()
+        return base64.urlsafe_b64encode(sha256).rstrip(b"=").decode()
+
     async def authenticate_oauth_user(
-        self, oauth_provider: IOAuthProvider, provider_type: OAuthProvider, code: str, state: str
+        self, oauth_provider: IOAuthProvider, provider_type: OAuthProvider, code: str, state: str, code_verifier: str
     ) -> tuple[TokenPairT, bool]:
         """Authenticate or register user via OAuth
 
@@ -52,7 +63,7 @@ class OAuthService:
             OAuthAccountAlreadyLinkedError: If OAuth account linked to different email
         """
         # Exchange code for access token
-        access_token = await oauth_provider.exchange_code_for_token(code, state)
+        access_token = await oauth_provider.exchange_code_for_token(code, code_verifier)
 
         # Get user info from provider
         oauth_user_info = await oauth_provider.get_user_info(access_token)
