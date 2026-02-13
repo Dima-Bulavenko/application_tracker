@@ -19,7 +19,7 @@ class GoogleOAuthProvider(IOAuthProvider):
         self.client_secret = GOOGLE_CLIENT_SECRET
         self.redirect_uri = f"{OAUTH_REDIRECT_URI}/google"
 
-    def get_authorization_url(self, state: str) -> str:
+    def get_authorization_url(self, state: str, code_challenge: str, code_challenge_method: str = "S256") -> str:
         """Generate Google OAuth authorization URL"""
         params = {
             "client_id": self.client_id,
@@ -29,11 +29,13 @@ class GoogleOAuthProvider(IOAuthProvider):
             "state": state,
             "access_type": "offline",
             "prompt": "consent",
+            "code_challenge": code_challenge,
+            "code_challenge_method": code_challenge_method,
         }
         query_string = "&".join([f"{key}={value}" for key, value in params.items()])
         return f"{self.AUTHORIZATION_URL}?{query_string}"
 
-    async def exchange_code_for_token(self, code: str, state: str) -> str:
+    async def exchange_code_for_token(self, code: str, code_verifier: str) -> str:
         """Exchange authorization code for access token"""
         data = {
             "client_id": self.client_id,
@@ -41,6 +43,7 @@ class GoogleOAuthProvider(IOAuthProvider):
             "code": code,
             "grant_type": "authorization_code",
             "redirect_uri": self.redirect_uri,
+            "code_verifier": code_verifier,
         }
 
         async with httpx.AsyncClient() as client:
