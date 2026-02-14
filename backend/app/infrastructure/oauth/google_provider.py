@@ -3,39 +3,44 @@ from __future__ import annotations
 import httpx
 
 from app import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OAUTH_REDIRECT_URI
+from app.core.domain.user import OAuthProvider
 from app.core.exceptions.oauth import OAuthProviderError, OAuthTokenExchangeError
-from app.core.repositories.oauth_provider import IOAuthProvider, OAuthUserInfo
+from app.core.repositories.oauth_provider import IOAuthProvider, OAuthPKCEProvider, OAuthStateProvider, OAuthUserInfo
 
 
 class GoogleOAuthProvider(IOAuthProvider):
     """Google OAuth2 provider implementation"""
 
+    __type = OAuthProvider.GOOGLE
+
     AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
     TOKEN_URL = "https://oauth2.googleapis.com/token"
     USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
-    def __init__(self):
+    def __init__(self, code_verifier: str | None = None):
         self.client_id = GOOGLE_CLIENT_ID
         self.client_secret = GOOGLE_CLIENT_SECRET
         self.redirect_uri = f"{OAUTH_REDIRECT_URI}/google"
+        self.__pkce_provider = OAuthPKCEProvider(code_verifier)
+        self.__state_provider = OAuthStateProvider()
 
-    def get_authorization_url(self, state: str, code_challenge: str, code_challenge_method: str = "S256") -> str:
+    def get_authorization_url(self) -> str:
         """Generate Google OAuth authorization URL"""
         params = {
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
             "response_type": "code",
             "scope": "openid email profile",
-            "state": state,
+            "state": self.state,
             "access_type": "offline",
             "prompt": "consent",
-            "code_challenge": code_challenge,
-            "code_challenge_method": code_challenge_method,
+            "code_challenge": self.code_challenge,
+            "code_challenge_method": self.code_challenge_method,
         }
         query_string = "&".join([f"{key}={value}" for key, value in params.items()])
         return f"{self.AUTHORIZATION_URL}?{query_string}"
 
-    async def exchange_code_for_token(self, code: str, code_verifier: str) -> str:
+    async def exchange_code_for_token(self, code: str) -> str:
         """Exchange authorization code for access token"""
         data = {
             "client_id": self.client_id,
@@ -43,7 +48,7 @@ class GoogleOAuthProvider(IOAuthProvider):
             "code": code,
             "grant_type": "authorization_code",
             "redirect_uri": self.redirect_uri,
-            "code_verifier": code_verifier,
+            "code_verifier": self.code_verifier,
         }
 
         async with httpx.AsyncClient() as client:
@@ -74,3 +79,27 @@ class GoogleOAuthProvider(IOAuthProvider):
                 )
             except (httpx.HTTPError, KeyError) as e:
                 raise OAuthProviderError(f"Failed to fetch user info from Google: {e}") from e
+
+    @property
+    def type(self) -> OAuthProvider:
+        return self.__type
+
+    @property
+    def state(self) -> str:
+        """Get or generate state token for CSRF protection"""
+        return self.__state_provider.state
+
+    @property
+    def code_verifier(self) -> str:
+        """Get or generate PKCE code verifier"""
+        return self.__pkce_provider.code_verifier
+
+    @property
+    def code_challenge(self) -> str:
+        """Get or generate PKCE code challenge"""
+        return self.__pkce_provider.code_challenge
+
+    @property
+    def code_challenge_method(self) -> str:
+        """PKCE code challenge method"""
+        return self.__pkce_provider.code_challenge_method

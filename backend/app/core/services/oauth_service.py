@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import base64
-import hashlib
-import secrets
-
 from app.core.domain import User
 from app.core.domain.user import OAuthProvider
 from app.core.dto import AccessTokenPayload, RefreshTokenPayload, Token, TokenType
@@ -28,27 +24,11 @@ class OAuthService:
         self.access_strategy = access_strategy
         self.refresh_token_service = refresh_token_service
 
-    def generate_state_token(self) -> str:
-        """Generate CSRF protection state token"""
-        return secrets.token_urlsafe(32)
-
-    def generate_code_verifier(self) -> str:
-        """Generate code verified for PKCE protection"""
-        return secrets.token_urlsafe(64)
-
-    def generate_code_challenge(self, verifier: str) -> str:
-        """Generate code challenge for PKCE protection"""
-        sha256 = hashlib.sha256(verifier.encode()).digest()
-        return base64.urlsafe_b64encode(sha256).rstrip(b"=").decode()
-
-    async def authenticate_oauth_user(
-        self, oauth_provider: IOAuthProvider, provider_type: OAuthProvider, code: str, state: str, code_verifier: str
-    ) -> tuple[TokenPairT, bool]:
+    async def authenticate_oauth_user(self, oauth_provider: IOAuthProvider, code: str) -> tuple[TokenPairT, bool]:
         """Authenticate or register user via OAuth
 
         Args:
             oauth_provider: OAuth provider implementation
-            provider_type: OAuth provider type enum
             code: Authorization code from OAuth callback
             state: CSRF protection state token
 
@@ -63,19 +43,19 @@ class OAuthService:
             OAuthAccountAlreadyLinkedError: If OAuth account linked to different email
         """
         # Exchange code for access token
-        access_token = await oauth_provider.exchange_code_for_token(code, code_verifier)
+        access_token = await oauth_provider.exchange_code_for_token(code)
 
         # Get user info from provider
         oauth_user_info = await oauth_provider.get_user_info(access_token)
 
         # Check if OAuth account already exists
-        existing_oauth_user = await self.user_repo.get_by_oauth_id(provider_type, oauth_user_info.oauth_id)
+        existing_oauth_user = await self.user_repo.get_by_oauth_id(oauth_provider.type, oauth_user_info.oauth_id)
 
         if existing_oauth_user:
             # OAuth account exists - verify email matches
             if existing_oauth_user.email != oauth_user_info.email:
                 raise OAuthAccountAlreadyLinkedError(
-                    f"This {provider_type.value} account is already linked to a different email"
+                    f"This {oauth_provider.type.value} account is already linked to a different email"
                 )
 
             # Login existing user
@@ -89,7 +69,7 @@ class OAuthService:
             # Email exists - check if it's a local account or different OAuth provider
             if existing_email_user.oauth_provider == OAuthProvider.LOCAL:
                 # Link OAuth to existing local account
-                await self._link_oauth_to_user(existing_email_user, provider_type, oauth_user_info)
+                await self._link_oauth_to_user(existing_email_user, oauth_provider.type, oauth_user_info)
                 tokens = await self._issue_tokens(existing_email_user)
                 return tokens, False
             else:
@@ -100,7 +80,7 @@ class OAuthService:
                 )
 
         # Create new OAuth user
-        new_user = await self._create_oauth_user(provider_type, oauth_user_info)
+        new_user = await self._create_oauth_user(oauth_provider.type, oauth_user_info)
         tokens = await self._issue_tokens(new_user)
         return tokens, True
 
