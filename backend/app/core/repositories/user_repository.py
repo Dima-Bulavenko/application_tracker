@@ -12,12 +12,12 @@ class IUserRepository(ABC):
     async def get_by_id(self, user_id: int) -> User | None: ...
 
     @abstractmethod
-    async def get_by_oauth_id(self, oauth_provider: OAuthProvider, oauth_id: str) -> User | None:
+    async def get_by_oauth_id(self, provider_type: OAuthProvider, oauth_id: str) -> User | None:
         """Get user by OAuth provider and OAuth ID"""
         ...
 
     @abstractmethod
-    async def get_by_email_and_provider(self, email: str, oauth_provider: OAuthProvider) -> User | None:
+    async def get_by_email_and_provider(self, email: str, provider_type: OAuthProvider) -> User | None:
         """Get user by email and OAuth provider"""
         ...
 

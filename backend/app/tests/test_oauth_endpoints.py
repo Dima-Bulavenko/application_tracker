@@ -59,7 +59,7 @@ class TestGoogleAuthorizeEndpoint(BaseTest):
         set_cookie_header = response.headers.get("set-cookie", "")
         assert "oauth_state=" in set_cookie_header
         assert "HttpOnly" in set_cookie_header
-        assert "SameSite=none" in set_cookie_header or "samesite=none" in set_cookie_header.lower()
+        assert "SameSite=strict" in set_cookie_header or "samesite=strict" in set_cookie_header.lower()
         assert "Max-Age=600" in set_cookie_header
 
     async def test_state_token_is_unique_per_request(self, client: AsyncClient):
@@ -157,6 +157,41 @@ class TestGoogleAuthorizeEndpoint(BaseTest):
         assert "redirect_uri=" in auth_url
         assert "/oauth/google" in auth_url
 
+    async def test_authorization_url_includes_code_challenge_parameters(self, client: AsyncClient):
+        """Test that authorization URL includes PKCE code challenge parameters"""
+        response = await client.get("/auth/oauth/google/authorize")
+
+        assert response.status_code == 200
+        auth_url = response.json()["authorization_url"]
+
+        # Should contain code_challenge and code_challenge_method parameters
+        assert "code_challenge=" in auth_url
+        assert "code_challenge_method=S256" in auth_url
+
+    async def test_response_contains_state_matching_cookie(self, client: AsyncClient):
+        """Test that state in response matches the value in oauth_state cookie"""
+        response = await client.get("/auth/oauth/google/authorize")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # State in response should match the cookie value
+        assert "state" in data
+        assert "oauth_state" in response.cookies
+        assert data["state"] == response.cookies["oauth_state"]
+
+    async def test_sets_oauth_code_verifier_cookie(self, client: AsyncClient):
+        """Test that endpoint sets oauth_code_verifier cookie for PKCE flow"""
+        response = await client.get("/auth/oauth/google/authorize")
+
+        assert response.status_code == 200
+        assert "oauth_code_verifier" in response.cookies
+
+        # Validate code verifier is a non-empty string
+        code_verifier = response.cookies["oauth_code_verifier"]
+        assert isinstance(code_verifier, str)
+        assert len(code_verifier) > 0
+
 
 class TestGoogleCallbackEndpoint(BaseTest):
     """Tests for the Google OAuth callback endpoint"""
@@ -182,7 +217,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint with state cookie
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert: Check response
@@ -243,7 +279,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert: Check response
@@ -256,14 +293,13 @@ class TestGoogleCallbackEndpoint(BaseTest):
         # Check refresh token cookie is set
         assert "refresh" in response.cookies
 
-    async def test_missing_state_cookie_returns_400(self, client: AsyncClient):
-        """Test that missing oauth_state cookie returns 400 Bad Request"""
+    async def test_missing_state_cookie(self, client: AsyncClient):
+        """Test that missing oauth_state cookie returns 422 Unprocessable Entity"""
         # Act: Call callback without state cookie
         response = await client.get("/auth/oauth/google/callback?code=test_code&state=test_state")
 
         # Assert
-        assert response.status_code == 400
-        assert response.json()["detail"] == "Missing state cookie"
+        assert response.status_code == 422
 
     async def test_state_mismatch_returns_400(self, client: AsyncClient):
         """Test that state mismatch returns 400 Bad Request (CSRF protection)"""
@@ -273,7 +309,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback with mismatched states
         response = await client.get(
-            f"/auth/oauth/google/callback?code=test_code&state={url_state}", cookies={"oauth_state": cookie_state}
+            f"/auth/oauth/google/callback?code=test_code&state={url_state}",
+            cookies={"oauth_state": cookie_state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -294,7 +331,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -317,7 +355,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -351,7 +390,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -382,7 +422,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert: Check response
@@ -411,7 +452,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -436,7 +478,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -466,7 +509,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -484,7 +528,10 @@ class TestGoogleCallbackEndpoint(BaseTest):
         state = "test_state_token"
 
         # Act: Call callback without code parameter
-        response = await client.get(f"/auth/oauth/google/callback?state={state}", cookies={"oauth_state": state})
+        response = await client.get(
+            f"/auth/oauth/google/callback?state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
+        )
 
         # Assert
         assert response.status_code == 422
@@ -521,7 +568,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -550,7 +598,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -579,7 +628,8 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
@@ -619,12 +669,26 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Act: Call callback endpoint
         response = await client.get(
-            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+            f"/auth/oauth/google/callback?code={code}&state={state}",
+            cookies={"oauth_state": state, "oauth_code_verifier": "test_code_verifier"},
         )
 
         # Assert
         assert response.status_code == 409
         assert "This account was created with Linkedin. Please use Linkedin to sign in." in response.json()["detail"]
+
+    async def test_missing_code_verifier_cookie(self, client: AsyncClient):
+        """Test that missing oauth_code_verifier cookie returns 422 Unprocessable Entity"""
+        state = "test_state_token"
+        code = "test_code"
+
+        # Act: Call callback without code verifier cookie
+        response = await client.get(
+            f"/auth/oauth/google/callback?code={code}&state={state}", cookies={"oauth_state": state}
+        )
+
+        # Assert
+        assert response.status_code == 422
 
 
 class TestLinkedInAuthorizeEndpoint(BaseTest):

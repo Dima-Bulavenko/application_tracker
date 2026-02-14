@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 
 from app import Tags
-from app.core.domain.user import OAuthProvider
 from app.core.dto import OAuthAuthorizeResponse, OAuthLoginResponse
 from app.core.exceptions.oauth import (
     OAuthAccountAlreadyLinkedError,
@@ -37,23 +36,35 @@ OAuthServiceDep = Annotated[OAuthService, Depends(get_oauth_service)]
 
 
 @router.get("/google/authorize")
-async def google_authorize(oauth_service: OAuthServiceDep, response: Response) -> OAuthAuthorizeResponse:
+async def google_authorize(
+    response: Response,
+) -> OAuthAuthorizeResponse:
     """Initiate Google OAuth flow
 
     Redirects user to Google authorization page.
     State token is stored in HTTPOnly cookie for CSRF protection.
     """
     provider = GoogleOAuthProvider()
-    state = oauth_service.generate_state_token()
 
-    authorization_url = provider.get_authorization_url(state)
+    state = provider.state
+    code_verifier = provider.code_verifier
+    authorization_url = provider.get_authorization_url()
 
     response.set_cookie(
         key="oauth_state",
         value=state,
         httponly=True,
         secure=True,
-        samesite="none",
+        samesite="strict",
+        max_age=600,
+    )
+
+    response.set_cookie(
+        key="oauth_code_verifier",
+        value=code_verifier,
+        httponly=True,
+        secure=True,
+        samesite="strict",
         max_age=600,
     )
 
@@ -66,7 +77,8 @@ async def google_callback(
     state: str,
     response: Response,
     oauth_service: OAuthServiceDep,
-    oauth_state_cookie: str | None = Cookie(None, alias="oauth_state"),
+    oauth_state_cookie: Annotated[str, Cookie(alias="oauth_state")],
+    oauth_code_verifier: Annotated[str, Cookie()],
 ) -> OAuthLoginResponse:
     """Handle Google OAuth callback
 
@@ -76,29 +88,22 @@ async def google_callback(
     3. Fetches user info from Google
     4. Creates or logs in user
     5. Issues JWT tokens
-    6. Redirects to frontend with access token
+    6. Response to frontend with access token
 
     The refresh token is set as an HTTPOnly secure cookie.
     """
-    if not oauth_state_cookie:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing state cookie",
-        )
-
-    if state != oauth_state_cookie:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="State mismatch - possible CSRF attack",
-        )
 
     response.delete_cookie(key="oauth_state")
+    response.delete_cookie(key="oauth_code_verifier")
+    exception = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, headers=dict(response.headers))
+
+    if state != oauth_state_cookie:
+        exception.detail = "State mismatch - possible CSRF attack"
+        raise exception
 
     try:
-        provider = GoogleOAuthProvider()
-        tokens, is_new_user = await oauth_service.authenticate_oauth_user(
-            oauth_provider=provider, provider_type=OAuthProvider.GOOGLE, code=code, state=state
-        )
+        provider = GoogleOAuthProvider(code_verifier=oauth_code_verifier)
+        tokens, is_new_user = await oauth_service.authenticate_oauth_user(oauth_provider=provider, code=code)
 
         access_token, refresh_token = tokens
 
@@ -109,28 +114,35 @@ async def google_callback(
         return OAuthLoginResponse(access_token=access_token.token, is_new_user=is_new_user)
 
     except OAuthTokenExchangeError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        exception.detail = str(e)
+        raise exception from e
     except OAuthProviderError as e:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(e)) from e
+        exception.detail = str(e)
+        exception.status_code = status.HTTP_502_BAD_GATEWAY
+        raise exception from e
     except OAuthAccountAlreadyLinkedError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+        exception.detail = str(e)
+        exception.status_code = status.HTTP_409_CONFLICT
+        raise exception from e
     except OAuthAccountAlreadyLinkedToProviderError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+        exception.detail = str(e)
+        exception.status_code = status.HTTP_409_CONFLICT
+        raise exception from e
     except OAuthError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+        exception.detail = str(e)
+        raise exception from e
 
 
 @router.get("/linkedin/authorize")
-async def linkedin_authorize(oauth_service: OAuthServiceDep, response: Response) -> OAuthAuthorizeResponse:
+async def linkedin_authorize(response: Response) -> OAuthAuthorizeResponse:
     """Initiate LinkedIn OAuth flow
 
     Redirects user to LinkedIn authorization page.
     State token is stored in HTTPOnly cookie for CSRF protection.
     """
     provider = LinkedInOAuthProvider()
-    state = oauth_service.generate_state_token()
-
-    authorization_url = provider.get_authorization_url(state)
+    state = provider.state
+    authorization_url = provider.get_authorization_url()
 
     response.set_cookie(
         key="oauth_state",
@@ -160,10 +172,12 @@ async def linkedin_callback(
     3. Fetches user info from LinkedIn
     4. Creates or logs in user
     5. Issues JWT tokens
-    6. Redirects to frontend with access token
 
     The refresh token is set as an HTTPOnly secure cookie.
     """
+    response.delete_cookie(key="oauth_state")
+    response.delete_cookie(key="oauth_code_verifier")
+
     if not oauth_state_cookie:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -181,7 +195,8 @@ async def linkedin_callback(
     try:
         provider = LinkedInOAuthProvider()
         tokens, is_new_user = await oauth_service.authenticate_oauth_user(
-            oauth_provider=provider, provider_type=OAuthProvider.LINKEDIN, code=code, state=state
+            oauth_provider=provider,
+            code=code,
         )
 
         access_token, refresh_token = tokens
