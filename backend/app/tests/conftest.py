@@ -13,6 +13,13 @@ from app.infrastructure.security import (
     VerificationTokenStrategy,
 )
 from app.main import app
+from app.tests.factories import (
+    access_token_factory as access_token_factory,
+    application_factory as application_factory,
+    company_factory as company_factory,
+    refresh_token_factory as refresh_token_factory,
+    user_factory as user_factory,
+)
 
 
 @pytest.fixture(scope="session")
