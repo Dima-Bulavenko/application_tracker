@@ -3,6 +3,9 @@ from datetime import datetime
 import pytest
 from httpx import AsyncClient
 
+from app.core.domain.company import Company
+from app.core.dto.application import ApplicationCreate
+
 from .base import BaseTest
 
 
@@ -570,3 +573,243 @@ class TestApplicationListFilters(BaseTest):
         data = resp.json()
         assert len(data) == 1
         assert data[0]["company"]["name"].startswith("Acme")
+
+
+@pytest.fixture(name="user", autouse=True)
+async def create_user(user_factory):
+    return await user_factory()
+
+
+@pytest.fixture(name="company", autouse=True)
+async def create_company(company_factory):
+    return await company_factory()
+
+
+@pytest.fixture(name="access_token", autouse=True)
+def create_access_token(access_token_factory, user):
+    return access_token_factory(user).token
+
+
+class TestApplicationCreate:
+    @pytest.fixture(name="client_data")
+    def create_client_data(self, access_token: str):
+        return {"url": "/applications", "headers": {"Authorization": f"Bearer {access_token}"}}
+
+    @pytest.fixture(name="payload")
+    def create_application_payload(self, company: Company):
+        return ApplicationCreate.model_validate(
+            {
+                "role": "Test Role",
+                "company": {"name": company.name},
+            }
+        )
+
+    async def test_create_application(self, client: AsyncClient, client_data: dict, payload: ApplicationCreate):
+        json = payload.model_dump(mode="json")
+        response = await client.post(**client_data, json=json)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["role"] == payload.role
+
+    async def test_create_application_with_non_existent_company(
+        self, client: AsyncClient, client_data: dict, payload: ApplicationCreate
+    ):
+        payload.company.name = "NonExistentCompany"
+        json = payload.model_dump(mode="json")
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "company_name,expected_status",
+        [
+            ("NonExistentCompany", 200),
+            ("", 422),
+            ("A" * 41, 422),
+            ("123", 200),
+        ],
+    )
+    async def test_create_application_with_different_company_names(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+        payload: ApplicationCreate,
+        company_name: str,
+        expected_status: int,
+    ):
+        payload.company.name = company_name
+        json = payload.model_dump(mode="json")
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        "role,expected_status",
+        [
+            ("A" * 40, 200),
+            ("A" * 41, 422),
+            ("", 422),
+            (None, 422),
+            ("123", 200),
+            ("Valid Role", 200),
+        ],
+    )
+    async def test_create_application_with_different_role_values(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+        payload: ApplicationCreate,
+        role: str,
+        expected_status: int,
+    ):
+        payload.role = role
+        json = payload.model_dump(mode="json")
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        "status,expected_status",
+        [
+            ("applied", 200),
+            ("interview", 200),
+            ("offer", 200),
+            ("rejected", 200),
+            ("invalid", 422),
+            ("", 422),
+            (None, 422),
+        ],
+    )
+    async def test_create_application_with_different_status_values(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+        payload: ApplicationCreate,
+        status: str | None,
+        expected_status: int,
+    ):
+        json = payload.model_dump(mode="json")
+        json["status"] = status
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        "work_type,expected_status",
+        [
+            ("full_time", 200),
+            ("part_time", 200),
+            ("internship", 200),
+            ("contract", 200),
+            ("other", 200),
+            ("invalid", 422),
+            ("", 422),
+            (None, 422),
+        ],
+    )
+    async def test_create_application_with_different_work_type_values(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+        payload: ApplicationCreate,
+        work_type: str | None,
+        expected_status: int,
+    ):
+        json = payload.model_dump(mode="json")
+        json["work_type"] = work_type
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        "work_location,expected_status",
+        [
+            ("on_site", 200),
+            ("remote", 200),
+            ("hybrid", 200),
+            ("invalid", 422),
+            ("", 422),
+            (None, 422),
+        ],
+    )
+    async def test_create_application_with_different_work_location_values(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+        payload: ApplicationCreate,
+        work_location: str | None,
+        expected_status: int,
+    ):
+        json = payload.model_dump(mode="json")
+        json["work_location"] = work_location
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        "interview_date,expected_status",
+        [
+            ("2025-01-01T12:00:00", 200),
+            (None, 200),
+            ("invalid-date", 422),
+            ("", 200),
+        ],
+    )
+    async def test_create_application_with_different_interview_date_values(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+        payload: ApplicationCreate,
+        interview_date: str | None,
+        expected_status: int,
+    ):
+        json = payload.model_dump(mode="json")
+        json["interview_date"] = interview_date
+        response = await client.post(**client_data, json=json)
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        "header, error_message",
+        [({"Authorization": "Bearer invalid_token"}, "Token is not valid"), (None, "Not authenticated")],
+    )
+    async def test_create_application_not_authenticated(
+        self,
+        header: dict | None,
+        error_message: str,
+        client: AsyncClient,
+        payload: ApplicationCreate,
+        client_data: dict,
+    ):
+        json = payload.model_dump(mode="json")
+        client_data["headers"] = header
+        response = await client.post(**client_data, json=json)
+
+        assert response.status_code == 401
+        assert response.headers.get("www-authenticate") == "Bearer"
+        assert response.json() == {"detail": f"{error_message}"}
+
+    async def test_create_application_with_non_active_user(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        payload: ApplicationCreate,
+        client_data: dict,
+    ):
+        inactive_user = await user_factory(is_active=False)
+        access_token = access_token_factory(inactive_user)
+
+        json = payload.model_dump(mode="json")
+        client_data["headers"] = {"Authorization": f"Bearer {access_token.token}"}
+        response = await client.post(
+            **client_data,
+            json=json,
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {"detail": "User account is not activated"}
+
+    async def test_create_application_missing_company(
+        self,
+        client: AsyncClient,
+        client_data: dict,
+    ):
+        json = {"role": "Test Role"}
+        response = await client.post(**client_data, json=json)
+
+        assert response.status_code == 422
