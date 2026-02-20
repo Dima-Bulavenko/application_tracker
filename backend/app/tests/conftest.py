@@ -7,6 +7,11 @@ from app.core.security import IPasswordHasher
 from app.db import url_object
 from app.db.models import Base
 from app.dependencies import get_session
+from app.infrastructure.repositories import (
+    ApplicationSQLAlchemyRepository,
+    CompanySQLAlchemyRepository,
+    UserSQLAlchemyRepository,
+)
 from app.infrastructure.security import (
     AccessTokenStrategy,
     PwdlibHasher,
@@ -67,9 +72,11 @@ async def override_session_dependency(session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture(name="client")
+@pytest.fixture(name="client", scope="session")
 async def get_async_client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver", headers={"Authorization": "gav"}
+    ) as ac:
         yield ac
 
 
@@ -86,3 +93,18 @@ def verification_token_strategy() -> VerificationTokenStrategy:
 @pytest.fixture(scope="session")
 def password_hasher() -> IPasswordHasher:
     return PwdlibHasher()
+
+
+@pytest.fixture
+def company_repo(session):
+    return CompanySQLAlchemyRepository(session)
+
+
+@pytest.fixture
+def application_repo(session):
+    return ApplicationSQLAlchemyRepository(session)
+
+
+@pytest.fixture
+def user_repo(session):
+    return UserSQLAlchemyRepository(session)
