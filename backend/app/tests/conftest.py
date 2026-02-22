@@ -72,10 +72,18 @@ async def override_session_dependency(session):
     app.dependency_overrides.clear()
 
 
-@pytest.fixture(name="client", scope="session")
-async def get_async_client():
+@pytest.fixture(name="client_config")
+def client_config():
+    """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+    return {}
+
+
+@pytest.fixture(name="client")
+async def get_async_client(client_config: dict):
     async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://testserver", headers={"Authorization": "gav"}
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+        **client_config,
     ) as ac:
         yield ac
 
