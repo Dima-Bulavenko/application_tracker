@@ -3,6 +3,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app import env
+from app.core.repositories.user_repository import IUserRepository
 from app.core.security import IPasswordHasher
 from app.db import url_object
 from app.db.models import Base
@@ -114,5 +115,5 @@ def application_repo(session):
 
 
 @pytest.fixture
-def user_repo(session):
+def user_repo(session) -> IUserRepository:
     return UserSQLAlchemyRepository(session)

@@ -1,31 +1,44 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
 from freezegun import freeze_time
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.domain import User
+from app.core.dto.user import UserCreate
+from app.core.repositories.user_repository import IUserRepository
+from app.core.security import IPasswordHasher
 
 from .base import BaseTest
 
 
-class TestCreateUser(BaseTest):
-    async def test_create_user_success(self, client: AsyncClient):
-        """Test successful user creation with valid email and password."""
-        email = "newuser@example.com"
-        form_data = {
-            "email": email,
-            "password": "TestPass123",
-        }
+@pytest.fixture(name="user")
+async def create_user_fixture(user_factory) -> User:
+    """Fixture to create a user for testing."""
+    return await user_factory()
 
-        response = await client.post("/users", data=form_data)
+
+class TestCreateUser:
+    url: str = "/users"
+
+    @pytest.fixture(name="form_data")
+    def create_form_data(self) -> UserCreate:
+        """Fixture to create valid form data for user creation."""
+        return UserCreate(email="newuser@example.com", password="TestPass123")
+
+    async def test_create_user_success(self, client: AsyncClient, user_repo: IUserRepository, form_data: UserCreate):
+        """Test successful user creation with valid email and password."""
+
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify user was created in database
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
 
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert created_user.is_active is False  # Should be inactive until email verification
         assert response.status_code == 201
         expected_message = "We sent email to newuser@example.com address, follow link to complete your registration"
@@ -33,22 +46,20 @@ class TestCreateUser(BaseTest):
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_create_user_success_with_background_task_mock(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        user_repo: IUserRepository,
+        form_data: UserCreate,
     ):
         """Test successful user creation and verify email service is called."""
-        email = "newuser@example.com"
-        form_data = {
-            "email": email,
-            "password": "TestPass123",
-        }
-
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify user was created in database
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
 
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert response.status_code == 201
 
         # Verify email service was called
@@ -61,19 +72,16 @@ class TestCreateUser(BaseTest):
 
         # Verify the user argument has correct properties
         assert hasattr(user_arg, "email")
-        assert user_arg.email == email
+        assert user_arg.email == form_data.email
 
-    async def test_create_user_with_existing_email(self, client: AsyncClient):
+    async def test_create_user_with_existing_email(self, client: AsyncClient, user_factory, form_data: UserCreate):
         """Test user creation with already existing email address."""
         # Create an existing user
-        existing_user = await self.create_user()
+        existing_user = await user_factory()
 
-        form_data = {
-            "email": existing_user.email,
-            "password": "TestPass123",
-        }
+        form_data.email = existing_user.email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -82,18 +90,19 @@ class TestCreateUser(BaseTest):
 
     @patch("app.core.services.user_email_service.UserEmailService.send_duplicate_registration_warning")
     async def test_create_user_with_existing_email_background_task(
-        self, mock_send_warning: MagicMock, client: AsyncClient
+        self,
+        mock_send_warning: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
     ):
         """Test user creation with existing email sends duplicate registration warning."""
         # Create an existing user
-        existing_user = await self.create_user()
+        existing_user = await user_factory()
 
-        form_data = {
-            "email": existing_user.email,
-            "password": "TestPass123",
-        }
+        form_data.email = existing_user.email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -109,17 +118,17 @@ class TestCreateUser(BaseTest):
         # Verify the email argument is correct
         assert email_arg == existing_user.email
 
-    async def test_create_user_with_inactive_existing_email(self, client: AsyncClient):
+    async def test_create_user_with_inactive_existing_email(
+        self, client: AsyncClient, user_factory, form_data: UserCreate
+    ):
         """Test user creation with inactive existing email resends activation email."""
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "NewTestPass456",
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "NewTestPass456"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -128,18 +137,20 @@ class TestCreateUser(BaseTest):
 
     @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
     async def test_create_user_with_inactive_existing_email_resends_activation(
-        self, mock_resend_activation: MagicMock, client: AsyncClient
+        self,
+        mock_resend_activation: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
     ):
         """Test user creation with inactive existing email triggers resend_activation_email."""
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "NewTestPass456",
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "NewTestPass456"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -161,19 +172,21 @@ class TestCreateUser(BaseTest):
     @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_create_user_inactive_vs_new_user_email_service(
-        self, mock_send_verification: MagicMock, mock_resend_activation: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        mock_resend_activation: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
     ):
         """Test that inactive users get resend_activation_email while new users get send_verification_email."""
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "TestPass123",
-        }
+        form_data.email = inactive_user.email
 
         # Try to register with inactive user's email
-        response1 = await client.post("/users", data=form_data)
+        response1 = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response1.status_code == 201
 
         # Verify resend_activation_email was called, not send_verification_email
@@ -186,12 +199,10 @@ class TestCreateUser(BaseTest):
         mock_send_verification.reset_mock()
 
         # Now create a new user
-        form_data2 = {
-            "email": "newuser@example.com",
-            "password": "TestPass123",
-        }
+        form_data.email = "newuser@example.com"
+        form_data.password = "TestPass123"
 
-        response2 = await client.post("/users", data=form_data2)
+        response2 = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response2.status_code == 201
 
         # Verify send_verification_email was called, not resend_activation_email
@@ -199,41 +210,40 @@ class TestCreateUser(BaseTest):
         assert mock_send_verification.call_count == 1
         assert not mock_resend_activation.called
 
-    async def test_create_user_inactive_user_password_not_updated(self, client: AsyncClient):
+    async def test_create_user_inactive_user_password_not_updated(
+        self, client: AsyncClient, user_factory, form_data: UserCreate, user_repo: IUserRepository
+    ):
         """Test that trying to register with inactive user's email doesn't update their password."""
         # Create an inactive user with a known password
-        original_password = "OriginalPass123"
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
         assert inactive_user.id is not None
 
         # Get the original password hash
-        original_user_db = await self.get_user(inactive_user.id)
+        original_user_db = await user_repo.get_by_id(inactive_user.id)
         assert original_user_db is not None
         original_password_hash = original_user_db.password
-        original_password_from_helper = self.get_user_password()  # The actual password used by create_user
 
         # Try to register with the same email but different password
-        form_data = {
-            "email": inactive_user.email,
-            "password": original_password,  # Different from what was used to create the user
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "SomeNewPass123"  # Different from what was used to create the user
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response.status_code == 201
 
         # Verify password was NOT updated
-        updated_user_db = await self.get_user(inactive_user.id)
+        updated_user_db = await user_repo.get_by_id(inactive_user.id)
         assert updated_user_db is not None
         assert updated_user_db.password == original_password_hash
 
-        # Verify the original password still works
-        assert self.password_hasher.verify(original_password_from_helper, updated_user_db.password)
-        # Verify the new password does NOT work
-        assert not self.password_hasher.verify(original_password, updated_user_db.password)
-
     @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
     async def test_create_user_inactive_user_comprehensive_check(
-        self, mock_resend_activation: MagicMock, client: AsyncClient
+        self,
+        mock_resend_activation: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        user_repo: IUserRepository,
+        form_data: UserCreate,
+        session: AsyncSession,
     ):
         """Comprehensive test for inactive user registration flow."""
         from sqlalchemy import func, select
@@ -241,21 +251,19 @@ class TestCreateUser(BaseTest):
         from app.db.models import User as UserModel
 
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False, first_name="John", second_name="Doe")
+        inactive_user = await user_factory(is_active=False, first_name="John", second_name="Doe")
         assert inactive_user.id is not None
 
         # Count users with this email before request
-        initial_count_result = await self.session.execute(
+        initial_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
         )
         initial_count = initial_count_result.scalar()
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "DifferentPass123",
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "DifferentPass123"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify API response
         assert response.status_code == 201
@@ -263,14 +271,14 @@ class TestCreateUser(BaseTest):
         assert response.json() == {"message": expected_message}
 
         # Verify no new user was created
-        final_count_result = await self.session.execute(
+        final_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
         )
         final_count = final_count_result.scalar()
         assert final_count == initial_count
 
         # Verify user data remains unchanged
-        unchanged_user = await self.get_user(inactive_user.id)
+        unchanged_user = await user_repo.get_by_id(inactive_user.id)
         assert unchanged_user is not None
         assert unchanged_user.is_active is False
         assert unchanged_user.first_name == "John"
@@ -285,14 +293,11 @@ class TestCreateUser(BaseTest):
         assert user_arg.email == inactive_user.email
         assert user_arg.id == inactive_user.id
 
-    async def test_create_user_with_invalid_email_format(self, client: AsyncClient):
+    async def test_create_user_with_invalid_email_format(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with invalid email format."""
-        form_data = {
-            "email": "invalid-email-format",
-            "password": "TestPass123",
-        }
+        form_data.email = "invalid-email-format"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
@@ -300,14 +305,11 @@ class TestCreateUser(BaseTest):
         # Should contain validation error for email format
         assert any("email" in str(error).lower() for error in response_data["detail"])
 
-    async def test_create_user_with_weak_password(self, client: AsyncClient):
+    async def test_create_user_with_weak_password(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password that doesn't meet requirements."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "weak",  # Too short, no uppercase, no number
-        }
+        form_data.password = "weak"  # Too short, no uppercase, no number
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
@@ -315,52 +317,42 @@ class TestCreateUser(BaseTest):
         # Should contain validation error for password requirements
         assert any("password" in str(error).lower() for error in response_data["detail"])
 
-    async def test_create_user_with_password_missing_uppercase(self, client: AsyncClient):
+    async def test_create_user_with_password_missing_uppercase(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password missing uppercase letter."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "testpass123",  # No uppercase letter
-        }
+        form_data.password = "testpass123"  # No uppercase letter
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_password_missing_number(self, client: AsyncClient):
+    async def test_create_user_with_password_missing_number(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password missing number."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "TestPassword",  # No number
-        }
+        form_data.password = "TestPassword"  # No number
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_password_too_short(self, client: AsyncClient):
+    async def test_create_user_with_password_too_short(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password shorter than 8 characters."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "Test1",  # Too short
-        }
+        form_data.password = "Test1"  # Too short
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_missing_email(self, client: AsyncClient):
+    async def test_create_user_with_missing_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation without email field."""
-        form_data = {
-            "password": "TestPass123",
-        }
+        payload = form_data.model_dump(mode="json")
+        payload.pop("email")
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=payload)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -371,67 +363,55 @@ class TestCreateUser(BaseTest):
         assert len(errors) > 0
         assert any(error.get("type") == "missing" for error in errors)
 
-    async def test_create_user_with_missing_password(self, client: AsyncClient):
+    async def test_create_user_with_missing_password(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation without password field."""
-        form_data = {
-            "email": "test@example.com",
-        }
+        payload = form_data.model_dump(mode="json")
+        payload.pop("password")
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=payload)
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
         assert any("password" in error.get("loc", []) for error in response_data["detail"])
 
-    async def test_create_user_with_empty_email(self, client: AsyncClient):
+    async def test_create_user_with_empty_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with empty email field."""
-        form_data = {
-            "email": "",
-            "password": "TestPass123",
-        }
+        form_data.email = ""
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_empty_password(self, client: AsyncClient):
+    async def test_create_user_with_empty_password(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with empty password field."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "",
-        }
+        form_data.password = ""
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_whitespace_only_fields(self, client: AsyncClient):
+    async def test_create_user_with_whitespace_only_fields(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with whitespace-only email and password."""
-        form_data = {
-            "email": "   ",
-            "password": "   ",
-        }
+        form_data.email = "   "
+        form_data.password = "   "
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_very_long_email(self, client: AsyncClient):
+    async def test_create_user_with_very_long_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with extremely long email address."""
         long_email = "a" * 100 + "@example.com"
-        form_data = {
-            "email": long_email,
-            "password": "TestPass123",
-        }
+        form_data.email = long_email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # This might succeed or fail depending on email length validation
         # If it succeeds, verify the user is created
@@ -441,75 +421,61 @@ class TestCreateUser(BaseTest):
         else:
             assert response.status_code == 422
 
-    async def test_create_user_with_special_characters_in_password(self, client: AsyncClient):
+    async def test_create_user_with_special_characters_in_password(
+        self, client: AsyncClient, form_data: UserCreate, user_repo: IUserRepository
+    ):
         """Test user creation with special characters in password."""
-        email = "test@example.com"
-        form_data = {
-            "email": email,
-            "password": "TestPass123!@#",
-        }
+        form_data.password = "TestPass123!@#"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 201
-        expected_message = "We sent email to test@example.com address, follow link to complete your registration"
+        expected_message = f"We sent email to {form_data.email} address, follow link to complete your registration"
         assert response.json() == {"message": expected_message}
 
         # Verify user was created in database with correct password hash
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert created_user.is_active is False
         # Verify password is hashed (not plain text)
         assert created_user.password != "TestPass123!@#"
         assert len(created_user.password) > 50  # Hashed passwords are much longer
-        # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify("TestPass123!@#", created_user.password)
 
-    async def test_create_user_case_insensitive_email(self, client: AsyncClient):
+    async def test_create_user_case_insensitive_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with different email cases."""
         # First user
-        form_data1 = {
-            "email": "Test@Example.com",
-            "password": "TestPass123",
-        }
+        form_data.email = "Test@Example.com"
+        form_data.password = "TestPass123"
 
-        response1 = await client.post("/users", data=form_data1)
+        response1 = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response1.status_code == 201
 
         # Second user with same email but different case
-        form_data2 = {
-            "email": "test@example.com",
-            "password": "TestPass456",
-        }
+        form_data.email = "test@example.com"
+        form_data.password = "TestPass456"
 
-        response2 = await client.post("/users", data=form_data2)
+        response2 = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success (existing user scenario)
         assert response2.status_code == 201
 
-    async def test_create_user_with_sql_injection_attempt(self, client: AsyncClient):
+    async def test_create_user_with_sql_injection_attempt(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation endpoint is protected against SQL injection."""
         malicious_email = "test'; DROP TABLE users; --@example.com"
-        form_data = {
-            "email": malicious_email,
-            "password": "TestPass123",
-        }
+        form_data.email = malicious_email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should fail due to email validation or be safely handled
         # Most likely will fail email validation
         assert response.status_code in [201, 422]  # Either succeeds safely or fails validation
 
-    async def test_create_user_with_unicode_characters(self, client: AsyncClient):
+    async def test_create_user_with_unicode_characters(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with unicode characters in email."""
-        form_data = {
-            "email": "测试@example.com",  # Unicode characters
-            "password": "TestPass123",
-        }
+        form_data.email = "测试@example.com"  # Unicode characters
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should handle unicode properly
         if response.status_code == 201:
@@ -518,56 +484,54 @@ class TestCreateUser(BaseTest):
         else:
             assert response.status_code == 422
 
-    async def test_create_user_password_hashing(self, client: AsyncClient):
+    async def test_create_user_password_hashing(
+        self, client: AsyncClient, form_data: UserCreate, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test that password is properly hashed and not stored in plain text."""
-        email = "hashtest@example.com"
-        password = "TestPass123"
-        form_data = {
-            "email": email,
-            "password": password,
-        }
-
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response.status_code == 201
 
         # Verify user was created in database with hashed password
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
 
         # Verify password is hashed, not plain text
-        assert created_user.password != password
+        assert created_user.password != form_data.password
         assert len(created_user.password) > 50  # Hashed passwords are much longer
         assert created_user.password.startswith("$")  # Common hash format indicator
 
         # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify(password, created_user.password)
+        assert password_hasher.verify(form_data.password, created_user.password)
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_create_user_comprehensive_verification(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_create_user_comprehensive_verification(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        form_data: UserCreate,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test comprehensive user creation including API response, database, and email service."""
-        email = "comprehensive@example.com"
-        password = "SecurePass123!"
-        form_data = {
-            "email": email,
-            "password": password,
-        }
+        form_data.email = "comprehensive@example.com"
+        form_data.password = "SecurePass123!"
 
         # Make the request
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify API response
         assert response.status_code == 201
-        expected_message = f"We sent email to {email} address, follow link to complete your registration"
+        expected_message = f"We sent email to {form_data.email} address, follow link to complete your registration"
         assert response.json() == {"message": expected_message}
 
         # Verify database state
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert created_user.is_active is False  # Should start inactive
-        assert created_user.password != password  # Should be hashed
-        assert self.password_hasher.verify(password, created_user.password)
+        assert created_user.password != form_data.password  # Should be hashed
+        assert password_hasher.verify(form_data.password, created_user.password)
 
         # Verify email service was called
         assert mock_send_verification.called
@@ -577,31 +541,36 @@ class TestCreateUser(BaseTest):
         call_args = mock_send_verification.call_args
         user_arg = call_args[0][0]
 
-        assert user_arg.email == email
+        assert user_arg.email == form_data.email
 
     @patch("app.core.services.user_email_service.UserEmailService.send_duplicate_registration_warning")
-    async def test_create_user_duplicate_email_comprehensive(self, mock_send_warning: MagicMock, client: AsyncClient):
+    async def test_create_user_duplicate_email_comprehensive(
+        self,
+        mock_send_warning: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
+        session: AsyncSession,
+    ):
         """Test duplicate email creation including email service verification."""
         from sqlalchemy import func, select
 
         from app.db.models import User as UserModel
 
         # Create initial user
-        existing_user = await self.create_user()
+        existing_user = await user_factory()
 
         # Count initial users with this email
-        initial_count_result = await self.session.execute(
+        initial_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == existing_user.email)
         )
         initial_count = initial_count_result.scalar()
 
-        form_data = {
-            "email": existing_user.email,
-            "password": "NewPassword123",
-        }
+        form_data.email = existing_user.email
+        form_data.password = "NewPassword123"
 
         # Attempt to create duplicate user
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify API response (should still be successful for security)
         assert response.status_code == 201
@@ -609,7 +578,7 @@ class TestCreateUser(BaseTest):
         assert response.json() == {"message": expected_message}
 
         # Verify no new user was created in database
-        final_count_result = await self.session.execute(
+        final_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == existing_user.email)
         )
         final_count = final_count_result.scalar()

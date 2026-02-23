@@ -38,14 +38,14 @@ class BaseTest:
         self.refresh_token_repo = RefreshTokenSQLAlchemyRepository(session)
 
         # Initialize counters for unique test data
-        self.user_counter = 0
-        self.company_counter = 0
-        self.application_counter = 0
+        self.user_counter = 1
+        self.company_counter = 1
+        self.application_counter = 1
         yield
         # Reset counters after each test
-        self.user_counter = 0
-        self.company_counter = 0
-        self.application_counter = 0
+        self.user_counter = 1
+        self.company_counter = 1
+        self.application_counter = 1
 
     async def create_user(self, **kwargs) -> User:
         """
