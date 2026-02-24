@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
@@ -439,9 +440,11 @@ class TestCreateUser:
         assert created_user is not None
         assert created_user.email == form_data.email
         assert created_user.is_active is False
+        password_hash = created_user.password
+        assert password_hash is not None
         # Verify password is hashed (not plain text)
-        assert created_user.password != "TestPass123!@#"
-        assert len(created_user.password) > 50  # Hashed passwords are much longer
+        assert password_hash != "TestPass123!@#"
+        assert len(password_hash) > 50  # Hashed passwords are much longer
 
     async def test_create_user_case_insensitive_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with different email cases."""
@@ -496,14 +499,16 @@ class TestCreateUser:
         created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
         assert created_user.email == form_data.email
+        password_hash = created_user.password
+        assert password_hash is not None
 
         # Verify password is hashed, not plain text
-        assert created_user.password != form_data.password
-        assert len(created_user.password) > 50  # Hashed passwords are much longer
-        assert created_user.password.startswith("$")  # Common hash format indicator
+        assert password_hash != form_data.password
+        assert len(password_hash) > 50  # Hashed passwords are much longer
+        assert password_hash.startswith("$")  # Common hash format indicator
 
         # Verify the password can be validated with the hasher
-        assert password_hasher.verify(form_data.password, created_user.password)
+        assert password_hasher.verify(form_data.password, password_hash)
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_create_user_comprehensive_verification(
@@ -531,8 +536,10 @@ class TestCreateUser:
         assert created_user is not None
         assert created_user.email == form_data.email
         assert created_user.is_active is False  # Should start inactive
-        assert created_user.password != form_data.password  # Should be hashed
-        assert password_hasher.verify(form_data.password, created_user.password)
+        password_hash = created_user.password
+        assert password_hash is not None
+        assert password_hash != form_data.password  # Should be hashed
+        assert password_hasher.verify(form_data.password, password_hash)
 
         # Verify email service was called
         assert mock_send_verification.called
@@ -761,34 +768,38 @@ class TestUserActivation:
         assert "Invalid activation token" in response.json()["detail"]
 
 
-class TestResendActivationEmail(BaseTest):
+class TestResendActivationEmail:
+    url: str = "/users/resend-activation"
+
+    @pytest.fixture(name="inactive_user")
+    async def create_inactive_user_fixture(self, user_factory) -> User:
+        """Fixture to create an inactive user for activation tests."""
+        return await user_factory(is_active=False)
+
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_success(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_success(
+        self, mock_send_verification: MagicMock, client: AsyncClient, inactive_user: User
+    ):
         """Test successful resend of activation email for inactive user."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
-        # Create an initial token (simulating first registration)
-        self.create_verification_token(user)
-        await self.session.commit()
-
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Move time forward past cooldown period to avoid rate limiting
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
-        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert f"If an account exists with {inactive_user.email}" in response.json()["message"]
         assert mock_send_verification.called
         assert mock_send_verification.call_count == 1
 
-    async def test_resend_activation_already_activated_user(self, client: AsyncClient):
+    async def test_resend_activation_already_activated_user(self, client: AsyncClient, user_factory):
         """Test resend activation email for already activated user returns 400."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         form_data = {"email": user.email}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 400
         assert response.json() == {"detail": "User is already activated"}
@@ -797,26 +808,30 @@ class TestResendActivationEmail(BaseTest):
         """Test resend activation for non-existent email returns success (security)."""
         form_data = {"email": "nonexistent@example.com"}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         # Should return success to prevent email enumeration
         assert response.status_code == 200
         assert "If an account exists with nonexistent@example.com" in response.json()["message"]
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_rate_limit_exceeded(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_rate_limit_exceeded(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test resend activation email enforces rate limiting."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         # Create a recent token (simulating recent request)
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Try to resend immediately (within cooldown period)
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 429
         assert "Please wait" in response.json()["detail"]
@@ -824,44 +839,47 @@ class TestResendActivationEmail(BaseTest):
         assert not mock_send_verification.called
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_no_previous_token(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_no_previous_token(
+        self, mock_send_verification: MagicMock, client: AsyncClient, inactive_user: User
+    ):
         """Test resend activation for user with no previous token."""
-        user = await self.create_user(is_active=False)
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         # Should succeed even without previous token
         assert response.status_code == 200
-        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert f"If an account exists with {inactive_user.email}" in response.json()["message"]
         assert mock_send_verification.called
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_resend_activation_after_cooldown_period(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
     ):
         """Test resend activation succeeds after cooldown period expires."""
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         # Create an old token
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Move time forward exactly past cooldown period
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES + 1)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert mock_send_verification.called
 
     async def test_resend_activation_missing_email(self, client: AsyncClient):
         """Test resend activation without email parameter returns 422."""
-        response = await client.post("/users/resend-activation", data={})
+        response = await client.post(self.url, data={})
 
         assert response.status_code == 422
         response_data = response.json()
@@ -872,7 +890,7 @@ class TestResendActivationEmail(BaseTest):
         """Test resend activation with empty email."""
         form_data = {"email": ""}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
 
@@ -880,49 +898,60 @@ class TestResendActivationEmail(BaseTest):
         """Test resend activation with invalid email format."""
         form_data = {"email": "not-an-email"}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_case_sensitive_email(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_case_sensitive_email(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test resend activation email is case-sensitive."""
-        user = await self.create_user(is_active=False, email="test@example.com")
-        assert user.id is not None
+        assert inactive_user.id is not None
 
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
         # Try with different case
-        form_data = {"email": "TEST@example.com"}
+        local_part, domain_part = inactive_user.email.split("@")
+        normalized_case_variant_email = f"{local_part.upper()}@{domain_part.lower()}"
+        form_data = {"email": normalized_case_variant_email}
 
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         # Email doesn't match (case-sensitive), so no email sent
         assert response.status_code == 200
-        assert "If an account exists with TEST@example.com" in response.json()["message"]
+        assert f"If an account exists with {normalized_case_variant_email}" in response.json()["message"]
         assert not mock_send_verification.called
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_multiple_users(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_multiple_users(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test resend activation for multiple different users."""
-        user1 = await self.create_user(is_active=False, email="user1@example.com")
-        user2 = await self.create_user(is_active=False, email="user2@example.com")
+        user1 = await user_factory(is_active=False, email="user1@example.com")
+        user2 = await user_factory(is_active=False, email="user2@example.com")
         assert user1.id is not None
         assert user2.id is not None
 
-        self.create_verification_token(user1)
-        self.create_verification_token(user2)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=user1.id)
+        await verification_token_strategy.issue(user_id=user2.id)
 
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
             # Resend for user1
-            response1 = await client.post("/users/resend-activation", data={"email": user1.email})
+            response1 = await client.post(self.url, data={"email": user1.email})
             assert response1.status_code == 200
 
             # Resend for user2
-            response2 = await client.post("/users/resend-activation", data={"email": user2.email})
+            response2 = await client.post(self.url, data={"email": user2.email})
             assert response2.status_code == 200
 
         assert mock_send_verification.call_count == 2
@@ -932,58 +961,64 @@ class TestResendActivationEmail(BaseTest):
         malicious_email = "'; DROP TABLE users; --"
         form_data = {"email": malicious_email}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_resend_activation_exact_cooldown_boundary(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
     ):
         """Test resend activation at exact cooldown boundary."""
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         current_time = datetime.now(timezone.utc)
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Try exactly at cooldown boundary (should still be rate limited)
         with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         # At exact boundary, should still be rate limited (< not <=)
         assert response.status_code == 429
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_resend_activation_one_second_after_cooldown(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
     ):
         """Test resend activation one second after cooldown expires."""
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         current_time = datetime.now(timezone.utc)
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Try one second after cooldown
         with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES, seconds=1)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert mock_send_verification.called
 
 
 class TestUserChangePassword(BaseTest):
+    url: str = "/users/change-password"
+
     async def test_change_password_success(self, client: AsyncClient):
         """Test successful password change with valid access token and correct old password."""
         user = await self.create_user(is_active=True)
@@ -999,7 +1034,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1010,8 +1045,10 @@ class TestUserChangePassword(BaseTest):
         # Verify password was actually changed in database
         updated_user = await self.get_user(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
-        assert not self.password_hasher.verify(old_password, updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert self.password_hasher.verify(new_password, password_hash)
+        assert not self.password_hasher.verify(old_password, password_hash)
 
     async def test_change_password_with_invalid_access_token(self, client: AsyncClient):
         """Test password change with invalid access token."""
@@ -1023,7 +1060,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {invalid_token}"},
             data=form_data,
         )
@@ -1045,7 +1082,7 @@ class TestUserChangePassword(BaseTest):
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.patch(
-                "/users/change-password",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
                 data=form_data,
             )
@@ -1061,7 +1098,7 @@ class TestUserChangePassword(BaseTest):
             "confirm_new_password": "NewPass123",
         }
 
-        response = await client.patch("/users/change-password", data=form_data)
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 401
 
@@ -1080,7 +1117,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1091,7 +1128,9 @@ class TestUserChangePassword(BaseTest):
         # Verify password was not changed
         updated_user = await self.get_user(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(self.get_user_password(), updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert self.password_hasher.verify(self.get_user_password(), password_hash)
 
     async def test_change_password_with_non_existent_user(self, client: AsyncClient):
         """Test password change with access token for non-existent user."""
@@ -1108,7 +1147,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {token.token}"},
             data=form_data,
         )
@@ -1130,7 +1169,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1151,7 +1190,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1173,7 +1212,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1198,7 +1237,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1220,7 +1259,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {verification_token}"},
             data=form_data,
         )
@@ -1242,7 +1281,7 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1265,11 +1304,9 @@ class TestUserChangePassword(BaseTest):
         }
 
         # Make two concurrent requests
-        import asyncio
-
         async def make_request():
             return await client.patch(
-                "/users/change-password",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
                 data=form_data,
             )
@@ -1283,6 +1320,8 @@ class TestUserChangePassword(BaseTest):
 
 
 class TestGetCurrentUser(BaseTest):
+    url: str = "/users/me"
+
     async def test_get_me_success(self, client: AsyncClient):
         """Should return current user info with valid access token."""
         user = await self.create_user(is_active=True)
@@ -1290,7 +1329,7 @@ class TestGetCurrentUser(BaseTest):
         access_token = self.create_access_token(user)
 
         response = await client.get(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -1305,14 +1344,14 @@ class TestGetCurrentUser(BaseTest):
 
     async def test_get_me_missing_token(self, client: AsyncClient):
         """Should return 401 when Authorization header is missing."""
-        response = await client.get("/users/me")
+        response = await client.get(self.url)
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
 
     async def test_get_me_invalid_token(self, client: AsyncClient):
         """Should return 401 with Bearer header for invalid token."""
         response = await client.get(
-            "/users/me",
+            self.url,
             headers={"Authorization": "Bearer invalid.token.here"},
         )
         assert response.status_code == 401
@@ -1326,7 +1365,7 @@ class TestGetCurrentUser(BaseTest):
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.get(
-                "/users/me",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
             )
 
@@ -1342,7 +1381,7 @@ class TestGetCurrentUser(BaseTest):
         token = self.create_access_token(ghost)
 
         response = await client.get(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {token.token}"},
         )
 
@@ -1352,6 +1391,8 @@ class TestGetCurrentUser(BaseTest):
 
 
 class TestUpdateUser(BaseTest):
+    url: str = "/users/me"
+
     async def test_update_user_first_name_success(self, client: AsyncClient):
         """Should successfully update user first name with valid access token."""
         user = await self.create_user(is_active=True)
@@ -1363,7 +1404,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1390,7 +1431,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1418,7 +1459,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1445,7 +1486,7 @@ class TestUpdateUser(BaseTest):
         update_data = {"first_name": "Updated"}
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1468,7 +1509,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1496,7 +1537,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1516,7 +1557,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1532,7 +1573,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
         )
 
@@ -1546,7 +1587,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": "Bearer invalid.token.here"},
         )
@@ -1565,7 +1606,7 @@ class TestUpdateUser(BaseTest):
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.patch(
-                "/users/me",
+                self.url,
                 json=update_data,
                 headers={"Authorization": f"Bearer {access_token.token}"},
             )
@@ -1585,7 +1626,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {token.token}"},
         )
@@ -1604,7 +1645,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1632,7 +1673,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1655,7 +1696,7 @@ class TestUpdateUser(BaseTest):
         update_data = {}
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
@@ -1673,6 +1714,8 @@ class TestUpdateUser(BaseTest):
 
 
 class TestSetPassword(BaseTest):
+    url: str = "/users/set-password"
+
     async def test_set_password_success(self, client: AsyncClient):
         """Test successful password setting for OAuth user without password."""
         # Create a user without password (OAuth user)
@@ -1687,7 +1730,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1715,7 +1758,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1726,7 +1769,9 @@ class TestSetPassword(BaseTest):
         # Verify password was not changed
         updated_user = await self.get_user(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(self.get_user_password(), updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert self.password_hasher.verify(self.get_user_password(), password_hash)
 
     async def test_set_password_with_invalid_access_token(self, client: AsyncClient):
         """Test set password with invalid access token."""
@@ -1737,7 +1782,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {invalid_token}"},
             data=form_data,
         )
@@ -1758,7 +1803,7 @@ class TestSetPassword(BaseTest):
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.post(
-                "/users/set-password",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
                 data=form_data,
             )
@@ -1773,7 +1818,7 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": "NewPass123",
         }
 
-        response = await client.post("/users/set-password", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 401
 
@@ -1790,7 +1835,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {token.token}"},
             data=form_data,
         )
@@ -1810,7 +1855,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1830,7 +1875,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1851,7 +1896,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1874,7 +1919,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1895,7 +1940,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1915,7 +1960,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1935,7 +1980,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1955,7 +2000,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {verification_token}"},
             data=form_data,
         )
@@ -1976,7 +2021,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2004,7 +2049,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2036,7 +2081,7 @@ class TestSetPassword(BaseTest):
         }
 
         response1 = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data1,
         )
@@ -2051,7 +2096,7 @@ class TestSetPassword(BaseTest):
         }
 
         response2 = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data2,
         )
@@ -2062,8 +2107,10 @@ class TestSetPassword(BaseTest):
         # Verify first password is still active
         updated_user = await self.get_user(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(first_password, updated_user.password)
-        assert not self.password_hasher.verify(second_password, updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert self.password_hasher.verify(first_password, password_hash)
+        assert not self.password_hasher.verify(second_password, password_hash)
 
     async def test_set_password_password_hashing(self, client: AsyncClient):
         """Test that password is properly hashed and not stored in plain text."""
@@ -2078,7 +2125,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2088,12 +2135,14 @@ class TestSetPassword(BaseTest):
         # Verify password is hashed, not plain text
         updated_user = await self.get_user(user.id)
         assert updated_user is not None
-        assert updated_user.password != password
-        assert len(updated_user.password) > 50  # Hashed passwords are much longer
-        assert updated_user.password.startswith("$")  # Common hash format indicator
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hash != password
+        assert len(password_hash) > 50  # Hashed passwords are much longer
+        assert password_hash.startswith("$")  # Common hash format indicator
 
         # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify(password, updated_user.password)
+        assert self.password_hasher.verify(password, password_hash)
 
     async def test_set_password_with_very_long_password(self, client: AsyncClient):
         """Test set password with very long but valid password."""
@@ -2108,7 +2157,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2120,7 +2169,9 @@ class TestSetPassword(BaseTest):
         # Verify password was set
         updated_user = await self.get_user(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(long_password, updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert self.password_hasher.verify(long_password, password_hash)
 
     async def test_set_password_oauth_user_workflow(self, client: AsyncClient):
         """Test complete OAuth user workflow: login via OAuth, then set password."""
@@ -2144,7 +2195,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2177,7 +2228,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2209,7 +2260,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2224,6 +2275,8 @@ class TestSetPassword(BaseTest):
 
 
 class TestDeleteUser(BaseTest):
+    url: str = "/users/me"
+
     async def test_delete_user_success(self, client: AsyncClient):
         """Test successful user deletion with valid access token."""
         user = await self.create_user(is_active=True)
@@ -2231,7 +2284,7 @@ class TestDeleteUser(BaseTest):
         access_token = self.create_access_token(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2258,7 +2311,7 @@ class TestDeleteUser(BaseTest):
         access_token = self.create_access_token(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2283,7 +2336,7 @@ class TestDeleteUser(BaseTest):
 
     async def test_delete_user_without_access_token(self, client: AsyncClient):
         """Test that deleting user without access token returns 401."""
-        response = await client.delete("/users/me")
+        response = await client.delete(self.url)
 
         assert response.status_code == 401
         assert "detail" in response.json()
@@ -2293,7 +2346,7 @@ class TestDeleteUser(BaseTest):
         invalid_token = "invalid.token.here"
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {invalid_token}"},
         )
 
@@ -2314,7 +2367,7 @@ class TestDeleteUser(BaseTest):
             datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)
         ):
             response = await client.delete(
-                "/users/me",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
             )
 
@@ -2332,7 +2385,7 @@ class TestDeleteUser(BaseTest):
         access_token = self.create_access_token(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2351,16 +2404,21 @@ class TestDeleteUser(BaseTest):
 
         # First deletion should succeed
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
         assert response.status_code == 200
         assert response.json() == {"message": "User deleted successfully"}
 
-        # Second deletion attempt should fail with 401 (token is no longer valid for non-existent user)
-        # Note: In real scenario, the token validation might fail differently
-        # depending on implementation details
+        # Second deletion attempt should fail because user no longer exists.
+        response_second = await client.delete(
+            self.url,
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
+
+        assert response_second.status_code == 404
+        assert "User" in response_second.json()["detail"]
 
     async def test_delete_user_verifies_token_user_id(self, client: AsyncClient):
         """Test that the endpoint uses the user_id from the token payload."""
@@ -2374,7 +2432,7 @@ class TestDeleteUser(BaseTest):
 
         # Delete using user1's token
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2393,7 +2451,7 @@ class TestDeleteUser(BaseTest):
         access_token = self.create_access_token(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
