@@ -11,6 +11,7 @@ from app.core.domain import User
 from app.core.dto.user import UserCreate
 from app.core.repositories.user_repository import IUserRepository
 from app.core.security import IPasswordHasher
+from app.core.services.verification_token_service import VerificationTokenService
 
 from .base import BaseTest
 
@@ -595,20 +596,34 @@ class TestCreateUser:
         assert email_arg == existing_user.email
 
 
-class TestUserActivation(BaseTest):
-    async def test_activate_user_success(self, client: AsyncClient):
-        """Test successful user activation with valid token."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
-        token = self.create_verification_token(user)
+class TestUserActivation:
+    url: str = "/users/activate"
 
-        response = await client.patch(f"/users/activate?token={token}")
+    @pytest.fixture(name="inactive_user")
+    async def create_inactive_user_fixture(self, user_factory) -> User:
+        """Fixture to create an inactive user for activation tests."""
+        return await user_factory(is_active=False)
+
+    @pytest.fixture(name="verification_token")
+    async def create_verification_token_fixture(
+        self, inactive_user: User, verification_token_strategy: VerificationTokenService
+    ) -> str:
+        """Fixture to create a valid verification token for the inactive user."""
+        assert inactive_user.id is not None
+        return await verification_token_strategy.issue(user_id=inactive_user.id)
+
+    async def test_activate_user_success(
+        self, client: AsyncClient, inactive_user: User, verification_token: str, user_repo: IUserRepository
+    ):
+        """Test successful user activation with valid token."""
+        assert inactive_user.id is not None
+        response = await client.patch(self.url, params={"token": verification_token})
 
         assert response.status_code == 200
         assert response.json() == {"message": "Account activated successfully"}
 
         # Verify user is actually activated in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(inactive_user.id)
         assert updated_user is not None
         assert updated_user.is_active is True
 
@@ -616,19 +631,24 @@ class TestUserActivation(BaseTest):
         """Test activation with malformed or invalid token."""
         invalid_token = "invalid.token.here"
 
-        response = await client.patch(f"/users/activate?token={invalid_token}")
+        response = await client.patch(self.url, params={"token": invalid_token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_with_expired_token(self, client: AsyncClient):
+    async def test_activate_with_expired_token(
+        self,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test activation with expired verification token."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
-        expired_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        token = self.create_verification_token_for_user_data(user.email, user.id, exp=expired_time)
+        assert inactive_user.id is not None
 
-        response = await client.patch(f"/users/activate?token={token}")
+        expired_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        token = await verification_token_strategy.issue(inactive_user.id, expires_at=expired_time)
+
+        response = await client.patch(self.url, params={"token": token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
@@ -640,25 +660,27 @@ class TestUserActivation(BaseTest):
         # New behavior: any token for a non-existent user cannot exist in storage, so a fabricated token must yield 400.
         fabricated_token = "non-existent-user-token-value"  # Not in DB -> invalid
 
-        response = await client.patch(f"/users/activate?token={fabricated_token}")
+        response = await client.patch(self.url, params={"token": fabricated_token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_already_active_user(self, client: AsyncClient):
+    async def test_activate_already_active_user(
+        self, client: AsyncClient, user_factory, verification_token_strategy: VerificationTokenService
+    ):
         """Test activation of user who is already activated."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        token = self.create_verification_token(user)
+        token = await verification_token_strategy.issue(user_id=user.id)
 
-        response = await client.patch(f"/users/activate?token={token}")
+        response = await client.patch(self.url, params={"token": token})
 
         assert response.status_code == 409
         assert response.json() == {"detail": "User is already activated"}
 
     async def test_activate_with_missing_token(self, client: AsyncClient):
         """Test activation without providing token parameter."""
-        response = await client.patch("/users/activate")
+        response = await client.patch(self.url)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -667,56 +689,65 @@ class TestUserActivation(BaseTest):
 
     async def test_activate_with_empty_token(self, client: AsyncClient):
         """Test activation with empty token parameter."""
-        response = await client.patch("/users/activate?token=")
+        response = await client.patch(self.url, params={"token": ""})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_with_wrong_token_type(self, client: AsyncClient):
+    async def test_activate_with_wrong_token_type(self, client: AsyncClient, inactive_user: User, access_token_factory):
         """Test activation with access token instead of verification token."""
-        user = await self.create_user(is_active=False)
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(inactive_user)
 
-        response = await client.patch(f"/users/activate?token={access_token.token}")
+        response = await client.patch(self.url, params={"token": access_token.token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_with_token_for_different_user(self, client: AsyncClient):
+    async def test_activate_with_token_for_different_user(
+        self,
+        client: AsyncClient,
+        user_factory,
+        verification_token_strategy: VerificationTokenService,
+        user_repo: IUserRepository,
+    ):
         """Test activation with token created for different user."""
-        user1 = await self.create_user(is_active=False)
-        user2 = await self.create_user(is_active=False)
+        user1 = await user_factory(is_active=False)
+        user2 = await user_factory(is_active=False)
         assert user1.id is not None
         assert user2.id is not None
 
         # Create token for user2 but try to activate user1's account
-        token = self.create_verification_token(user2)
+        token = await verification_token_strategy.issue(user_id=user2.id)
 
-        response = await client.patch(f"/users/activate?token={token}")
+        response = await client.patch(self.url, params={"token": token})
 
         # This should succeed for user2, not user1
         assert response.status_code == 200
 
         # Verify user1 is still inactive and user2 is now active
-        updated_user1 = await self.get_user(user1.id)
-        updated_user2 = await self.get_user(user2.id)
+        updated_user1 = await user_repo.get_by_id(user1.id)
+        updated_user2 = await user_repo.get_by_id(user2.id)
         assert updated_user1 is not None
         assert updated_user2 is not None
         assert updated_user1.is_active is False
         assert updated_user2.is_active is True
 
-    async def test_activate_multiple_times_with_same_token(self, client: AsyncClient):
+    async def test_activate_multiple_times_with_same_token(
+        self,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token: str,
+    ):
         """Test that same token cannot be used multiple times."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
-        token = self.create_verification_token(user)
+
+        assert inactive_user.id is not None
 
         # First activation should succeed
-        response1 = await client.patch(f"/users/activate?token={token}")
+        response1 = await client.patch(self.url, params={"token": verification_token})
         assert response1.status_code == 200
 
         # Second activation with same token should fail
-        response2 = await client.patch(f"/users/activate?token={token}")
+        response2 = await client.patch(self.url, params={"token": verification_token})
         assert response2.status_code == 400
         assert response2.json() == {"detail": "Invalid activation token: Token already used"}
 
@@ -724,7 +755,7 @@ class TestUserActivation(BaseTest):
         """Test activation endpoint is protected against SQL injection."""
         malicious_token = "'; DROP TABLE users; --"
 
-        response = await client.patch(f"/users/activate?token={malicious_token}")
+        response = await client.patch(self.url, params={"token": malicious_token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
