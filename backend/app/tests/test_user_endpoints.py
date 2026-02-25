@@ -1647,43 +1647,59 @@ class TestUpdateUser:
         assert updated_user.second_name == user.second_name
 
 
-class TestSetPassword(BaseTest):
+class TestSetPassword:
     url: str = "/users/set-password"
 
-    async def test_set_password_success(self, client: AsyncClient):
-        """Test successful password setting for OAuth user without password."""
-        # Create a user without password (OAuth user)
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-        new_password = "NewTestPass123"
+    @pytest.fixture(name="user")
+    async def create_user_fixture(self, user_factory) -> User:
+        """Fixture to create an active user without password for set password tests."""
+        return await user_factory(password=None, is_active=True)
 
+    @pytest.fixture(name="access_token", autouse=True)
+    async def create_access_token(self, access_token_factory, user):
+        return access_token_factory(user).token
+
+    @pytest.fixture(name="client_config", autouse=True)
+    def client_config(self, access_token: str):
+        """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+        return {"headers": {"Authorization": f"Bearer {access_token}"}}
+
+    async def test_set_password_success(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
+        """Test successful password setting for OAuth user without password."""
+        assert user.id is not None
+        new_password = "NewTestPass123"
         form_data = {
             "new_password": new_password,
             "confirm_new_password": new_password,
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_user_already_has_password(self, client: AsyncClient):
+    async def test_set_password_user_already_has_password(
+        self,
+        client: AsyncClient,
+        user_factory,
+        password_hasher: IPasswordHasher,
+        access_token_factory,
+        user_repo: IUserRepository,
+    ):
         """Test set password fails when user already has a password."""
         # Create a user with a password
-        user = await self.create_user(is_active=True)
+        old_password = "ExistingPass123"
+        user = await user_factory(password=old_password)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
         new_password = "NewTestPass123"
 
         form_data = {
@@ -1701,11 +1717,11 @@ class TestSetPassword(BaseTest):
         assert "already has a password" in response.json()["detail"]
 
         # Verify password was not changed
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         password_hash = updated_user.password
         assert password_hash is not None
-        assert self.password_hasher.verify(self.get_user_password(), password_hash)
+        assert password_hasher.verify(old_password, password_hash)
 
     async def test_set_password_with_invalid_access_token(self, client: AsyncClient):
         """Test set password with invalid access token."""
@@ -1726,10 +1742,6 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_expired_access_token(self, client: AsyncClient):
         """Test set password with expired access token."""
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-
         form_data = {
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
@@ -1738,7 +1750,6 @@ class TestSetPassword(BaseTest):
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.post(
                 self.url,
-                headers={"Authorization": f"Bearer {access_token.token}"},
                 data=form_data,
             )
 
@@ -1751,17 +1762,18 @@ class TestSetPassword(BaseTest):
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
+        del client.headers["Authorization"]
 
         response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 401
 
-    async def test_set_password_with_non_existent_user(self, client: AsyncClient):
+    async def test_set_password_with_non_existent_user(self, client: AsyncClient, access_token_factory):
         """Test set password with access token for non-existent user."""
         non_existent_email = "nonexistent@example.com"
         non_existent_id = 99999
         user = User(id=non_existent_id, email=non_existent_email, password=None)
-        token = self.create_access_token(user)
+        token = access_token_factory(user)
 
         form_data = {
             "new_password": "NewPass123",
@@ -1779,20 +1791,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_mismatched_confirmation(self, client: AsyncClient):
         """Test set password when new password and confirmation don't match."""
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "NewPass123",
             "confirm_new_password": "DifferentPass123",
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1800,19 +1805,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_missing_form_fields(self, client: AsyncClient):
         """Test set password with missing required form fields."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         # Test missing new_password
         form_data = {
             "confirm_new_password": "NewPass123",
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1821,19 +1820,12 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_empty_form_fields(self, client: AsyncClient):
         """Test set password with empty form fields."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
-
         form_data = {
             "new_password": "",
             "confirm_new_password": "",
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1842,21 +1834,14 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_weak_password(self, client: AsyncClient):
         """Test set password with weak password."""
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-        weak_password = "123"  # Too short and weak
+        weak_password = "123"
 
         form_data = {
             "new_password": weak_password,
             "confirm_new_password": weak_password,
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1865,19 +1850,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_password_missing_uppercase(self, client: AsyncClient):
         """Test set password with password missing uppercase letter."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "testpass123",  # No uppercase letter
             "confirm_new_password": "testpass123",
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1885,19 +1864,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_password_missing_number(self, client: AsyncClient):
         """Test set password with password missing number."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "TestPassword",  # No number
             "confirm_new_password": "TestPassword",
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1905,28 +1878,24 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_password_too_short(self, client: AsyncClient):
         """Test set password with password shorter than 8 characters."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "Test1",  # Too short
             "confirm_new_password": "Test1",
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_set_password_with_wrong_token_type(self, client: AsyncClient):
+    async def test_set_password_with_wrong_token_type(
+        self, client: AsyncClient, user: User, verification_token_strategy: VerificationTokenService
+    ):
         """Test set password with verification token instead of access token."""
-        user = await self.create_user(is_active=True, password=None)
-        verification_token = self.create_verification_token(user)
+        assert user.id is not None
+        verification_token = verification_token_strategy.issue(user_id=user.id)
 
         form_data = {
             "new_password": "NewPass123",
@@ -1942,11 +1911,18 @@ class TestSetPassword(BaseTest):
         assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
-    async def test_set_password_with_inactive_user(self, client: AsyncClient):
+    async def test_set_password_with_inactive_user(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test set password for inactive OAuth user."""
-        user = await self.create_user(is_active=False, password=None)
+        user = await user_factory(is_active=False, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
         new_password = "NewPass123"
 
         form_data = {
@@ -1965,16 +1941,16 @@ class TestSetPassword(BaseTest):
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_with_special_characters(self, client: AsyncClient):
+    async def test_set_password_with_special_characters(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test set password with special characters in password."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         new_password = "TestPass123!@#$%"
 
         form_data = {
@@ -1982,29 +1958,25 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": new_password,
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set correctly
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
         # Verify password is hashed (not plain text)
         assert updated_user.password != new_password
         assert len(updated_user.password) > 50  # Hashed passwords are much longer
 
-    async def test_set_password_idempotency(self, client: AsyncClient):
+    async def test_set_password_idempotency(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test that setting password twice fails on second attempt."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         first_password = "FirstPass123"
         second_password = "SecondPass456"
 
@@ -2014,11 +1986,7 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": first_password,
         }
 
-        response1 = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data1,
-        )
+        response1 = await client.post(self.url, data=form_data1)
 
         assert response1.status_code == 200
         assert response1.json() == {"message": "Password set successfully"}
@@ -2029,28 +1997,24 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": second_password,
         }
 
-        response2 = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data2,
-        )
+        response2 = await client.post(self.url, data=form_data2)
 
         assert response2.status_code == 400
         assert "already has a password" in response2.json()["detail"]
 
         # Verify first password is still active
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         password_hash = updated_user.password
         assert password_hash is not None
-        assert self.password_hasher.verify(first_password, password_hash)
-        assert not self.password_hasher.verify(second_password, password_hash)
+        assert password_hasher.verify(first_password, password_hash)
+        assert not password_hasher.verify(second_password, password_hash)
 
-    async def test_set_password_password_hashing(self, client: AsyncClient):
+    async def test_set_password_password_hashing(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test that password is properly hashed and not stored in plain text."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         password = "TestPass123"
 
         form_data = {
@@ -2058,16 +2022,12 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": password,
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
 
         # Verify password is hashed, not plain text
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         password_hash = updated_user.password
         assert password_hash is not None
@@ -2076,13 +2036,13 @@ class TestSetPassword(BaseTest):
         assert password_hash.startswith("$")  # Common hash format indicator
 
         # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify(password, password_hash)
+        assert password_hasher.verify(password, password_hash)
 
-    async def test_set_password_with_very_long_password(self, client: AsyncClient):
+    async def test_set_password_with_very_long_password(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test set password with very long but valid password."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         long_password = "TestPass123" + "a" * 100  # Very long password
 
         form_data = {
@@ -2090,36 +2050,39 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": long_password,
         }
 
-        response = await client.post(
-            self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         # Should succeed if password meets requirements
         assert response.status_code == 200
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         password_hash = updated_user.password
         assert password_hash is not None
-        assert self.password_hasher.verify(long_password, password_hash)
+        assert password_hasher.verify(long_password, password_hash)
 
-    async def test_set_password_oauth_user_workflow(self, client: AsyncClient):
+    async def test_set_password_oauth_user_workflow(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        password_hasher: IPasswordHasher,
+        user_repo: IUserRepository,
+    ):
         """Test complete OAuth user workflow: login via OAuth, then set password."""
         # Simulate OAuth user (no password)
-        oauth_user = await self.create_user(is_active=True, password=None, email="oauth@example.com")
+        oauth_user = await user_factory(is_active=True, password=None, email="oauth@example.com")
         assert oauth_user.id is not None
 
         # Verify user has no password initially
-        db_user = await self.get_user(oauth_user.id)
+        db_user = await user_repo.get_by_id(oauth_user.id)
         assert db_user is not None
         assert db_user.password is None
 
         # User gets access token (would be from OAuth flow)
-        access_token = self.create_access_token(oauth_user)
+        access_token = access_token_factory(oauth_user)
 
         # User sets password
         new_password = "MyNewPass123"
@@ -2138,18 +2101,25 @@ class TestSetPassword(BaseTest):
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify user now has password and can use it to login
-        updated_user = await self.get_user(oauth_user.id)
+        updated_user = await user_repo.get_by_id(oauth_user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_preserves_other_user_fields(self, client: AsyncClient):
+    async def test_set_password_preserves_other_user_fields(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test that setting password doesn't affect other user fields."""
-        user = await self.create_user(
+        user = await user_factory(
             is_active=True, password=None, first_name="John", second_name="Doe", email="preserve@example.com"
         )
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
         original_email = user.email
         original_first_name = user.first_name
         original_second_name = user.second_name
@@ -2170,7 +2140,7 @@ class TestSetPassword(BaseTest):
         assert response.status_code == 200
 
         # Verify other fields are preserved
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.email == original_email
         assert updated_user.first_name == original_first_name
@@ -2178,13 +2148,13 @@ class TestSetPassword(BaseTest):
         assert updated_user.is_active == original_is_active
         # Only password should be changed
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_updates_time_update_field(self, client: AsyncClient):
+    async def test_set_password_updates_time_update_field(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository
+    ):
         """Test that setting password updates the time_update field."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         original_time_update = user.time_update
 
         new_password = "NewPass123"
@@ -2195,14 +2165,13 @@ class TestSetPassword(BaseTest):
 
         response = await client.post(
             self.url,
-            headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
 
         assert response.status_code == 200
 
         # Verify time_update was updated
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         # The time_update should be greater than or equal to the original
         assert updated_user.time_update >= original_time_update

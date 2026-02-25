@@ -30,7 +30,9 @@ def user_factory(session: AsyncSession, password_hasher: IPasswordHasher):
         }
 
         params.update(kwargs)
-        params["password"] = password_hasher.hash(params["password"])
+        params["password"] = (
+            password_hasher.hash(params["password"]) if params["password"] is not None else params["password"]
+        )
 
         user = UserModel(**params)
 
