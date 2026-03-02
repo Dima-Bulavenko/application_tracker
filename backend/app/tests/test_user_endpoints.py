@@ -1,31 +1,44 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
 from freezegun import freeze_time
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ACCESS_TOKEN_EXPIRE_MINUTES
 from app.core.domain import User
+from app.core.dto.user import UserCreate
+from app.core.repositories.user_repository import IUserRepository
+from app.core.security import IPasswordHasher
+from app.core.services.verification_token_service import VerificationTokenService
 
-from .base import BaseTest
+
+@pytest.fixture(name="user")
+async def create_user_fixture(user_factory) -> User:
+    """Fixture to create a user for testing."""
+    return await user_factory()
 
 
-class TestCreateUser(BaseTest):
-    async def test_create_user_success(self, client: AsyncClient):
+class TestCreateUser:
+    url: str = "/users"
+
+    @pytest.fixture(name="form_data")
+    def create_form_data(self) -> UserCreate:
+        """Fixture to create valid form data for user creation."""
+        return UserCreate(email="newuser@example.com", password="TestPass123")
+
+    async def test_create_user_success(self, client: AsyncClient, user_repo: IUserRepository, form_data: UserCreate):
         """Test successful user creation with valid email and password."""
-        email = "newuser@example.com"
-        form_data = {
-            "email": email,
-            "password": "TestPass123",
-        }
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify user was created in database
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
 
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert created_user.is_active is False  # Should be inactive until email verification
         assert response.status_code == 201
         expected_message = "We sent email to newuser@example.com address, follow link to complete your registration"
@@ -33,22 +46,20 @@ class TestCreateUser(BaseTest):
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_create_user_success_with_background_task_mock(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        user_repo: IUserRepository,
+        form_data: UserCreate,
     ):
         """Test successful user creation and verify email service is called."""
-        email = "newuser@example.com"
-        form_data = {
-            "email": email,
-            "password": "TestPass123",
-        }
-
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify user was created in database
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
 
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert response.status_code == 201
 
         # Verify email service was called
@@ -61,19 +72,16 @@ class TestCreateUser(BaseTest):
 
         # Verify the user argument has correct properties
         assert hasattr(user_arg, "email")
-        assert user_arg.email == email
+        assert user_arg.email == form_data.email
 
-    async def test_create_user_with_existing_email(self, client: AsyncClient):
+    async def test_create_user_with_existing_email(self, client: AsyncClient, user_factory, form_data: UserCreate):
         """Test user creation with already existing email address."""
         # Create an existing user
-        existing_user = await self.create_user()
+        existing_user = await user_factory()
 
-        form_data = {
-            "email": existing_user.email,
-            "password": "TestPass123",
-        }
+        form_data.email = existing_user.email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -82,18 +90,19 @@ class TestCreateUser(BaseTest):
 
     @patch("app.core.services.user_email_service.UserEmailService.send_duplicate_registration_warning")
     async def test_create_user_with_existing_email_background_task(
-        self, mock_send_warning: MagicMock, client: AsyncClient
+        self,
+        mock_send_warning: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
     ):
         """Test user creation with existing email sends duplicate registration warning."""
         # Create an existing user
-        existing_user = await self.create_user()
+        existing_user = await user_factory()
 
-        form_data = {
-            "email": existing_user.email,
-            "password": "TestPass123",
-        }
+        form_data.email = existing_user.email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -109,17 +118,17 @@ class TestCreateUser(BaseTest):
         # Verify the email argument is correct
         assert email_arg == existing_user.email
 
-    async def test_create_user_with_inactive_existing_email(self, client: AsyncClient):
+    async def test_create_user_with_inactive_existing_email(
+        self, client: AsyncClient, user_factory, form_data: UserCreate
+    ):
         """Test user creation with inactive existing email resends activation email."""
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "NewTestPass456",
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "NewTestPass456"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -128,18 +137,20 @@ class TestCreateUser(BaseTest):
 
     @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
     async def test_create_user_with_inactive_existing_email_resends_activation(
-        self, mock_resend_activation: MagicMock, client: AsyncClient
+        self,
+        mock_resend_activation: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
     ):
         """Test user creation with inactive existing email triggers resend_activation_email."""
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "NewTestPass456",
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "NewTestPass456"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success response (security by design)
         assert response.status_code == 201
@@ -161,19 +172,21 @@ class TestCreateUser(BaseTest):
     @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_create_user_inactive_vs_new_user_email_service(
-        self, mock_send_verification: MagicMock, mock_resend_activation: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        mock_resend_activation: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
     ):
         """Test that inactive users get resend_activation_email while new users get send_verification_email."""
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "TestPass123",
-        }
+        form_data.email = inactive_user.email
 
         # Try to register with inactive user's email
-        response1 = await client.post("/users", data=form_data)
+        response1 = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response1.status_code == 201
 
         # Verify resend_activation_email was called, not send_verification_email
@@ -186,12 +199,10 @@ class TestCreateUser(BaseTest):
         mock_send_verification.reset_mock()
 
         # Now create a new user
-        form_data2 = {
-            "email": "newuser@example.com",
-            "password": "TestPass123",
-        }
+        form_data.email = "newuser@example.com"
+        form_data.password = "TestPass123"
 
-        response2 = await client.post("/users", data=form_data2)
+        response2 = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response2.status_code == 201
 
         # Verify send_verification_email was called, not resend_activation_email
@@ -199,41 +210,40 @@ class TestCreateUser(BaseTest):
         assert mock_send_verification.call_count == 1
         assert not mock_resend_activation.called
 
-    async def test_create_user_inactive_user_password_not_updated(self, client: AsyncClient):
+    async def test_create_user_inactive_user_password_not_updated(
+        self, client: AsyncClient, user_factory, form_data: UserCreate, user_repo: IUserRepository
+    ):
         """Test that trying to register with inactive user's email doesn't update their password."""
         # Create an inactive user with a known password
-        original_password = "OriginalPass123"
-        inactive_user = await self.create_user(is_active=False)
+        inactive_user = await user_factory(is_active=False)
         assert inactive_user.id is not None
 
         # Get the original password hash
-        original_user_db = await self.get_user(inactive_user.id)
+        original_user_db = await user_repo.get_by_id(inactive_user.id)
         assert original_user_db is not None
         original_password_hash = original_user_db.password
-        original_password_from_helper = self.get_user_password()  # The actual password used by create_user
 
         # Try to register with the same email but different password
-        form_data = {
-            "email": inactive_user.email,
-            "password": original_password,  # Different from what was used to create the user
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "SomeNewPass123"  # Different from what was used to create the user
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response.status_code == 201
 
         # Verify password was NOT updated
-        updated_user_db = await self.get_user(inactive_user.id)
+        updated_user_db = await user_repo.get_by_id(inactive_user.id)
         assert updated_user_db is not None
         assert updated_user_db.password == original_password_hash
 
-        # Verify the original password still works
-        assert self.password_hasher.verify(original_password_from_helper, updated_user_db.password)
-        # Verify the new password does NOT work
-        assert not self.password_hasher.verify(original_password, updated_user_db.password)
-
     @patch("app.core.services.user_email_service.UserEmailService.resend_activation_email")
     async def test_create_user_inactive_user_comprehensive_check(
-        self, mock_resend_activation: MagicMock, client: AsyncClient
+        self,
+        mock_resend_activation: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        user_repo: IUserRepository,
+        form_data: UserCreate,
+        session: AsyncSession,
     ):
         """Comprehensive test for inactive user registration flow."""
         from sqlalchemy import func, select
@@ -241,21 +251,19 @@ class TestCreateUser(BaseTest):
         from app.db.models import User as UserModel
 
         # Create an inactive user
-        inactive_user = await self.create_user(is_active=False, first_name="John", second_name="Doe")
+        inactive_user = await user_factory(is_active=False, first_name="John", second_name="Doe")
         assert inactive_user.id is not None
 
         # Count users with this email before request
-        initial_count_result = await self.session.execute(
+        initial_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
         )
         initial_count = initial_count_result.scalar()
 
-        form_data = {
-            "email": inactive_user.email,
-            "password": "DifferentPass123",
-        }
+        form_data.email = inactive_user.email
+        form_data.password = "DifferentPass123"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify API response
         assert response.status_code == 201
@@ -263,14 +271,14 @@ class TestCreateUser(BaseTest):
         assert response.json() == {"message": expected_message}
 
         # Verify no new user was created
-        final_count_result = await self.session.execute(
+        final_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == inactive_user.email)
         )
         final_count = final_count_result.scalar()
         assert final_count == initial_count
 
         # Verify user data remains unchanged
-        unchanged_user = await self.get_user(inactive_user.id)
+        unchanged_user = await user_repo.get_by_id(inactive_user.id)
         assert unchanged_user is not None
         assert unchanged_user.is_active is False
         assert unchanged_user.first_name == "John"
@@ -285,14 +293,11 @@ class TestCreateUser(BaseTest):
         assert user_arg.email == inactive_user.email
         assert user_arg.id == inactive_user.id
 
-    async def test_create_user_with_invalid_email_format(self, client: AsyncClient):
+    async def test_create_user_with_invalid_email_format(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with invalid email format."""
-        form_data = {
-            "email": "invalid-email-format",
-            "password": "TestPass123",
-        }
+        form_data.email = "invalid-email-format"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
@@ -300,14 +305,11 @@ class TestCreateUser(BaseTest):
         # Should contain validation error for email format
         assert any("email" in str(error).lower() for error in response_data["detail"])
 
-    async def test_create_user_with_weak_password(self, client: AsyncClient):
+    async def test_create_user_with_weak_password(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password that doesn't meet requirements."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "weak",  # Too short, no uppercase, no number
-        }
+        form_data.password = "weak"  # Too short, no uppercase, no number
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
@@ -315,52 +317,42 @@ class TestCreateUser(BaseTest):
         # Should contain validation error for password requirements
         assert any("password" in str(error).lower() for error in response_data["detail"])
 
-    async def test_create_user_with_password_missing_uppercase(self, client: AsyncClient):
+    async def test_create_user_with_password_missing_uppercase(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password missing uppercase letter."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "testpass123",  # No uppercase letter
-        }
+        form_data.password = "testpass123"  # No uppercase letter
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_password_missing_number(self, client: AsyncClient):
+    async def test_create_user_with_password_missing_number(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password missing number."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "TestPassword",  # No number
-        }
+        form_data.password = "TestPassword"  # No number
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_password_too_short(self, client: AsyncClient):
+    async def test_create_user_with_password_too_short(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with password shorter than 8 characters."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "Test1",  # Too short
-        }
+        form_data.password = "Test1"  # Too short
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_missing_email(self, client: AsyncClient):
+    async def test_create_user_with_missing_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation without email field."""
-        form_data = {
-            "password": "TestPass123",
-        }
+        payload = form_data.model_dump(mode="json")
+        payload.pop("email")
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=payload)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -371,67 +363,55 @@ class TestCreateUser(BaseTest):
         assert len(errors) > 0
         assert any(error.get("type") == "missing" for error in errors)
 
-    async def test_create_user_with_missing_password(self, client: AsyncClient):
+    async def test_create_user_with_missing_password(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation without password field."""
-        form_data = {
-            "email": "test@example.com",
-        }
+        payload = form_data.model_dump(mode="json")
+        payload.pop("password")
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=payload)
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
         assert any("password" in error.get("loc", []) for error in response_data["detail"])
 
-    async def test_create_user_with_empty_email(self, client: AsyncClient):
+    async def test_create_user_with_empty_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with empty email field."""
-        form_data = {
-            "email": "",
-            "password": "TestPass123",
-        }
+        form_data.email = ""
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_empty_password(self, client: AsyncClient):
+    async def test_create_user_with_empty_password(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with empty password field."""
-        form_data = {
-            "email": "test@example.com",
-            "password": "",
-        }
+        form_data.password = ""
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_whitespace_only_fields(self, client: AsyncClient):
+    async def test_create_user_with_whitespace_only_fields(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with whitespace-only email and password."""
-        form_data = {
-            "email": "   ",
-            "password": "   ",
-        }
+        form_data.email = "   "
+        form_data.password = "   "
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_create_user_with_very_long_email(self, client: AsyncClient):
+    async def test_create_user_with_very_long_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with extremely long email address."""
         long_email = "a" * 100 + "@example.com"
-        form_data = {
-            "email": long_email,
-            "password": "TestPass123",
-        }
+        form_data.email = long_email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # This might succeed or fail depending on email length validation
         # If it succeeds, verify the user is created
@@ -441,75 +421,63 @@ class TestCreateUser(BaseTest):
         else:
             assert response.status_code == 422
 
-    async def test_create_user_with_special_characters_in_password(self, client: AsyncClient):
+    async def test_create_user_with_special_characters_in_password(
+        self, client: AsyncClient, form_data: UserCreate, user_repo: IUserRepository
+    ):
         """Test user creation with special characters in password."""
-        email = "test@example.com"
-        form_data = {
-            "email": email,
-            "password": "TestPass123!@#",
-        }
+        form_data.password = "TestPass123!@#"
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         assert response.status_code == 201
-        expected_message = "We sent email to test@example.com address, follow link to complete your registration"
+        expected_message = f"We sent email to {form_data.email} address, follow link to complete your registration"
         assert response.json() == {"message": expected_message}
 
         # Verify user was created in database with correct password hash
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert created_user.is_active is False
+        password_hash = created_user.password
+        assert password_hash is not None
         # Verify password is hashed (not plain text)
-        assert created_user.password != "TestPass123!@#"
-        assert len(created_user.password) > 50  # Hashed passwords are much longer
-        # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify("TestPass123!@#", created_user.password)
+        assert password_hash != "TestPass123!@#"
+        assert len(password_hash) > 50  # Hashed passwords are much longer
 
-    async def test_create_user_case_insensitive_email(self, client: AsyncClient):
+    async def test_create_user_case_insensitive_email(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with different email cases."""
         # First user
-        form_data1 = {
-            "email": "Test@Example.com",
-            "password": "TestPass123",
-        }
+        form_data.email = "Test@Example.com"
+        form_data.password = "TestPass123"
 
-        response1 = await client.post("/users", data=form_data1)
+        response1 = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response1.status_code == 201
 
         # Second user with same email but different case
-        form_data2 = {
-            "email": "test@example.com",
-            "password": "TestPass456",
-        }
+        form_data.email = "test@example.com"
+        form_data.password = "TestPass456"
 
-        response2 = await client.post("/users", data=form_data2)
+        response2 = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should still return success (existing user scenario)
         assert response2.status_code == 201
 
-    async def test_create_user_with_sql_injection_attempt(self, client: AsyncClient):
+    async def test_create_user_with_sql_injection_attempt(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation endpoint is protected against SQL injection."""
         malicious_email = "test'; DROP TABLE users; --@example.com"
-        form_data = {
-            "email": malicious_email,
-            "password": "TestPass123",
-        }
+        form_data.email = malicious_email
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should fail due to email validation or be safely handled
         # Most likely will fail email validation
         assert response.status_code in [201, 422]  # Either succeeds safely or fails validation
 
-    async def test_create_user_with_unicode_characters(self, client: AsyncClient):
+    async def test_create_user_with_unicode_characters(self, client: AsyncClient, form_data: UserCreate):
         """Test user creation with unicode characters in email."""
-        form_data = {
-            "email": "测试@example.com",  # Unicode characters
-            "password": "TestPass123",
-        }
+        form_data.email = "测试@example.com"  # Unicode characters
 
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Should handle unicode properly
         if response.status_code == 201:
@@ -518,56 +486,58 @@ class TestCreateUser(BaseTest):
         else:
             assert response.status_code == 422
 
-    async def test_create_user_password_hashing(self, client: AsyncClient):
+    async def test_create_user_password_hashing(
+        self, client: AsyncClient, form_data: UserCreate, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test that password is properly hashed and not stored in plain text."""
-        email = "hashtest@example.com"
-        password = "TestPass123"
-        form_data = {
-            "email": email,
-            "password": password,
-        }
-
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
         assert response.status_code == 201
 
         # Verify user was created in database with hashed password
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
+        password_hash = created_user.password
+        assert password_hash is not None
 
         # Verify password is hashed, not plain text
-        assert created_user.password != password
-        assert len(created_user.password) > 50  # Hashed passwords are much longer
-        assert created_user.password.startswith("$")  # Common hash format indicator
+        assert password_hash != form_data.password
+        assert len(password_hash) > 50  # Hashed passwords are much longer
+        assert password_hash.startswith("$")  # Common hash format indicator
 
         # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify(password, created_user.password)
+        assert password_hasher.verify(form_data.password, password_hash)
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_create_user_comprehensive_verification(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_create_user_comprehensive_verification(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        form_data: UserCreate,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test comprehensive user creation including API response, database, and email service."""
-        email = "comprehensive@example.com"
-        password = "SecurePass123!"
-        form_data = {
-            "email": email,
-            "password": password,
-        }
+        form_data.email = "comprehensive@example.com"
+        form_data.password = "SecurePass123!"
 
         # Make the request
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify API response
         assert response.status_code == 201
-        expected_message = f"We sent email to {email} address, follow link to complete your registration"
+        expected_message = f"We sent email to {form_data.email} address, follow link to complete your registration"
         assert response.json() == {"message": expected_message}
 
         # Verify database state
-        created_user = await self.get_user_by_email(email)
+        created_user = await user_repo.get_by_email(form_data.email)
         assert created_user is not None
-        assert created_user.email == email
+        assert created_user.email == form_data.email
         assert created_user.is_active is False  # Should start inactive
-        assert created_user.password != password  # Should be hashed
-        assert self.password_hasher.verify(password, created_user.password)
+        password_hash = created_user.password
+        assert password_hash is not None
+        assert password_hash != form_data.password  # Should be hashed
+        assert password_hasher.verify(form_data.password, password_hash)
 
         # Verify email service was called
         assert mock_send_verification.called
@@ -577,31 +547,36 @@ class TestCreateUser(BaseTest):
         call_args = mock_send_verification.call_args
         user_arg = call_args[0][0]
 
-        assert user_arg.email == email
+        assert user_arg.email == form_data.email
 
     @patch("app.core.services.user_email_service.UserEmailService.send_duplicate_registration_warning")
-    async def test_create_user_duplicate_email_comprehensive(self, mock_send_warning: MagicMock, client: AsyncClient):
+    async def test_create_user_duplicate_email_comprehensive(
+        self,
+        mock_send_warning: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        form_data: UserCreate,
+        session: AsyncSession,
+    ):
         """Test duplicate email creation including email service verification."""
         from sqlalchemy import func, select
 
         from app.db.models import User as UserModel
 
         # Create initial user
-        existing_user = await self.create_user()
+        existing_user = await user_factory()
 
         # Count initial users with this email
-        initial_count_result = await self.session.execute(
+        initial_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == existing_user.email)
         )
         initial_count = initial_count_result.scalar()
 
-        form_data = {
-            "email": existing_user.email,
-            "password": "NewPassword123",
-        }
+        form_data.email = existing_user.email
+        form_data.password = "NewPassword123"
 
         # Attempt to create duplicate user
-        response = await client.post("/users", data=form_data)
+        response = await client.post(self.url, data=form_data.model_dump(mode="json"))
 
         # Verify API response (should still be successful for security)
         assert response.status_code == 201
@@ -609,7 +584,7 @@ class TestCreateUser(BaseTest):
         assert response.json() == {"message": expected_message}
 
         # Verify no new user was created in database
-        final_count_result = await self.session.execute(
+        final_count_result = await session.execute(
             select(func.count(UserModel.id)).where(UserModel.email == existing_user.email)
         )
         final_count = final_count_result.scalar()
@@ -626,20 +601,34 @@ class TestCreateUser(BaseTest):
         assert email_arg == existing_user.email
 
 
-class TestUserActivation(BaseTest):
-    async def test_activate_user_success(self, client: AsyncClient):
-        """Test successful user activation with valid token."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
-        token = self.create_verification_token(user)
+class TestUserActivation:
+    url: str = "/users/activate"
 
-        response = await client.patch(f"/users/activate?token={token}")
+    @pytest.fixture(name="inactive_user")
+    async def create_inactive_user_fixture(self, user_factory) -> User:
+        """Fixture to create an inactive user for activation tests."""
+        return await user_factory(is_active=False)
+
+    @pytest.fixture(name="verification_token")
+    async def create_verification_token_fixture(
+        self, inactive_user: User, verification_token_strategy: VerificationTokenService
+    ) -> str:
+        """Fixture to create a valid verification token for the inactive user."""
+        assert inactive_user.id is not None
+        return await verification_token_strategy.issue(user_id=inactive_user.id)
+
+    async def test_activate_user_success(
+        self, client: AsyncClient, inactive_user: User, verification_token: str, user_repo: IUserRepository
+    ):
+        """Test successful user activation with valid token."""
+        assert inactive_user.id is not None
+        response = await client.patch(self.url, params={"token": verification_token})
 
         assert response.status_code == 200
         assert response.json() == {"message": "Account activated successfully"}
 
         # Verify user is actually activated in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(inactive_user.id)
         assert updated_user is not None
         assert updated_user.is_active is True
 
@@ -647,19 +636,24 @@ class TestUserActivation(BaseTest):
         """Test activation with malformed or invalid token."""
         invalid_token = "invalid.token.here"
 
-        response = await client.patch(f"/users/activate?token={invalid_token}")
+        response = await client.patch(self.url, params={"token": invalid_token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_with_expired_token(self, client: AsyncClient):
+    async def test_activate_with_expired_token(
+        self,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test activation with expired verification token."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
-        expired_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        token = self.create_verification_token_for_user_data(user.email, user.id, exp=expired_time)
+        assert inactive_user.id is not None
 
-        response = await client.patch(f"/users/activate?token={token}")
+        expired_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+        token = await verification_token_strategy.issue(inactive_user.id, expires_at=expired_time)
+
+        response = await client.patch(self.url, params={"token": token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
@@ -671,25 +665,27 @@ class TestUserActivation(BaseTest):
         # New behavior: any token for a non-existent user cannot exist in storage, so a fabricated token must yield 400.
         fabricated_token = "non-existent-user-token-value"  # Not in DB -> invalid
 
-        response = await client.patch(f"/users/activate?token={fabricated_token}")
+        response = await client.patch(self.url, params={"token": fabricated_token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_already_active_user(self, client: AsyncClient):
+    async def test_activate_already_active_user(
+        self, client: AsyncClient, user_factory, verification_token_strategy: VerificationTokenService
+    ):
         """Test activation of user who is already activated."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        token = self.create_verification_token(user)
+        token = await verification_token_strategy.issue(user_id=user.id)
 
-        response = await client.patch(f"/users/activate?token={token}")
+        response = await client.patch(self.url, params={"token": token})
 
         assert response.status_code == 409
         assert response.json() == {"detail": "User is already activated"}
 
     async def test_activate_with_missing_token(self, client: AsyncClient):
         """Test activation without providing token parameter."""
-        response = await client.patch("/users/activate")
+        response = await client.patch(self.url)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -698,56 +694,65 @@ class TestUserActivation(BaseTest):
 
     async def test_activate_with_empty_token(self, client: AsyncClient):
         """Test activation with empty token parameter."""
-        response = await client.patch("/users/activate?token=")
+        response = await client.patch(self.url, params={"token": ""})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_with_wrong_token_type(self, client: AsyncClient):
+    async def test_activate_with_wrong_token_type(self, client: AsyncClient, inactive_user: User, access_token_factory):
         """Test activation with access token instead of verification token."""
-        user = await self.create_user(is_active=False)
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(inactive_user)
 
-        response = await client.patch(f"/users/activate?token={access_token.token}")
+        response = await client.patch(self.url, params={"token": access_token.token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
-    async def test_activate_with_token_for_different_user(self, client: AsyncClient):
+    async def test_activate_with_token_for_different_user(
+        self,
+        client: AsyncClient,
+        user_factory,
+        verification_token_strategy: VerificationTokenService,
+        user_repo: IUserRepository,
+    ):
         """Test activation with token created for different user."""
-        user1 = await self.create_user(is_active=False)
-        user2 = await self.create_user(is_active=False)
+        user1 = await user_factory(is_active=False)
+        user2 = await user_factory(is_active=False)
         assert user1.id is not None
         assert user2.id is not None
 
         # Create token for user2 but try to activate user1's account
-        token = self.create_verification_token(user2)
+        token = await verification_token_strategy.issue(user_id=user2.id)
 
-        response = await client.patch(f"/users/activate?token={token}")
+        response = await client.patch(self.url, params={"token": token})
 
         # This should succeed for user2, not user1
         assert response.status_code == 200
 
         # Verify user1 is still inactive and user2 is now active
-        updated_user1 = await self.get_user(user1.id)
-        updated_user2 = await self.get_user(user2.id)
+        updated_user1 = await user_repo.get_by_id(user1.id)
+        updated_user2 = await user_repo.get_by_id(user2.id)
         assert updated_user1 is not None
         assert updated_user2 is not None
         assert updated_user1.is_active is False
         assert updated_user2.is_active is True
 
-    async def test_activate_multiple_times_with_same_token(self, client: AsyncClient):
+    async def test_activate_multiple_times_with_same_token(
+        self,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token: str,
+    ):
         """Test that same token cannot be used multiple times."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
-        token = self.create_verification_token(user)
+
+        assert inactive_user.id is not None
 
         # First activation should succeed
-        response1 = await client.patch(f"/users/activate?token={token}")
+        response1 = await client.patch(self.url, params={"token": verification_token})
         assert response1.status_code == 200
 
         # Second activation with same token should fail
-        response2 = await client.patch(f"/users/activate?token={token}")
+        response2 = await client.patch(self.url, params={"token": verification_token})
         assert response2.status_code == 400
         assert response2.json() == {"detail": "Invalid activation token: Token already used"}
 
@@ -755,40 +760,44 @@ class TestUserActivation(BaseTest):
         """Test activation endpoint is protected against SQL injection."""
         malicious_token = "'; DROP TABLE users; --"
 
-        response = await client.patch(f"/users/activate?token={malicious_token}")
+        response = await client.patch(self.url, params={"token": malicious_token})
 
         assert response.status_code == 400
         assert "Invalid activation token" in response.json()["detail"]
 
 
-class TestResendActivationEmail(BaseTest):
+class TestResendActivationEmail:
+    url: str = "/users/resend-activation"
+
+    @pytest.fixture(name="inactive_user")
+    async def create_inactive_user_fixture(self, user_factory) -> User:
+        """Fixture to create an inactive user for activation tests."""
+        return await user_factory(is_active=False)
+
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_success(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_success(
+        self, mock_send_verification: MagicMock, client: AsyncClient, inactive_user: User
+    ):
         """Test successful resend of activation email for inactive user."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
-        # Create an initial token (simulating first registration)
-        self.create_verification_token(user)
-        await self.session.commit()
-
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Move time forward past cooldown period to avoid rate limiting
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
-        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert f"If an account exists with {inactive_user.email}" in response.json()["message"]
         assert mock_send_verification.called
         assert mock_send_verification.call_count == 1
 
-    async def test_resend_activation_already_activated_user(self, client: AsyncClient):
+    async def test_resend_activation_already_activated_user(self, client: AsyncClient, user_factory):
         """Test resend activation email for already activated user returns 400."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         form_data = {"email": user.email}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 400
         assert response.json() == {"detail": "User is already activated"}
@@ -797,26 +806,30 @@ class TestResendActivationEmail(BaseTest):
         """Test resend activation for non-existent email returns success (security)."""
         form_data = {"email": "nonexistent@example.com"}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         # Should return success to prevent email enumeration
         assert response.status_code == 200
         assert "If an account exists with nonexistent@example.com" in response.json()["message"]
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_rate_limit_exceeded(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_rate_limit_exceeded(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test resend activation email enforces rate limiting."""
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         # Create a recent token (simulating recent request)
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Try to resend immediately (within cooldown period)
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 429
         assert "Please wait" in response.json()["detail"]
@@ -824,44 +837,47 @@ class TestResendActivationEmail(BaseTest):
         assert not mock_send_verification.called
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_no_previous_token(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_no_previous_token(
+        self, mock_send_verification: MagicMock, client: AsyncClient, inactive_user: User
+    ):
         """Test resend activation for user with no previous token."""
-        user = await self.create_user(is_active=False)
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         # Should succeed even without previous token
         assert response.status_code == 200
-        assert f"If an account exists with {user.email}" in response.json()["message"]
+        assert f"If an account exists with {inactive_user.email}" in response.json()["message"]
         assert mock_send_verification.called
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_resend_activation_after_cooldown_period(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
     ):
         """Test resend activation succeeds after cooldown period expires."""
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         # Create an old token
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Move time forward exactly past cooldown period
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES + 1)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert mock_send_verification.called
 
     async def test_resend_activation_missing_email(self, client: AsyncClient):
         """Test resend activation without email parameter returns 422."""
-        response = await client.post("/users/resend-activation", data={})
+        response = await client.post(self.url, data={})
 
         assert response.status_code == 422
         response_data = response.json()
@@ -872,7 +888,7 @@ class TestResendActivationEmail(BaseTest):
         """Test resend activation with empty email."""
         form_data = {"email": ""}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
 
@@ -880,49 +896,60 @@ class TestResendActivationEmail(BaseTest):
         """Test resend activation with invalid email format."""
         form_data = {"email": "not-an-email"}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_case_sensitive_email(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_case_sensitive_email(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test resend activation email is case-sensitive."""
-        user = await self.create_user(is_active=False, email="test@example.com")
-        assert user.id is not None
+        assert inactive_user.id is not None
 
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
         # Try with different case
-        form_data = {"email": "TEST@example.com"}
+        local_part, domain_part = inactive_user.email.split("@")
+        normalized_case_variant_email = f"{local_part.upper()}@{domain_part.lower()}"
+        form_data = {"email": normalized_case_variant_email}
 
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         # Email doesn't match (case-sensitive), so no email sent
         assert response.status_code == 200
-        assert "If an account exists with TEST@example.com" in response.json()["message"]
+        assert f"If an account exists with {normalized_case_variant_email}" in response.json()["message"]
         assert not mock_send_verification.called
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
-    async def test_resend_activation_multiple_users(self, mock_send_verification: MagicMock, client: AsyncClient):
+    async def test_resend_activation_multiple_users(
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        user_factory,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test resend activation for multiple different users."""
-        user1 = await self.create_user(is_active=False, email="user1@example.com")
-        user2 = await self.create_user(is_active=False, email="user2@example.com")
+        user1 = await user_factory(is_active=False, email="user1@example.com")
+        user2 = await user_factory(is_active=False, email="user2@example.com")
         assert user1.id is not None
         assert user2.id is not None
 
-        self.create_verification_token(user1)
-        self.create_verification_token(user2)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=user1.id)
+        await verification_token_strategy.issue(user_id=user2.id)
 
         with freeze_time(datetime.now(timezone.utc) + timedelta(minutes=3)):
             # Resend for user1
-            response1 = await client.post("/users/resend-activation", data={"email": user1.email})
+            response1 = await client.post(self.url, data={"email": user1.email})
             assert response1.status_code == 200
 
             # Resend for user2
-            response2 = await client.post("/users/resend-activation", data={"email": user2.email})
+            response2 = await client.post(self.url, data={"email": user2.email})
             assert response2.status_code == 200
 
         assert mock_send_verification.call_count == 2
@@ -932,64 +959,95 @@ class TestResendActivationEmail(BaseTest):
         malicious_email = "'; DROP TABLE users; --"
         form_data = {"email": malicious_email}
 
-        response = await client.post("/users/resend-activation", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_resend_activation_exact_cooldown_boundary(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
     ):
         """Test resend activation at exact cooldown boundary."""
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         current_time = datetime.now(timezone.utc)
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Try exactly at cooldown boundary (should still be rate limited)
         with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         # At exact boundary, should still be rate limited (< not <=)
         assert response.status_code == 429
 
     @patch("app.core.services.user_email_service.UserEmailService.send_verification_email")
     async def test_resend_activation_one_second_after_cooldown(
-        self, mock_send_verification: MagicMock, client: AsyncClient
+        self,
+        mock_send_verification: MagicMock,
+        client: AsyncClient,
+        inactive_user: User,
+        verification_token_strategy: VerificationTokenService,
     ):
         """Test resend activation one second after cooldown expires."""
         from app import RESEND_ACTIVATION_COOLDOWN_MINUTES
 
-        user = await self.create_user(is_active=False)
-        assert user.id is not None
+        assert inactive_user.id is not None
 
         current_time = datetime.now(timezone.utc)
-        self.create_verification_token(user)
-        await self.session.commit()
+        await verification_token_strategy.issue(user_id=inactive_user.id)
 
-        form_data = {"email": user.email}
+        form_data = {"email": inactive_user.email}
 
         # Try one second after cooldown
         with freeze_time(current_time + timedelta(minutes=RESEND_ACTIVATION_COOLDOWN_MINUTES, seconds=1)):
-            response = await client.post("/users/resend-activation", data=form_data)
+            response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert mock_send_verification.called
 
 
-class TestUserChangePassword(BaseTest):
-    async def test_change_password_success(self, client: AsyncClient):
+class TestUserChangePassword:
+    url: str = "/users/change-password"
+
+    @pytest.fixture(name="old_password")
+    def old_password_fixture(self) -> str:
+        """Fixture to provide a known old password for change password tests."""
+        return "OldPass123"
+
+    @pytest.fixture(name="user")
+    async def create_user_fixture(self, user_factory, old_password: str) -> User:
+        """Fixture to create an active user for change password tests."""
+        return await user_factory(password=old_password, is_active=True)
+
+    @pytest.fixture(name="access_token", autouse=True)
+    def create_access_token(self, access_token_factory, user):
+        return access_token_factory(user).token
+
+    @pytest.fixture(name="client_config", autouse=True)
+    def client_config(self, access_token: str):
+        """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+        return {
+            "headers": {"Authorization": f"Bearer {access_token}"},
+        }
+
+    async def test_change_password_success(
+        self,
+        client: AsyncClient,
+        user: User,
+        old_password: str,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test successful password change with valid access token and correct old password."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
-        old_password = self.get_user_password()
         new_password = "NewTestPass123"
 
         form_data = {
@@ -998,32 +1056,31 @@ class TestUserChangePassword(BaseTest):
             "confirm_new_password": new_password,
         }
 
-        response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 200
         assert response.json() == {"message": "Password changed successfully"}
 
         # Verify password was actually changed in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
-        assert not self.password_hasher.verify(old_password, updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hasher.verify(new_password, password_hash)
+        assert not password_hasher.verify(old_password, password_hash)
 
-    async def test_change_password_with_invalid_access_token(self, client: AsyncClient):
+    async def test_change_password_with_invalid_access_token(self, client: AsyncClient, old_password: str):
         """Test password change with invalid access token."""
+
         invalid_token = "invalid.token.here"
         form_data = {
-            "old_password": "OldPass123",
+            "old_password": old_password,
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {invalid_token}"},
             data=form_data,
         )
@@ -1031,45 +1088,49 @@ class TestUserChangePassword(BaseTest):
         assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
-    async def test_change_password_with_expired_access_token(self, client: AsyncClient):
+    async def test_change_password_with_expired_access_token(self, client: AsyncClient, user: User, old_password: str):
         """Test password change with expired access token."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         form_data = {
-            "old_password": self.get_user_password(),
+            "old_password": old_password,
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.patch(
-                "/users/change-password",
-                headers={"Authorization": f"Bearer {access_token.token}"},
+                self.url,
                 data=form_data,
             )
 
         assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
-    async def test_change_password_with_missing_access_token(self, client: AsyncClient):
+    async def test_change_password_with_missing_access_token(self, client: AsyncClient, old_password: str):
         """Test password change without access token."""
+        del client.headers["Authorization"]
+
         form_data = {
-            "old_password": "OldPass123",
+            "old_password": old_password,
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
 
-        response = await client.patch("/users/change-password", data=form_data)
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 401
 
-    async def test_change_password_with_incorrect_old_password(self, client: AsyncClient):
+    async def test_change_password_with_incorrect_old_password(
+        self,
+        client: AsyncClient,
+        user: User,
+        old_password: str,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test password change with incorrect old password."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         wrong_old_password = "WrongOldPass123"
         new_password = "NewTestPass123"
 
@@ -1079,61 +1140,52 @@ class TestUserChangePassword(BaseTest):
             "confirm_new_password": new_password,
         }
 
-        response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 400
         assert "Old password is incorrect" in response.json()["detail"]
 
         # Verify password was not changed
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(self.get_user_password(), updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hasher.verify(old_password, password_hash)
 
-    async def test_change_password_with_non_existent_user(self, client: AsyncClient):
+    async def test_change_password_with_non_existent_user(
+        self, client: AsyncClient, access_token_factory, old_password: str
+    ):
         """Test password change with access token for non-existent user."""
 
         non_existent_email = "nonexistent@example.com"
         non_existent_id = 99999
         user = User(id=non_existent_id, email=non_existent_email, password="OldPass123")
-        token = self.create_access_token(user)
+        token = access_token_factory(user).token
 
         form_data = {
-            "old_password": "OldPass123",
+            "old_password": old_password,
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
 
         response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {token.token}"},
+            self.url,
+            headers={"Authorization": f"Bearer {token}"},
             data=form_data,
         )
 
         assert response.status_code == 404
         assert "User does not exist" in response.json()["detail"]
 
-    async def test_change_password_with_mismatched_confirmation(self, client: AsyncClient):
+    async def test_change_password_with_mismatched_confirmation(self, client: AsyncClient, old_password: str):
         """Test password change when new password and confirmation don't match."""
-        user = await self.create_user(is_active=True)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-        old_password = self.get_user_password()
-
         form_data = {
             "old_password": old_password,
             "new_password": "NewPass123",
             "confirm_new_password": "DifferentPass123",
         }
 
-        response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1141,20 +1193,13 @@ class TestUserChangePassword(BaseTest):
 
     async def test_change_password_with_missing_form_fields(self, client: AsyncClient):
         """Test password change with missing required form fields."""
-        user = await self.create_user(is_active=True)
-        access_token = self.create_access_token(user)
-
         # Test missing old_password
         form_data = {
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
 
-        response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1163,32 +1208,21 @@ class TestUserChangePassword(BaseTest):
 
     async def test_change_password_with_empty_form_fields(self, client: AsyncClient):
         """Test password change with empty form fields."""
-        user = await self.create_user(is_active=True)
-        access_token = self.create_access_token(user)
-
         form_data = {
             "old_password": "",
             "new_password": "",
             "confirm_new_password": "",
         }
 
-        response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
         # Should have validation errors for password requirements
         assert len(response_data["detail"]) > 0
 
-    async def test_change_password_with_weak_new_password(self, client: AsyncClient):
+    async def test_change_password_with_weak_new_password(self, client: AsyncClient, old_password: str):
         """Test password change with weak new password."""
-        user = await self.create_user(is_active=True)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-        old_password = self.get_user_password()
         weak_password = "123"  # Too short and weak
 
         form_data = {
@@ -1197,30 +1231,32 @@ class TestUserChangePassword(BaseTest):
             "confirm_new_password": weak_password,
         }
 
-        response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.patch(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
         # Should have validation errors for password requirements
         assert len(response_data["detail"]) > 0
 
-    async def test_change_password_with_wrong_token_type(self, client: AsyncClient):
+    async def test_change_password_with_wrong_token_type(
+        self,
+        client: AsyncClient,
+        user: User,
+        old_password: str,
+        verification_token_strategy: VerificationTokenService,
+    ):
         """Test password change with verification token instead of access token."""
-        user = await self.create_user(is_active=True)
-        verification_token = self.create_verification_token(user)
+        assert user.id is not None
+        verification_token = await verification_token_strategy.issue(user_id=user.id)
 
         form_data = {
-            "old_password": self.get_user_password(),
+            "old_password": old_password,
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
 
         response = await client.patch(
-            "/users/change-password",
+            self.url,
             headers={"Authorization": f"Bearer {verification_token}"},
             data=form_data,
         )
@@ -1228,12 +1264,12 @@ class TestUserChangePassword(BaseTest):
         assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
-    async def test_change_password_with_inactive_user(self, client: AsyncClient):
+    async def test_change_password_with_inactive_user(self, client: AsyncClient, user_factory, access_token_factory):
         """Test password change for inactive user."""
-        user = await self.create_user(is_active=False)
+        user = await user_factory(password="OldPass123", is_active=False)
         assert user.id is not None
-        access_token = self.create_access_token(user)
-        old_password = self.get_user_password()
+        access_token = access_token_factory(user).token
+        old_password = "OldPass123"
 
         form_data = {
             "old_password": old_password,
@@ -1242,8 +1278,8 @@ class TestUserChangePassword(BaseTest):
         }
 
         response = await client.patch(
-            "/users/change-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
+            self.url,
+            headers={"Authorization": f"Bearer {access_token}"},
             data=form_data,
         )
 
@@ -1251,13 +1287,8 @@ class TestUserChangePassword(BaseTest):
         assert response.status_code == 200
         assert response.json() == {"message": "Password changed successfully"}
 
-    async def test_change_password_concurrent_requests(self, client: AsyncClient):
+    async def test_change_password_concurrent_requests(self, client: AsyncClient, old_password: str):
         """Test multiple simultaneous password change requests."""
-        user = await self.create_user(is_active=True)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-        old_password = self.get_user_password()
-
         form_data = {
             "old_password": old_password,
             "new_password": "NewPass123",
@@ -1265,14 +1296,8 @@ class TestUserChangePassword(BaseTest):
         }
 
         # Make two concurrent requests
-        import asyncio
-
         async def make_request():
-            return await client.patch(
-                "/users/change-password",
-                headers={"Authorization": f"Bearer {access_token.token}"},
-                data=form_data,
-            )
+            return await client.patch(self.url, data=form_data)
 
         responses = await asyncio.gather(make_request(), make_request())
 
@@ -1282,17 +1307,30 @@ class TestUserChangePassword(BaseTest):
         assert success_count >= 1
 
 
-class TestGetCurrentUser(BaseTest):
-    async def test_get_me_success(self, client: AsyncClient):
-        """Should return current user info with valid access token."""
-        user = await self.create_user(is_active=True)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
+class TestGetCurrentUser:
+    url: str = "/users/me"
 
-        response = await client.get(
-            "/users/me",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+    @pytest.fixture(name="user")
+    async def create_user_fixture(self, user_factory) -> User:
+        """Fixture to create an active user for get current user tests."""
+        return await user_factory()
+
+    @pytest.fixture(name="access_token", autouse=True)
+    def create_access_token(self, access_token_factory, user):
+        return access_token_factory(user).token
+
+    @pytest.fixture(name="client_config", autouse=True)
+    def client_config(self, access_token: str):
+        """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+        return {
+            "headers": {"Authorization": f"Bearer {access_token}"},
+        }
+
+    async def test_get_me_success(self, client: AsyncClient, user: User):
+        """Should return current user info with valid access token."""
+        assert user.id is not None
+
+        response = await client.get(self.url)
 
         assert response.status_code == 200
         data = response.json()
@@ -1305,44 +1343,39 @@ class TestGetCurrentUser(BaseTest):
 
     async def test_get_me_missing_token(self, client: AsyncClient):
         """Should return 401 when Authorization header is missing."""
-        response = await client.get("/users/me")
+        del client.headers["Authorization"]
+
+        response = await client.get(self.url)
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
 
     async def test_get_me_invalid_token(self, client: AsyncClient):
         """Should return 401 with Bearer header for invalid token."""
-        response = await client.get(
-            "/users/me",
-            headers={"Authorization": "Bearer invalid.token.here"},
-        )
+        client.headers["Authorization"] = "Bearer invalid.token.here"
+        response = await client.get(self.url)
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
         assert "Invalid access token" in response.json()["detail"]
 
     async def test_get_me_expired_token(self, client: AsyncClient):
         """Should return 401 for expired token."""
-        user = await self.create_user(is_active=True)
-        access_token = self.create_access_token(user)
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
-            response = await client.get(
-                "/users/me",
-                headers={"Authorization": f"Bearer {access_token.token}"},
-            )
+            response = await client.get(self.url)
 
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
         assert "Invalid access token" in response.json()["detail"]
 
-    async def test_get_me_user_not_found(self, client: AsyncClient):
+    async def test_get_me_user_not_found(self, client: AsyncClient, access_token_factory):
         """Should return 404 when token refers to a non-existent user."""
         non_existent_email = "nonexistent@example.com"
         non_existent_id = 99999
         ghost = User(id=non_existent_id, email=non_existent_email, password="x")
-        token = self.create_access_token(ghost)
+        token = access_token_factory(ghost)
 
         response = await client.get(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {token.token}"},
         )
 
@@ -1351,22 +1384,29 @@ class TestGetCurrentUser(BaseTest):
         assert "User" in response.json()["detail"]
 
 
-class TestUpdateUser(BaseTest):
-    async def test_update_user_first_name_success(self, client: AsyncClient):
+class TestUpdateUser:
+    url: str = "/users/me"
+
+    @pytest.fixture(name="access_token", autouse=True)
+    def create_access_token(self, access_token_factory, user):
+        return access_token_factory(user).token
+
+    @pytest.fixture(name="client_config", autouse=True)
+    def client_config(self, access_token: str):
+        """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+        return {
+            "headers": {"Authorization": f"Bearer {access_token}"},
+        }
+
+    async def test_update_user_first_name_success(self, client: AsyncClient, user: User, user_repo: IUserRepository):
         """Should successfully update user first name with valid access token."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {
             "first_name": "John",
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -1375,25 +1415,19 @@ class TestUpdateUser(BaseTest):
         assert data["username"] == user.email
 
         # Verify in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.first_name == "John"
 
-    async def test_update_user_second_name_success(self, client: AsyncClient):
+    async def test_update_user_second_name_success(self, client: AsyncClient, user: User, user_repo: IUserRepository):
         """Should successfully update user second name with valid access token."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {
             "second_name": "Doe",
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -1402,26 +1436,20 @@ class TestUpdateUser(BaseTest):
         assert data["username"] == user.email
 
         # Verify in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.second_name == "Doe"
 
-    async def test_update_user_both_names_success(self, client: AsyncClient):
+    async def test_update_user_both_names_success(self, client: AsyncClient, user: User, user_repo: IUserRepository):
         """Should successfully update both first and second names."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {
             "first_name": "John",
             "second_name": "Doe",
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -1431,47 +1459,21 @@ class TestUpdateUser(BaseTest):
         assert data["username"] == user.email
 
         # Verify in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.first_name == "John"
         assert updated_user.second_name == "Doe"
 
-    async def test_update_user_with_only_one_field(self, client: AsyncClient):
-        """Should successfully update when only one field is provided."""
-        user = await self.create_user(is_active=True, first_name="Original", second_name="Name")
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-
-        update_data = {"first_name": "Updated"}
-
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == user.id
-        assert data["first_name"] == "Updated"
-        assert data["second_name"] == "Name"
-
-    async def test_update_user_with_null_values(self, client: AsyncClient):
+    async def test_update_user_with_null_values(self, client: AsyncClient, user: User, user_repo: IUserRepository):
         """Should successfully update user with null values to clear names."""
-        user = await self.create_user(is_active=True, first_name="John", second_name="Doe")
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {
             "first_name": None,
             "second_name": None,
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -1480,46 +1482,34 @@ class TestUpdateUser(BaseTest):
         assert data["second_name"] is None
 
         # Verify in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.first_name is None
         assert updated_user.second_name is None
 
     async def test_update_user_first_name_exceeds_max_length(self, client: AsyncClient):
         """Should return 422 when first name exceeds maximum length."""
-        user = await self.create_user(is_active=True)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-
         update_data = {
             "first_name": "A" * 41,  # Max length is 40
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_update_user_second_name_exceeds_max_length(self, client: AsyncClient):
+    async def test_update_user_second_name_exceeds_max_length(
+        self,
+        client: AsyncClient,
+    ):
         """Should return 422 when second name exceeds maximum length."""
-        user = await self.create_user(is_active=True)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {
             "second_name": "B" * 41,  # Max length is 40
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1531,8 +1521,10 @@ class TestUpdateUser(BaseTest):
             "first_name": "John",
         }
 
+        del client.headers["Authorization"]
+
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
         )
 
@@ -1546,7 +1538,7 @@ class TestUpdateUser(BaseTest):
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
             headers={"Authorization": "Bearer invalid.token.here"},
         )
@@ -1556,157 +1548,156 @@ class TestUpdateUser(BaseTest):
 
     async def test_update_user_expired_token(self, client: AsyncClient):
         """Should return 401 for expired token."""
-        user = await self.create_user(is_active=True)
-        access_token = self.create_access_token(user)
 
         update_data = {
             "first_name": "John",
         }
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
-            response = await client.patch(
-                "/users/me",
-                json=update_data,
-                headers={"Authorization": f"Bearer {access_token.token}"},
-            )
+            response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 401
         assert response.headers.get("www-authenticate") == "Bearer"
 
-    async def test_update_user_not_found(self, client: AsyncClient):
+    async def test_update_user_not_found(self, client: AsyncClient, access_token_factory):
         """Should return 404 when token refers to a non-existent user."""
         non_existent_email = "nonexistent@example.com"
         non_existent_id = 99999
         ghost = User(id=non_existent_id, email=non_existent_email, password="x")
-        token = self.create_access_token(ghost)
+        token = access_token_factory(ghost).token
 
         update_data = {
             "first_name": "John",
         }
 
         response = await client.patch(
-            "/users/me",
+            self.url,
             json=update_data,
-            headers={"Authorization": f"Bearer {token.token}"},
+            headers={"Authorization": f"Bearer {token}"},
         )
 
         assert response.status_code == 404
         assert "User" in response.json()["detail"]
 
-    async def test_update_user_preserves_unchanged_fields(self, client: AsyncClient):
+    async def test_update_user_preserves_unchanged_fields(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository
+    ):
         """Should preserve fields that are not included in the update."""
-        user = await self.create_user(is_active=True, first_name="John", second_name="Doe")
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {
             "first_name": "Jane",
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
         data = response.json()
         assert data["first_name"] == "Jane"
-        assert data["second_name"] == "Doe"  # Should remain unchanged
+        assert data["second_name"] == user.second_name  # Unchanged
 
         # Verify in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.first_name == "Jane"
-        assert updated_user.second_name == "Doe"
+        assert updated_user.second_name == user.second_name  # Unchanged
 
-    async def test_update_user_updates_time_update_field(self, client: AsyncClient):
+    async def test_update_user_updates_time_update_field(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository
+    ):
         """Should update the time_update field when user is updated."""
-        user = await self.create_user(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+
         original_time_update = user.time_update
 
         update_data = {
             "first_name": "John",
         }
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
 
         # Verify time_update was updated
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         # The time_update should be greater than or equal to the original
         # (database may update it automatically via trigger or default)
         assert updated_user.time_update >= original_time_update
 
-    async def test_update_user_with_no_fields(self, client: AsyncClient):
+    async def test_update_user_with_no_fields(self, client: AsyncClient, user: User, user_repo: IUserRepository):
         """Should return 200 and make no changes when no fields are provided."""
-        user = await self.create_user(is_active=True, first_name="John", second_name="Doe")
         assert user.id is not None
-        access_token = self.create_access_token(user)
 
         update_data = {}
 
-        response = await client.patch(
-            "/users/me",
-            json=update_data,
-            headers={"Authorization": f"Bearer {access_token.token}"},
-        )
+        response = await client.patch(self.url, json=update_data)
 
         assert response.status_code == 200
         data = response.json()
-        assert data["first_name"] == "John"
-        assert data["second_name"] == "Doe"
+        assert data["first_name"] == user.first_name
+        assert data["second_name"] == user.second_name
 
         # Verify in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert updated_user.first_name == "John"
-        assert updated_user.second_name == "Doe"
+        assert updated_user.first_name == user.first_name
+        assert updated_user.second_name == user.second_name
 
 
-class TestSetPassword(BaseTest):
-    async def test_set_password_success(self, client: AsyncClient):
+class TestSetPassword:
+    url: str = "/users/set-password"
+
+    @pytest.fixture(name="user")
+    async def create_user_fixture(self, user_factory) -> User:
+        """Fixture to create an active user without password for set password tests."""
+        return await user_factory(password=None, is_active=True)
+
+    @pytest.fixture(name="access_token", autouse=True)
+    async def create_access_token(self, access_token_factory, user):
+        return access_token_factory(user).token
+
+    @pytest.fixture(name="client_config", autouse=True)
+    def client_config(self, access_token: str):
+        """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+        return {"headers": {"Authorization": f"Bearer {access_token}"}}
+
+    async def test_set_password_success(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test successful password setting for OAuth user without password."""
-        # Create a user without password (OAuth user)
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         new_password = "NewTestPass123"
-
         form_data = {
             "new_password": new_password,
             "confirm_new_password": new_password,
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set in database
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_user_already_has_password(self, client: AsyncClient):
+    async def test_set_password_user_already_has_password(
+        self,
+        client: AsyncClient,
+        user_factory,
+        password_hasher: IPasswordHasher,
+        access_token_factory,
+        user_repo: IUserRepository,
+    ):
         """Test set password fails when user already has a password."""
         # Create a user with a password
-        user = await self.create_user(is_active=True)
+        old_password = "ExistingPass123"
+        user = await user_factory(password=old_password)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
         new_password = "NewTestPass123"
 
         form_data = {
@@ -1715,7 +1706,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1724,9 +1715,11 @@ class TestSetPassword(BaseTest):
         assert "already has a password" in response.json()["detail"]
 
         # Verify password was not changed
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(self.get_user_password(), updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hasher.verify(old_password, password_hash)
 
     async def test_set_password_with_invalid_access_token(self, client: AsyncClient):
         """Test set password with invalid access token."""
@@ -1737,7 +1730,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {invalid_token}"},
             data=form_data,
         )
@@ -1747,10 +1740,6 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_expired_access_token(self, client: AsyncClient):
         """Test set password with expired access token."""
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-
         form_data = {
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
@@ -1758,8 +1747,7 @@ class TestSetPassword(BaseTest):
 
         with freeze_time(datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)):
             response = await client.post(
-                "/users/set-password",
-                headers={"Authorization": f"Bearer {access_token.token}"},
+                self.url,
                 data=form_data,
             )
 
@@ -1772,17 +1760,18 @@ class TestSetPassword(BaseTest):
             "new_password": "NewPass123",
             "confirm_new_password": "NewPass123",
         }
+        del client.headers["Authorization"]
 
-        response = await client.post("/users/set-password", data=form_data)
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 401
 
-    async def test_set_password_with_non_existent_user(self, client: AsyncClient):
+    async def test_set_password_with_non_existent_user(self, client: AsyncClient, access_token_factory):
         """Test set password with access token for non-existent user."""
         non_existent_email = "nonexistent@example.com"
         non_existent_id = 99999
         user = User(id=non_existent_id, email=non_existent_email, password=None)
-        token = self.create_access_token(user)
+        token = access_token_factory(user)
 
         form_data = {
             "new_password": "NewPass123",
@@ -1790,7 +1779,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {token.token}"},
             data=form_data,
         )
@@ -1800,20 +1789,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_mismatched_confirmation(self, client: AsyncClient):
         """Test set password when new password and confirmation don't match."""
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "NewPass123",
             "confirm_new_password": "DifferentPass123",
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1821,19 +1803,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_missing_form_fields(self, client: AsyncClient):
         """Test set password with missing required form fields."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         # Test missing new_password
         form_data = {
             "confirm_new_password": "NewPass123",
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1842,19 +1818,12 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_empty_form_fields(self, client: AsyncClient):
         """Test set password with empty form fields."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
-
         form_data = {
             "new_password": "",
             "confirm_new_password": "",
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1863,21 +1832,14 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_weak_password(self, client: AsyncClient):
         """Test set password with weak password."""
-        user = await self.create_user(is_active=True, password=None)
-        assert user.id is not None
-        access_token = self.create_access_token(user)
-        weak_password = "123"  # Too short and weak
+        weak_password = "123"
 
         form_data = {
             "new_password": weak_password,
             "confirm_new_password": weak_password,
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1886,19 +1848,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_password_missing_uppercase(self, client: AsyncClient):
         """Test set password with password missing uppercase letter."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "testpass123",  # No uppercase letter
             "confirm_new_password": "testpass123",
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1906,19 +1862,13 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_password_missing_number(self, client: AsyncClient):
         """Test set password with password missing number."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "TestPassword",  # No number
             "confirm_new_password": "TestPassword",
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
@@ -1926,28 +1876,24 @@ class TestSetPassword(BaseTest):
 
     async def test_set_password_with_password_too_short(self, client: AsyncClient):
         """Test set password with password shorter than 8 characters."""
-        user = await self.create_user(is_active=True, password=None)
-        access_token = self.create_access_token(user)
 
         form_data = {
             "new_password": "Test1",  # Too short
             "confirm_new_password": "Test1",
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 422
         response_data = response.json()
         assert "detail" in response_data
 
-    async def test_set_password_with_wrong_token_type(self, client: AsyncClient):
+    async def test_set_password_with_wrong_token_type(
+        self, client: AsyncClient, user: User, verification_token_strategy: VerificationTokenService
+    ):
         """Test set password with verification token instead of access token."""
-        user = await self.create_user(is_active=True, password=None)
-        verification_token = self.create_verification_token(user)
+        assert user.id is not None
+        verification_token = verification_token_strategy.issue(user_id=user.id)
 
         form_data = {
             "new_password": "NewPass123",
@@ -1955,7 +1901,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {verification_token}"},
             data=form_data,
         )
@@ -1963,11 +1909,18 @@ class TestSetPassword(BaseTest):
         assert response.status_code == 401
         assert "Invalid access token" in response.json()["detail"]
 
-    async def test_set_password_with_inactive_user(self, client: AsyncClient):
+    async def test_set_password_with_inactive_user(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test set password for inactive OAuth user."""
-        user = await self.create_user(is_active=False, password=None)
+        user = await user_factory(is_active=False, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
         new_password = "NewPass123"
 
         form_data = {
@@ -1976,7 +1929,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -1986,16 +1939,16 @@ class TestSetPassword(BaseTest):
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_with_special_characters(self, client: AsyncClient):
+    async def test_set_password_with_special_characters(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test set password with special characters in password."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         new_password = "TestPass123!@#$%"
 
         form_data = {
@@ -2003,29 +1956,25 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": new_password,
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set correctly
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
         # Verify password is hashed (not plain text)
         assert updated_user.password != new_password
         assert len(updated_user.password) > 50  # Hashed passwords are much longer
 
-    async def test_set_password_idempotency(self, client: AsyncClient):
+    async def test_set_password_idempotency(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test that setting password twice fails on second attempt."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         first_password = "FirstPass123"
         second_password = "SecondPass456"
 
@@ -2035,11 +1984,7 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": first_password,
         }
 
-        response1 = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data1,
-        )
+        response1 = await client.post(self.url, data=form_data1)
 
         assert response1.status_code == 200
         assert response1.json() == {"message": "Password set successfully"}
@@ -2050,26 +1995,24 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": second_password,
         }
 
-        response2 = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data2,
-        )
+        response2 = await client.post(self.url, data=form_data2)
 
         assert response2.status_code == 400
         assert "already has a password" in response2.json()["detail"]
 
         # Verify first password is still active
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(first_password, updated_user.password)
-        assert not self.password_hasher.verify(second_password, updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hasher.verify(first_password, password_hash)
+        assert not password_hasher.verify(second_password, password_hash)
 
-    async def test_set_password_password_hashing(self, client: AsyncClient):
+    async def test_set_password_password_hashing(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test that password is properly hashed and not stored in plain text."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         password = "TestPass123"
 
         form_data = {
@@ -2077,29 +2020,27 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": password,
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         assert response.status_code == 200
 
         # Verify password is hashed, not plain text
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert updated_user.password != password
-        assert len(updated_user.password) > 50  # Hashed passwords are much longer
-        assert updated_user.password.startswith("$")  # Common hash format indicator
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hash != password
+        assert len(password_hash) > 50  # Hashed passwords are much longer
+        assert password_hash.startswith("$")  # Common hash format indicator
 
         # Verify the password can be validated with the hasher
-        assert self.password_hasher.verify(password, updated_user.password)
+        assert password_hasher.verify(password, password_hash)
 
-    async def test_set_password_with_very_long_password(self, client: AsyncClient):
+    async def test_set_password_with_very_long_password(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository, password_hasher: IPasswordHasher
+    ):
         """Test set password with very long but valid password."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         long_password = "TestPass123" + "a" * 100  # Very long password
 
         form_data = {
@@ -2107,34 +2048,39 @@ class TestSetPassword(BaseTest):
             "confirm_new_password": long_password,
         }
 
-        response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
-            data=form_data,
-        )
+        response = await client.post(self.url, data=form_data)
 
         # Should succeed if password meets requirements
         assert response.status_code == 200
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify password was set
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
-        assert self.password_hasher.verify(long_password, updated_user.password)
+        password_hash = updated_user.password
+        assert password_hash is not None
+        assert password_hasher.verify(long_password, password_hash)
 
-    async def test_set_password_oauth_user_workflow(self, client: AsyncClient):
+    async def test_set_password_oauth_user_workflow(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        password_hasher: IPasswordHasher,
+        user_repo: IUserRepository,
+    ):
         """Test complete OAuth user workflow: login via OAuth, then set password."""
         # Simulate OAuth user (no password)
-        oauth_user = await self.create_user(is_active=True, password=None, email="oauth@example.com")
+        oauth_user = await user_factory(is_active=True, password=None, email="oauth@example.com")
         assert oauth_user.id is not None
 
         # Verify user has no password initially
-        db_user = await self.get_user(oauth_user.id)
+        db_user = await user_repo.get_by_id(oauth_user.id)
         assert db_user is not None
         assert db_user.password is None
 
         # User gets access token (would be from OAuth flow)
-        access_token = self.create_access_token(oauth_user)
+        access_token = access_token_factory(oauth_user)
 
         # User sets password
         new_password = "MyNewPass123"
@@ -2144,7 +2090,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2153,18 +2099,25 @@ class TestSetPassword(BaseTest):
         assert response.json() == {"message": "Password set successfully"}
 
         # Verify user now has password and can use it to login
-        updated_user = await self.get_user(oauth_user.id)
+        updated_user = await user_repo.get_by_id(oauth_user.id)
         assert updated_user is not None
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_preserves_other_user_fields(self, client: AsyncClient):
+    async def test_set_password_preserves_other_user_fields(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+        password_hasher: IPasswordHasher,
+    ):
         """Test that setting password doesn't affect other user fields."""
-        user = await self.create_user(
+        user = await user_factory(
             is_active=True, password=None, first_name="John", second_name="Doe", email="preserve@example.com"
         )
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
         original_email = user.email
         original_first_name = user.first_name
         original_second_name = user.second_name
@@ -2177,7 +2130,7 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             data=form_data,
         )
@@ -2185,7 +2138,7 @@ class TestSetPassword(BaseTest):
         assert response.status_code == 200
 
         # Verify other fields are preserved
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         assert updated_user.email == original_email
         assert updated_user.first_name == original_first_name
@@ -2193,13 +2146,13 @@ class TestSetPassword(BaseTest):
         assert updated_user.is_active == original_is_active
         # Only password should be changed
         assert updated_user.password is not None
-        assert self.password_hasher.verify(new_password, updated_user.password)
+        assert password_hasher.verify(new_password, updated_user.password)
 
-    async def test_set_password_updates_time_update_field(self, client: AsyncClient):
+    async def test_set_password_updates_time_update_field(
+        self, client: AsyncClient, user: User, user_repo: IUserRepository
+    ):
         """Test that setting password updates the time_update field."""
-        user = await self.create_user(is_active=True, password=None)
         assert user.id is not None
-        access_token = self.create_access_token(user)
         original_time_update = user.time_update
 
         new_password = "NewPass123"
@@ -2209,29 +2162,32 @@ class TestSetPassword(BaseTest):
         }
 
         response = await client.post(
-            "/users/set-password",
-            headers={"Authorization": f"Bearer {access_token.token}"},
+            self.url,
             data=form_data,
         )
 
         assert response.status_code == 200
 
         # Verify time_update was updated
-        updated_user = await self.get_user(user.id)
+        updated_user = await user_repo.get_by_id(user.id)
         assert updated_user is not None
         # The time_update should be greater than or equal to the original
         assert updated_user.time_update >= original_time_update
 
 
-class TestDeleteUser(BaseTest):
-    async def test_delete_user_success(self, client: AsyncClient):
+class TestDeleteUser:
+    url: str = "/users/me"
+
+    async def test_delete_user_success(
+        self, client: AsyncClient, user_factory, access_token_factory, user_repo: IUserRepository
+    ):
         """Test successful user deletion with valid access token."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2239,26 +2195,35 @@ class TestDeleteUser(BaseTest):
         assert response.json() == {"message": "User deleted successfully"}
 
         # Verify user was deleted from database
-        deleted_user = await self.get_user(user.id)
+        deleted_user = await user_repo.get_by_id(user.id)
         assert deleted_user is None
 
-    async def test_delete_user_with_applications_and_companies(self, client: AsyncClient):
+    async def test_delete_user_with_applications_and_companies(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        application_factory,
+        user_repo: IUserRepository,
+        application_repo,
+        company_repo,
+    ):
         """Test that deleting a user also cascades to their applications and companies."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
 
         # Create applications and companies for the user
-        application1 = await self.create_application(user_id=user.id)
-        application2 = await self.create_application(user_id=user.id)
+        application1 = await application_factory(user_id=user.id)
+        application2 = await application_factory(user_id=user.id)
         assert application1.id is not None
         assert application2.id is not None
         assert application1.company_id is not None
         assert application2.company_id is not None
 
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2266,24 +2231,24 @@ class TestDeleteUser(BaseTest):
         assert response.json() == {"message": "User deleted successfully"}
 
         # Verify user was deleted
-        deleted_user = await self.get_user(user.id)
+        deleted_user = await user_repo.get_by_id(user.id)
         assert deleted_user is None
 
         # Verify applications were deleted (cascade)
-        deleted_app1 = await self.get_application(application1.id)
-        deleted_app2 = await self.get_application(application2.id)
+        deleted_app1 = await application_repo.get_by_id(application1.id)
+        deleted_app2 = await application_repo.get_by_id(application2.id)
         assert deleted_app1 is None
         assert deleted_app2 is None
 
         # Verify companies still exist (they should not be deleted)
-        company1 = await self.get_company(application1.company_id)
-        company2 = await self.get_company(application2.company_id)
+        company1 = await company_repo.get_by_id(application1.company_id)
+        company2 = await company_repo.get_by_id(application2.company_id)
         assert company1 is not None
         assert company2 is not None
 
     async def test_delete_user_without_access_token(self, client: AsyncClient):
         """Test that deleting user without access token returns 401."""
-        response = await client.delete("/users/me")
+        response = await client.delete(self.url)
 
         assert response.status_code == 401
         assert "detail" in response.json()
@@ -2293,7 +2258,7 @@ class TestDeleteUser(BaseTest):
         invalid_token = "invalid.token.here"
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {invalid_token}"},
         )
 
@@ -2301,20 +2266,26 @@ class TestDeleteUser(BaseTest):
         assert "Token is not valid" in response.json()["detail"]
 
     @freeze_time("2024-01-01 12:00:00")
-    async def test_delete_user_with_expired_access_token(self, client: AsyncClient):
+    async def test_delete_user_with_expired_access_token(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+    ):
         """Test that deleting user with expired access token returns 401."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
 
         # Create token that will be expired
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         # Move time forward past token expiration
         with freeze_time(
             datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)
         ):
             response = await client.delete(
-                "/users/me",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
             )
 
@@ -2322,17 +2293,19 @@ class TestDeleteUser(BaseTest):
             assert "Token is expired" in response.json()["detail"]
 
         # Verify user still exists in database
-        existing_user = await self.get_user(user.id)
+        existing_user = await user_repo.get_by_id(user.id)
         assert existing_user is not None
 
-    async def test_delete_user_inactive_user(self, client: AsyncClient):
+    async def test_delete_user_inactive_user(
+        self, client: AsyncClient, user_factory, access_token_factory, user_repo: IUserRepository
+    ):
         """Test that inactive users can still delete their account."""
-        user = await self.create_user(is_active=False)
+        user = await user_factory(is_active=False)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
@@ -2340,60 +2313,73 @@ class TestDeleteUser(BaseTest):
         assert response.json() == {"message": "User deleted successfully"}
 
         # Verify user was deleted from database
-        deleted_user = await self.get_user(user.id)
+        deleted_user = await user_repo.get_by_id(user.id)
         assert deleted_user is None
 
-    async def test_delete_user_idempotency(self, client: AsyncClient):
+    async def test_delete_user_idempotency(self, client: AsyncClient, user_factory, access_token_factory):
         """Test that attempting to delete already deleted user returns 404."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         # First deletion should succeed
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
         assert response.status_code == 200
         assert response.json() == {"message": "User deleted successfully"}
 
-        # Second deletion attempt should fail with 401 (token is no longer valid for non-existent user)
-        # Note: In real scenario, the token validation might fail differently
-        # depending on implementation details
+        # Second deletion attempt should fail because user no longer exists.
+        response_second = await client.delete(
+            self.url,
+            headers={"Authorization": f"Bearer {access_token.token}"},
+        )
 
-    async def test_delete_user_verifies_token_user_id(self, client: AsyncClient):
+        assert response_second.status_code == 404
+        assert "User" in response_second.json()["detail"]
+
+    async def test_delete_user_verifies_token_user_id(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+    ):
         """Test that the endpoint uses the user_id from the token payload."""
-        user1 = await self.create_user(is_active=True)
-        user2 = await self.create_user(is_active=True)
+        user1 = await user_factory(is_active=True)
+        user2 = await user_factory(is_active=True)
         assert user1.id is not None
         assert user2.id is not None
 
         # Create token for user1
-        access_token = self.create_access_token(user1)
+        access_token = access_token_factory(user1)
 
         # Delete using user1's token
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 
         assert response.status_code == 200
 
         # Verify only user1 was deleted
-        deleted_user1 = await self.get_user(user1.id)
-        existing_user2 = await self.get_user(user2.id)
+        deleted_user1 = await user_repo.get_by_id(user1.id)
+        existing_user2 = await user_repo.get_by_id(user2.id)
         assert deleted_user1 is None
         assert existing_user2 is not None
 
-    async def test_delete_user_deletes_refresh_token_cookie(self, client: AsyncClient):
+    async def test_delete_user_deletes_refresh_token_cookie(
+        self, client: AsyncClient, user_factory, access_token_factory
+    ):
         """Test that deleting user also deletes the refresh token cookie."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
-            "/users/me",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
         )
 

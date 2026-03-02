@@ -1,18 +1,32 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app import env
+from app.core.repositories.user_repository import IUserRepository
 from app.core.security import IPasswordHasher
+from app.core.services.verification_token_service import VerificationTokenService
 from app.db import url_object
 from app.db.models import Base
 from app.dependencies import get_session
+from app.infrastructure.repositories import (
+    ApplicationSQLAlchemyRepository,
+    CompanySQLAlchemyRepository,
+    UserSQLAlchemyRepository,
+)
+from app.infrastructure.repositories.slq_alchemy.verification_token import VerificationTokenSQLAlchemyRepository
 from app.infrastructure.security import (
     AccessTokenStrategy,
     PwdlibHasher,
-    VerificationTokenStrategy,
 )
 from app.main import app
+from app.tests.factories import (
+    access_token_factory as access_token_factory,
+    application_factory as application_factory,
+    company_factory as company_factory,
+    refresh_token_factory as refresh_token_factory,
+    user_factory as user_factory,
+)
 
 
 @pytest.fixture(scope="session")
@@ -60,9 +74,19 @@ async def override_session_dependency(session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(name="client_config")
+def client_config():
+    """Provide default client configuration for tests. Can be overridden in individual tests if needed."""
+    return {}
+
+
 @pytest.fixture(name="client")
-async def get_async_client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
+async def get_async_client(client_config: dict):
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+        **client_config,
+    ) as ac:
         yield ac
 
 
@@ -71,11 +95,26 @@ def access_token_strategy() -> AccessTokenStrategy:
     return AccessTokenStrategy()
 
 
-@pytest.fixture(scope="session")
-def verification_token_strategy() -> VerificationTokenStrategy:
-    return VerificationTokenStrategy()
+@pytest.fixture
+def verification_token_strategy(session: AsyncSession) -> VerificationTokenService:
+    return VerificationTokenService(repo=VerificationTokenSQLAlchemyRepository(session=session))
 
 
 @pytest.fixture(scope="session")
 def password_hasher() -> IPasswordHasher:
     return PwdlibHasher()
+
+
+@pytest.fixture
+def company_repo(session):
+    return CompanySQLAlchemyRepository(session)
+
+
+@pytest.fixture
+def application_repo(session):
+    return ApplicationSQLAlchemyRepository(session)
+
+
+@pytest.fixture
+def user_repo(session) -> IUserRepository:
+    return UserSQLAlchemyRepository(session)

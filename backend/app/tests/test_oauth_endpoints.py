@@ -11,10 +11,8 @@ from app.core.exceptions.oauth import (
 from app.core.repositories.oauth_provider import OAuthUserInfo
 from app.infrastructure.oauth import GoogleOAuthProvider, LinkedInOAuthProvider
 
-from .base import BaseTest
 
-
-class TestGoogleAuthorizeEndpoint(BaseTest):
+class TestGoogleAuthorizeEndpoint:
     """Tests for the Google OAuth authorization endpoint"""
 
     async def test_returns_authorization_url_and_state(self, client: AsyncClient):
@@ -193,10 +191,10 @@ class TestGoogleAuthorizeEndpoint(BaseTest):
         assert len(code_verifier) > 0
 
 
-class TestGoogleCallbackEndpoint(BaseTest):
+class TestGoogleCallbackEndpoint:
     """Tests for the Google OAuth callback endpoint"""
 
-    async def test_successful_oauth_login_for_new_user(self, client: AsyncClient, mocker):
+    async def test_successful_oauth_login_for_new_user(self, client: AsyncClient, mocker, user_repo):
         """Test successful OAuth authentication for a new user"""
         # Arrange: Mock OAuth provider methods
         mock_access_token = "mock_google_access_token"
@@ -242,7 +240,7 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert "Max-Age=0" in set_cookie_header or "Expires" in set_cookie_header
 
         # Verify user was created in database
-        user = await self.get_user_by_email("newuser@example.com")
+        user = await user_repo.get_by_email("newuser@example.com")
         assert user is not None
         assert user.oauth_provider == OAuthProvider.GOOGLE
         assert user.oauth_id == "google_12345"
@@ -251,10 +249,10 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert user.is_active is True  # OAuth users are auto-activated
         assert user.password is None  # OAuth users don't have passwords
 
-    async def test_successful_oauth_login_for_existing_user(self, client: AsyncClient, mocker):
+    async def test_successful_oauth_login_for_existing_user(self, client: AsyncClient, mocker, user_factory):
         """Test successful OAuth authentication for an existing OAuth user"""
         # Arrange: Create existing OAuth user
-        _existing_user = await self.create_user(
+        _existing_user = await user_factory(
             email="existing@example.com",
             oauth_provider=OAuthProvider.GOOGLE,
             oauth_id="google_67890",
@@ -363,10 +361,10 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert response.status_code == 502
         assert "Failed to fetch user info" in response.json()["detail"]
 
-    async def test_account_already_linked_returns_409(self, client: AsyncClient, mocker):
+    async def test_account_already_linked_returns_409(self, client: AsyncClient, mocker, user_factory):
         """Test that linking an OAuth account to a different email returns 409 Conflict"""
         # Arrange: Create existing OAuth user with different email
-        await self.create_user(
+        await user_factory(
             email="original@example.com",
             oauth_provider=OAuthProvider.GOOGLE,
             oauth_id="google_12345",
@@ -398,10 +396,12 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert response.status_code == 409
         assert "already linked to a different email" in response.json()["detail"]
 
-    async def test_user_already_exists_with_local_account_links_oauth(self, client: AsyncClient, mocker):
+    async def test_user_already_exists_with_local_account_links_oauth(
+        self, client: AsyncClient, mocker, user_factory, user_repo
+    ):
         """Test that OAuth login for existing local account links the OAuth provider"""
         # Arrange: Create existing local user
-        existing_user = await self.create_user(
+        existing_user = await user_factory(
             email="localuser@example.com",
             oauth_provider=OAuthProvider.LOCAL,
             is_active=True,
@@ -433,7 +433,7 @@ class TestGoogleCallbackEndpoint(BaseTest):
 
         # Verify OAuth provider was linked to existing account
         assert existing_user.id is not None
-        user = await self.get_user(existing_user.id)
+        user = await user_repo.get_by_id(existing_user.id)
         assert user is not None
         assert user.oauth_provider == OAuthProvider.GOOGLE
         assert user.oauth_id == "google_99999"
@@ -550,7 +550,7 @@ class TestGoogleCallbackEndpoint(BaseTest):
         detail = response.json().get("detail", [])
         assert any("state" in str(d).lower() for d in detail)
 
-    async def test_oauth_user_auto_activated(self, client: AsyncClient, mocker):
+    async def test_oauth_user_auto_activated(self, client: AsyncClient, mocker, user_repo):
         """Test that OAuth users are automatically activated (no email verification needed)"""
         # Arrange
         mock_access_token = "mock_access_token"
@@ -576,11 +576,11 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert response.status_code == 200
 
         # Verify user is automatically activated
-        user = await self.get_user_by_email("autoactivate@example.com")
+        user = await user_repo.get_by_email("autoactivate@example.com")
         assert user is not None
         assert user.is_active is True
 
-    async def test_oauth_user_has_no_password(self, client: AsyncClient, mocker):
+    async def test_oauth_user_has_no_password(self, client: AsyncClient, mocker, user_repo):
         """Test that OAuth users are created without a password field"""
         # Arrange
         mock_access_token = "mock_access_token"
@@ -606,7 +606,7 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert response.status_code == 200
 
         # Verify user has no password
-        user = await self.get_user_by_email("nopassword@example.com")
+        user = await user_repo.get_by_email("nopassword@example.com")
         assert user is not None
         assert user.password is None
 
@@ -644,9 +644,11 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert data["token_type"] == "bearer"
         assert isinstance(data["is_new_user"], bool)
 
-    async def test_user_tries_authenticate_with_another_provider_returns_409(self, client: AsyncClient, mocker):
+    async def test_user_tries_authenticate_with_another_provider_returns_409(
+        self, client: AsyncClient, mocker, user_factory
+    ):
         """Test that trying to authenticate with a different provider for the same email returns 409 Conflict"""
-        await self.create_user(
+        await user_factory(
             email="original@example.com",
             oauth_provider=OAuthProvider.LINKEDIN,
             oauth_id="linkedin_12345",
@@ -691,7 +693,7 @@ class TestGoogleCallbackEndpoint(BaseTest):
         assert response.status_code == 422
 
 
-class TestLinkedInAuthorizeEndpoint(BaseTest):
+class TestLinkedInAuthorizeEndpoint:
     """Tests for the LinkedIn OAuth authorization endpoint"""
 
     async def test_returns_authorization_url_and_state(self, client: AsyncClient):
@@ -833,10 +835,10 @@ class TestLinkedInAuthorizeEndpoint(BaseTest):
         assert "/oauth/linkedin" in auth_url
 
 
-class TestLinkedInCallbackEndpoint(BaseTest):
+class TestLinkedInCallbackEndpoint:
     """Tests for the LinkedIn OAuth callback endpoint"""
 
-    async def test_successful_oauth_login_for_new_user(self, client: AsyncClient, mocker):
+    async def test_successful_oauth_login_for_new_user(self, client: AsyncClient, mocker, user_repo):
         """Test successful OAuth authentication for a new user"""
         # Arrange: Mock OAuth provider methods
         mock_access_token = "mock_linkedin_access_token"
@@ -881,7 +883,7 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert "Max-Age=0" in set_cookie_header or "Expires" in set_cookie_header
 
         # Verify user was created in database
-        user = await self.get_user_by_email("newuser@example.com")
+        user = await user_repo.get_by_email("newuser@example.com")
         assert user is not None
         assert user.oauth_provider == OAuthProvider.LINKEDIN
         assert user.oauth_id == "linkedin_12345"
@@ -890,10 +892,10 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert user.is_active is True  # OAuth users are auto-activated
         assert user.password is None  # OAuth users don't have passwords
 
-    async def test_successful_oauth_login_for_existing_user(self, client: AsyncClient, mocker):
+    async def test_successful_oauth_login_for_existing_user(self, client: AsyncClient, mocker, user_factory):
         """Test successful OAuth authentication for an existing OAuth user"""
         # Arrange: Create existing OAuth user
-        _existing_user = await self.create_user(
+        _existing_user = await user_factory(
             email="existing@example.com",
             oauth_provider=OAuthProvider.LINKEDIN,
             oauth_id="linkedin_67890",
@@ -999,10 +1001,10 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert response.status_code == 502
         assert "Failed to fetch user info" in response.json()["detail"]
 
-    async def test_account_already_linked_returns_409(self, client: AsyncClient, mocker):
+    async def test_account_already_linked_returns_409(self, client: AsyncClient, mocker, user_factory):
         """Test that linking an OAuth account to a different email returns 409 Conflict"""
         # Arrange: Create existing OAuth user with different email
-        await self.create_user(
+        await user_factory(
             email="original@example.com",
             oauth_provider=OAuthProvider.LINKEDIN,
             oauth_id="linkedin_12345",
@@ -1033,10 +1035,12 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert response.status_code == 409
         assert "already linked to a different email" in response.json()["detail"]
 
-    async def test_user_already_exists_with_local_account_links_oauth(self, client: AsyncClient, mocker):
+    async def test_user_already_exists_with_local_account_links_oauth(
+        self, client: AsyncClient, mocker, user_factory, user_repo
+    ):
         """Test that OAuth login for existing local account links the OAuth provider"""
         # Arrange: Create existing local user
-        existing_user = await self.create_user(
+        existing_user = await user_factory(
             email="localuser@example.com",
             oauth_provider=OAuthProvider.LOCAL,
             is_active=True,
@@ -1067,7 +1071,7 @@ class TestLinkedInCallbackEndpoint(BaseTest):
 
         # Verify OAuth provider was linked to existing account
         assert existing_user.id is not None
-        user = await self.get_user(existing_user.id)
+        user = await user_repo.get_by_id(existing_user.id)
         assert user is not None
         assert user.oauth_provider == OAuthProvider.LINKEDIN
         assert user.oauth_id == "linkedin_99999"
@@ -1178,7 +1182,7 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         detail = response.json().get("detail", [])
         assert any("state" in str(d).lower() for d in detail)
 
-    async def test_oauth_user_auto_activated(self, client: AsyncClient, mocker):
+    async def test_oauth_user_auto_activated(self, client: AsyncClient, mocker, user_repo):
         """Test that OAuth users are automatically activated (no email verification needed)"""
         # Arrange
         mock_access_token = "mock_access_token"
@@ -1203,11 +1207,11 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert response.status_code == 200
 
         # Verify user is automatically activated
-        user = await self.get_user_by_email("autoactivate@example.com")
+        user = await user_repo.get_by_email("autoactivate@example.com")
         assert user is not None
         assert user.is_active is True
 
-    async def test_oauth_user_has_no_password(self, client: AsyncClient, mocker):
+    async def test_oauth_user_has_no_password(self, client: AsyncClient, mocker, user_repo):
         """Test that OAuth users are created without a password field"""
         # Arrange
         mock_access_token = "mock_access_token"
@@ -1232,7 +1236,7 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert response.status_code == 200
 
         # Verify user has no password
-        user = await self.get_user_by_email("nopassword@example.com")
+        user = await user_repo.get_by_email("nopassword@example.com")
         assert user is not None
         assert user.password is None
 
@@ -1269,9 +1273,11 @@ class TestLinkedInCallbackEndpoint(BaseTest):
         assert data["token_type"] == "bearer"
         assert isinstance(data["is_new_user"], bool)
 
-    async def test_user_tries_authenticate_with_another_provider_returns_409(self, client: AsyncClient, mocker):
+    async def test_user_tries_authenticate_with_another_provider_returns_409(
+        self, client: AsyncClient, mocker, user_factory
+    ):
         """Test that trying to authenticate with a different provider for the same email returns 409 Conflict"""
-        await self.create_user(
+        await user_factory(
             email="original@example.com",
             oauth_provider=OAuthProvider.GOOGLE,
             oauth_id="google_12345",
