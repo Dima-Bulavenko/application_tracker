@@ -14,8 +14,6 @@ from app.core.repositories.user_repository import IUserRepository
 from app.core.security import IPasswordHasher
 from app.core.services.verification_token_service import VerificationTokenService
 
-from .base import BaseTest
-
 
 @pytest.fixture(name="user")
 async def create_user_fixture(user_factory) -> User:
@@ -2177,14 +2175,16 @@ class TestSetPassword:
         assert updated_user.time_update >= original_time_update
 
 
-class TestDeleteUser(BaseTest):
+class TestDeleteUser:
     url: str = "/users/me"
 
-    async def test_delete_user_success(self, client: AsyncClient):
+    async def test_delete_user_success(
+        self, client: AsyncClient, user_factory, access_token_factory, user_repo: IUserRepository
+    ):
         """Test successful user deletion with valid access token."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
             self.url,
@@ -2195,23 +2195,32 @@ class TestDeleteUser(BaseTest):
         assert response.json() == {"message": "User deleted successfully"}
 
         # Verify user was deleted from database
-        deleted_user = await self.get_user(user.id)
+        deleted_user = await user_repo.get_by_id(user.id)
         assert deleted_user is None
 
-    async def test_delete_user_with_applications_and_companies(self, client: AsyncClient):
+    async def test_delete_user_with_applications_and_companies(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        application_factory,
+        user_repo: IUserRepository,
+        application_repo,
+        company_repo,
+    ):
         """Test that deleting a user also cascades to their applications and companies."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
 
         # Create applications and companies for the user
-        application1 = await self.create_application(user_id=user.id)
-        application2 = await self.create_application(user_id=user.id)
+        application1 = await application_factory(user_id=user.id)
+        application2 = await application_factory(user_id=user.id)
         assert application1.id is not None
         assert application2.id is not None
         assert application1.company_id is not None
         assert application2.company_id is not None
 
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
             self.url,
@@ -2222,18 +2231,18 @@ class TestDeleteUser(BaseTest):
         assert response.json() == {"message": "User deleted successfully"}
 
         # Verify user was deleted
-        deleted_user = await self.get_user(user.id)
+        deleted_user = await user_repo.get_by_id(user.id)
         assert deleted_user is None
 
         # Verify applications were deleted (cascade)
-        deleted_app1 = await self.get_application(application1.id)
-        deleted_app2 = await self.get_application(application2.id)
+        deleted_app1 = await application_repo.get_by_id(application1.id)
+        deleted_app2 = await application_repo.get_by_id(application2.id)
         assert deleted_app1 is None
         assert deleted_app2 is None
 
         # Verify companies still exist (they should not be deleted)
-        company1 = await self.get_company(application1.company_id)
-        company2 = await self.get_company(application2.company_id)
+        company1 = await company_repo.get_by_id(application1.company_id)
+        company2 = await company_repo.get_by_id(application2.company_id)
         assert company1 is not None
         assert company2 is not None
 
@@ -2257,13 +2266,19 @@ class TestDeleteUser(BaseTest):
         assert "Token is not valid" in response.json()["detail"]
 
     @freeze_time("2024-01-01 12:00:00")
-    async def test_delete_user_with_expired_access_token(self, client: AsyncClient):
+    async def test_delete_user_with_expired_access_token(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+    ):
         """Test that deleting user with expired access token returns 401."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
 
         # Create token that will be expired
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         # Move time forward past token expiration
         with freeze_time(
@@ -2278,14 +2293,16 @@ class TestDeleteUser(BaseTest):
             assert "Token is expired" in response.json()["detail"]
 
         # Verify user still exists in database
-        existing_user = await self.get_user(user.id)
+        existing_user = await user_repo.get_by_id(user.id)
         assert existing_user is not None
 
-    async def test_delete_user_inactive_user(self, client: AsyncClient):
+    async def test_delete_user_inactive_user(
+        self, client: AsyncClient, user_factory, access_token_factory, user_repo: IUserRepository
+    ):
         """Test that inactive users can still delete their account."""
-        user = await self.create_user(is_active=False)
+        user = await user_factory(is_active=False)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
             self.url,
@@ -2296,14 +2313,14 @@ class TestDeleteUser(BaseTest):
         assert response.json() == {"message": "User deleted successfully"}
 
         # Verify user was deleted from database
-        deleted_user = await self.get_user(user.id)
+        deleted_user = await user_repo.get_by_id(user.id)
         assert deleted_user is None
 
-    async def test_delete_user_idempotency(self, client: AsyncClient):
+    async def test_delete_user_idempotency(self, client: AsyncClient, user_factory, access_token_factory):
         """Test that attempting to delete already deleted user returns 404."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         # First deletion should succeed
         response = await client.delete(
@@ -2323,15 +2340,21 @@ class TestDeleteUser(BaseTest):
         assert response_second.status_code == 404
         assert "User" in response_second.json()["detail"]
 
-    async def test_delete_user_verifies_token_user_id(self, client: AsyncClient):
+    async def test_delete_user_verifies_token_user_id(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        user_repo: IUserRepository,
+    ):
         """Test that the endpoint uses the user_id from the token payload."""
-        user1 = await self.create_user(is_active=True)
-        user2 = await self.create_user(is_active=True)
+        user1 = await user_factory(is_active=True)
+        user2 = await user_factory(is_active=True)
         assert user1.id is not None
         assert user2.id is not None
 
         # Create token for user1
-        access_token = self.create_access_token(user1)
+        access_token = access_token_factory(user1)
 
         # Delete using user1's token
         response = await client.delete(
@@ -2342,16 +2365,18 @@ class TestDeleteUser(BaseTest):
         assert response.status_code == 200
 
         # Verify only user1 was deleted
-        deleted_user1 = await self.get_user(user1.id)
-        existing_user2 = await self.get_user(user2.id)
+        deleted_user1 = await user_repo.get_by_id(user1.id)
+        existing_user2 = await user_repo.get_by_id(user2.id)
         assert deleted_user1 is None
         assert existing_user2 is not None
 
-    async def test_delete_user_deletes_refresh_token_cookie(self, client: AsyncClient):
+    async def test_delete_user_deletes_refresh_token_cookie(
+        self, client: AsyncClient, user_factory, access_token_factory
+    ):
         """Test that deleting user also deletes the refresh token cookie."""
-        user = await self.create_user(is_active=True)
+        user = await user_factory(is_active=True)
         assert user.id is not None
-        access_token = self.create_access_token(user)
+        access_token = access_token_factory(user)
 
         response = await client.delete(
             self.url,

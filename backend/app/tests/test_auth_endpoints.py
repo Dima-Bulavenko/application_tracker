@@ -9,16 +9,17 @@ from app.core.exceptions.generic import InvalidPasswordError
 from app.core.exceptions.user import UserNotActivatedError, UserNotFoundError
 from app.core.services.auth_service import AuthService
 
-from .base import BaseTest
 
+class TestLoginEndpoint:
+    url: str = "/auth/login"
 
-class TestLoginEndpoint(BaseTest):
-    async def test_with_valid_credentials(self, client: AsyncClient):
-        user = await self.create_user()
+    async def test_with_valid_credentials(self, client: AsyncClient, user_factory):
+        password = "TestPass123"
+        user = await user_factory(password=password)
 
         response = await client.post(
-            "/auth/login",
-            data={"username": user.email, "password": self.get_user_password()},
+            self.url,
+            data={"username": user.email, "password": password},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -37,7 +38,7 @@ class TestLoginEndpoint(BaseTest):
         auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
 
         response = await client.post(
-            "/auth/login",
+            self.url,
             data={"username": "nonexistent@example.com", "password": "ValidPass123"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -50,7 +51,7 @@ class TestLoginEndpoint(BaseTest):
     @pytest.mark.parametrize("invalid_email", ["invalidemail", "user@.com", "user@domain", "@domain.com"])
     async def test_with_invalid_email(self, invalid_email: str, client: AsyncClient):
         response = await client.post(
-            "/auth/login",
+            self.url,
             data={"username": invalid_email, "password": "ValidPass123"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -62,11 +63,11 @@ class TestLoginEndpoint(BaseTest):
         assert detail[0]["type"] == "value_error"
 
     @pytest.mark.parametrize("invalid_password", ["short", "alllowercase", "12345678", "NoDigitsHere"])
-    async def test_with_invalid_password(self, invalid_password: str, client: AsyncClient):
-        user = await self.create_user()
+    async def test_with_invalid_password(self, invalid_password: str, client: AsyncClient, user_factory):
+        user = await user_factory()
 
         response = await client.post(
-            "/auth/login",
+            self.url,
             data={"username": user.email, "password": invalid_password},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -77,13 +78,13 @@ class TestLoginEndpoint(BaseTest):
         assert detail[0]["loc"] == ["body", "password"]
         assert detail[0]["type"] == "string_pattern_mismatch"
 
-    async def test_with_wrong_password(self, client: AsyncClient, mocker):
-        user = await self.create_user()
+    async def test_with_wrong_password(self, client: AsyncClient, mocker, user_factory):
+        user = await user_factory()
 
         auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
 
         response = await client.post(
-            "/auth/login",
+            self.url,
             data={"username": user.email, "password": "WrongPass123"},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -94,17 +95,18 @@ class TestLoginEndpoint(BaseTest):
         assert isinstance(auth_service_spy.spy_exception, InvalidPasswordError)
 
     async def test_with_missing_credentials(self, client: AsyncClient):
-        response = await client.post("/auth/login")
+        response = await client.post(self.url)
         assert response.status_code == 422
 
-    async def test_inactive_user(self, client: AsyncClient, mocker):
-        user = await self.create_user(is_active=False)
+    async def test_inactive_user(self, client: AsyncClient, mocker, user_factory):
+        password = "TestPass123"
+        user = await user_factory(is_active=False, password=password)
 
         auth_service_spy = mocker.spy(AuthService, "login_with_credentials")
 
         response = await client.post(
-            "/auth/login",
-            data={"username": user.email, "password": self.get_user_password()},
+            self.url,
+            data={"username": user.email, "password": password},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
@@ -114,18 +116,22 @@ class TestLoginEndpoint(BaseTest):
         assert isinstance(auth_service_spy.spy_exception, UserNotActivatedError)
 
 
-class TestLogoutEndpoint(BaseTest):
+class TestLogoutEndpoint:
+    url: str = "/auth/logout"
+
     async def test_without_tokens(self, client: AsyncClient):
-        response = await client.post("/auth/logout")
+        response = await client.post(self.url)
         assert response.status_code == 204
 
-    async def test_with_valid_tokens(self, client: AsyncClient):
-        user = await self.create_user()
-        access_token = self.create_access_token(user)
-        refresh_token = await self.create_refresh_token(user)
+    async def test_with_valid_tokens(
+        self, client: AsyncClient, user_factory, access_token_factory, refresh_token_factory
+    ):
+        user = await user_factory()
+        access_token = access_token_factory(user)
+        refresh_token = await refresh_token_factory(user)
 
         response = await client.post(
-            "/auth/logout",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             cookies={"refresh_token": refresh_token.token},
         )
@@ -133,12 +139,12 @@ class TestLogoutEndpoint(BaseTest):
         assert "Max-Age=0" in response.headers.get("set-cookie", "")
         assert "refresh" in response.headers.get("set-cookie", "")
 
-    async def test_with_invalid_access_token(self, client: AsyncClient):
-        user = await self.create_user()
-        refresh_token = await self.create_refresh_token(user)
+    async def test_with_invalid_access_token(self, client: AsyncClient, user_factory, refresh_token_factory):
+        user = await user_factory()
+        refresh_token = await refresh_token_factory(user)
 
         response = await client.post(
-            "/auth/logout",
+            self.url,
             headers={"Authorization": "Bearer invalid_token"},
             cookies={"refresh_token": refresh_token.token},
         )
@@ -147,12 +153,12 @@ class TestLogoutEndpoint(BaseTest):
         set_cookie = response.headers.get("set-cookie", "")
         assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
 
-    async def test_with_invalid_refresh_token(self, client: AsyncClient):
-        user = await self.create_user()
-        access_token = await self.create_refresh_token(user)
+    async def test_with_invalid_refresh_token(self, client: AsyncClient, user_factory, refresh_token_factory):
+        user = await user_factory()
+        access_token = await refresh_token_factory(user)
 
         response = await client.post(
-            "/auth/logout",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             cookies={"refresh_token": "invalid_refresh_token"},
         )
@@ -161,21 +167,25 @@ class TestLogoutEndpoint(BaseTest):
         set_cookie = response.headers.get("set-cookie", "")
         assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
 
-    async def test_user_does_not_exits(self, client: AsyncClient):
+    async def test_user_does_not_exits(
+        self,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        refresh_token_factory,
+        user_repo,
+    ):
         # Create a user, get tokens, then delete the user to simulate non-existent user
-        user = await self.create_user()
-        access_token = self.create_access_token(user)
-        refresh_token = await self.create_refresh_token(user)
+        user = await user_factory()
+        access_token = access_token_factory(user)
+        refresh_token = await refresh_token_factory(user)
 
         # Delete the user from database
         assert user.id is not None, "User ID should be set after creation"
-        user_model = await self.get_user(user.id)
-        if user_model:
-            await self.session.delete(user_model)
-            await self.session.commit()
+        await user_repo.delete(user.id)
 
         response = await client.post(
-            "/auth/logout",
+            self.url,
             headers={"Authorization": f"Bearer {access_token.token}"},
             cookies={"refresh_token": refresh_token.token},
         )
@@ -188,14 +198,21 @@ class TestLogoutEndpoint(BaseTest):
         "token_live_duration",
         [REFRESH_TOKEN_EXPIRE_MINUTES, ACCESS_TOKEN_EXPIRE_MINUTES],
     )
-    async def test_access_token_expired(self, token_live_duration: int, client: AsyncClient):
-        user = await self.create_user()
-        access_token = self.create_access_token(user)
-        refresh_token = await self.create_refresh_token(user)
+    async def test_access_token_expired(
+        self,
+        token_live_duration: int,
+        client: AsyncClient,
+        user_factory,
+        access_token_factory,
+        refresh_token_factory,
+    ):
+        user = await user_factory()
+        access_token = access_token_factory(user)
+        refresh_token = await refresh_token_factory(user)
 
         with freeze_time(datetime.now() + timedelta(minutes=token_live_duration + 5)):
             response = await client.post(
-                "/auth/logout",
+                self.url,
                 headers={"Authorization": f"Bearer {access_token.token}"},
                 cookies={"refresh_token": refresh_token.token},
             )
@@ -205,13 +222,15 @@ class TestLogoutEndpoint(BaseTest):
         assert "refresh" in set_cookie and "Max-Age=0" in set_cookie
 
 
-class TestRefreshEndpoint(BaseTest):
-    async def test_with_valid_refresh_token(self, client: AsyncClient):
-        user = await self.create_user()
-        refresh_token = await self.create_refresh_token(user)
+class TestRefreshEndpoint:
+    url: str = "/auth/refresh"
+
+    async def test_with_valid_refresh_token(self, client: AsyncClient, user_factory, refresh_token_factory):
+        user = await user_factory()
+        refresh_token = await refresh_token_factory(user)
 
         response = await client.post(
-            "/auth/refresh",
+            self.url,
             cookies={"refresh": refresh_token.token},
         )
 
@@ -225,7 +244,7 @@ class TestRefreshEndpoint(BaseTest):
 
     async def test_with_invalid_refresh_token(self, client: AsyncClient):
         response = await client.post(
-            "/auth/refresh",
+            self.url,
             cookies={"refresh": "invalid_refresh_token"},
         )
 
@@ -233,34 +252,31 @@ class TestRefreshEndpoint(BaseTest):
         assert response.headers.get("www-authenticate") == "Bearer"
         assert response.json() == {"detail": "Token is not valid"}
 
-    async def test_refresh_token_expired(self, client: AsyncClient):
-        user = await self.create_user()
-        refresh_token = await self.create_refresh_token(user)
+    async def test_refresh_token_expired(self, client: AsyncClient, user_factory, refresh_token_factory):
+        user = await user_factory()
+        refresh_token = await refresh_token_factory(user)
 
         with freeze_time(datetime.now() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES + 5)):
             response = await client.post(
-                "/auth/refresh",
+                self.url,
                 cookies={"refresh": refresh_token.token},
             )
 
         assert response.status_code == 401
         assert response.json() == {"detail": "Token is expired"}
 
-    async def test_user_does_not_exist(self, client: AsyncClient):
+    async def test_user_does_not_exist(self, client: AsyncClient, user_factory, refresh_token_factory, user_repo):
         # Create a real user, get token, then delete user to simulate non-existent user
-        user = await self.create_user()
-        refresh_token = await self.create_refresh_token(user)
+        user = await user_factory()
+        refresh_token = await refresh_token_factory(user)
 
         # Delete the user from database
         # Due to CASCADE delete on user_id FK, the refresh token will also be deleted
         assert user.id is not None, "User ID should be set after creation"
-        user_model = await self.get_user(user.id)
-        if user_model:
-            await self.session.delete(user_model)
-            await self.session.commit()
+        await user_repo.delete(user.id)
 
         response = await client.post(
-            "/auth/refresh",
+            self.url,
             cookies={"refresh": refresh_token.token},
         )
 

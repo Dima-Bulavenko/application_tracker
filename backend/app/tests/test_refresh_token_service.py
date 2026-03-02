@@ -16,20 +16,25 @@ from app.core.exceptions import (
     TokenInvalidError,
 )
 from app.core.services.refresh_token_service import RefreshTokenService
-from app.tests.base import BaseTest
+from app.infrastructure.repositories import RefreshTokenSQLAlchemyRepository
 
 
-class TestRefreshTokenService(BaseTest):
+@pytest.fixture
+def refresh_token_repo(session):
+    return RefreshTokenSQLAlchemyRepository(session)
+
+
+class TestRefreshTokenService:
     """Test refresh token service functionality."""
 
     def _hash_token(self, raw_token: str) -> str:
         """Helper to hash a token."""
         return hmac.new(SECRET_KEY.encode(), raw_token.encode(), hashlib.sha256).hexdigest()
 
-    async def test_issue_token(self):
+    async def test_issue_token(self, user_factory, refresh_token_repo):
         """Test issuing a new refresh token."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         raw_token = await service.issue(user.id)
 
@@ -38,7 +43,7 @@ class TestRefreshTokenService(BaseTest):
 
         # Verify token is stored in database
         token_hash = self._hash_token(raw_token)
-        token = await self.refresh_token_repo.get_by_hash(token_hash)
+        token = await refresh_token_repo.get_by_hash(token_hash)
         assert token is not None
         assert token.user_id == user.id
         assert token.family_id is not None
@@ -46,30 +51,30 @@ class TestRefreshTokenService(BaseTest):
         assert not token.is_revoked()
         assert not token.is_used()
 
-    async def test_issue_token_with_parent(self):
+    async def test_issue_token_with_parent(self, user_factory, refresh_token_repo):
         """Test issuing a token with a parent (token family)."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue first token (root)
         first_token = await service.issue(user.id)
         first_token_hash = self._hash_token(first_token)
-        first_token_obj = await self.refresh_token_repo.get_by_hash(first_token_hash)
+        first_token_obj = await refresh_token_repo.get_by_hash(first_token_hash)
 
         # Issue second token with same family_id and parent
         second_token = await service.issue(
             user.id, family_id=first_token_obj.family_id, parent_token_id=first_token_obj.id
         )
         second_token_hash = self._hash_token(second_token)
-        second_token_obj = await self.refresh_token_repo.get_by_hash(second_token_hash)
+        second_token_obj = await refresh_token_repo.get_by_hash(second_token_hash)
 
         assert second_token_obj.parent_token_id == first_token_obj.id
         assert second_token_obj.family_id == first_token_obj.family_id
 
-    async def test_validate_and_rotate_success(self):
+    async def test_validate_and_rotate_success(self, user_factory, refresh_token_repo):
         """Test successful token validation and rotation."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue initial token
         old_token = await service.issue(user.id)
@@ -82,30 +87,30 @@ class TestRefreshTokenService(BaseTest):
         assert returned_user_id == user.id
 
         # Verify old token is marked as used
-        old_token_obj = await self.refresh_token_repo.get_by_hash(old_token_hash)
+        old_token_obj = await refresh_token_repo.get_by_hash(old_token_hash)
         assert old_token_obj.is_used()
 
         # Verify new token is valid and has old token as parent
         new_token_hash = self._hash_token(new_token)
-        new_token_obj = await self.refresh_token_repo.get_by_hash(new_token_hash)
+        new_token_obj = await refresh_token_repo.get_by_hash(new_token_hash)
         assert new_token_obj.is_valid()
         assert new_token_obj.parent_token_id == old_token_obj.id
 
-    async def test_validate_and_rotate_token_not_found(self):
+    async def test_validate_and_rotate_token_not_found(self, user_factory, refresh_token_repo):
         """Test validation fails for non-existent token."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         fake_token = secrets.token_urlsafe(32)
 
         with pytest.raises(TokenInvalidError, match="Token is not valid"):
             await service.validate_and_rotate(fake_token, user.id)
 
-    async def test_validate_and_rotate_wrong_user(self):
+    async def test_validate_and_rotate_wrong_user(self, user_factory, refresh_token_repo):
         """Test validation fails when token doesn't belong to user."""
-        user1 = await self.create_user()
-        user2 = await self.create_user(email="another@example.com")
-        service = RefreshTokenService(self.refresh_token_repo)
+        user1 = await user_factory()
+        user2 = await user_factory(email="another@example.com")
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue token for user1
         token = await service.issue(user1.id)
@@ -114,10 +119,10 @@ class TestRefreshTokenService(BaseTest):
         with pytest.raises(TokenInvalidError, match="Token does not belong to the specified user"):
             await service.validate_and_rotate(token, user2.id)
 
-    async def test_validate_and_rotate_expired_token(self):
+    async def test_validate_and_rotate_expired_token(self, user_factory, refresh_token_repo):
         """Test validation fails for expired token."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue token
         token = await service.issue(user.id)
@@ -127,10 +132,10 @@ class TestRefreshTokenService(BaseTest):
             with pytest.raises(TokenExpireError, match="Token is expired"):
                 await service.validate_and_rotate(token, user.id)
 
-    async def test_validate_and_rotate_revoked_token(self):
+    async def test_validate_and_rotate_revoked_token(self, user_factory, refresh_token_repo):
         """Test validation fails for revoked token."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue and revoke token
         token = await service.issue(user.id)
@@ -139,10 +144,10 @@ class TestRefreshTokenService(BaseTest):
         with pytest.raises(RefreshTokenRevokedError, match="Token has been revoked"):
             await service.validate_and_rotate(token, user.id)
 
-    async def test_token_reuse_detection(self):
+    async def test_token_reuse_detection(self, user_factory, refresh_token_repo):
         """Test that reusing a token triggers token family revocation."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue and rotate token once
         token1 = await service.issue(user.id)
@@ -156,30 +161,30 @@ class TestRefreshTokenService(BaseTest):
         token1_hash = self._hash_token(token1)
         token2_hash = self._hash_token(token2)
 
-        token1_obj = await self.refresh_token_repo.get_by_hash(token1_hash)
-        token2_obj = await self.refresh_token_repo.get_by_hash(token2_hash)
+        token1_obj = await refresh_token_repo.get_by_hash(token1_hash)
+        token2_obj = await refresh_token_repo.get_by_hash(token2_hash)
 
         # Both should be revoked (same family_id)
         assert token1_obj.is_revoked()
         assert token2_obj.is_revoked()
         assert token1_obj.family_id == token2_obj.family_id
 
-    async def test_revoke_single_token(self):
+    async def test_revoke_single_token(self, user_factory, refresh_token_repo):
         """Test revoking a single token."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         token = await service.issue(user.id)
         await service.revoke(token)
 
         token_hash = self._hash_token(token)
-        token_obj = await self.refresh_token_repo.get_by_hash(token_hash)
+        token_obj = await refresh_token_repo.get_by_hash(token_hash)
         assert token_obj.is_revoked()
 
-    async def test_revoke_all_for_user(self):
+    async def test_revoke_all_for_user(self, user_factory, refresh_token_repo):
         """Test revoking all tokens for a user."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue multiple tokens
         token1 = await service.issue(user.id)
@@ -192,14 +197,14 @@ class TestRefreshTokenService(BaseTest):
         # Verify all are revoked
         for token in [token1, token2, token3]:
             token_hash = self._hash_token(token)
-            token_obj = await self.refresh_token_repo.get_by_hash(token_hash)
+            token_obj = await refresh_token_repo.get_by_hash(token_hash)
             assert token_obj.is_revoked()
 
-    async def test_revoke_all_does_not_affect_other_users(self):
+    async def test_revoke_all_does_not_affect_other_users(self, user_factory, refresh_token_repo):
         """Test that revoking all tokens for one user doesn't affect others."""
-        user1 = await self.create_user()
-        user2 = await self.create_user(email="user2@example.com")
-        service = RefreshTokenService(self.refresh_token_repo)
+        user1 = await user_factory()
+        user2 = await user_factory(email="user2@example.com")
+        service = RefreshTokenService(refresh_token_repo)
 
         # Issue tokens for both users
         user1_token = await service.issue(user1.id)
@@ -210,18 +215,18 @@ class TestRefreshTokenService(BaseTest):
 
         # Verify user1's token is revoked
         user1_token_hash = self._hash_token(user1_token)
-        user1_token_obj = await self.refresh_token_repo.get_by_hash(user1_token_hash)
+        user1_token_obj = await refresh_token_repo.get_by_hash(user1_token_hash)
         assert user1_token_obj.is_revoked()
 
         # Verify user2's token is still valid
         user2_token_hash = self._hash_token(user2_token)
-        user2_token_obj = await self.refresh_token_repo.get_by_hash(user2_token_hash)
+        user2_token_obj = await refresh_token_repo.get_by_hash(user2_token_hash)
         assert not user2_token_obj.is_revoked()
 
-    async def test_token_rotation_chain(self):
+    async def test_token_rotation_chain(self, user_factory, refresh_token_repo):
         """Test multiple token rotations create a proper chain."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         # Create a chain of rotations
         token1 = await service.issue(user.id)
@@ -233,9 +238,9 @@ class TestRefreshTokenService(BaseTest):
         token2_hash = self._hash_token(token2)
         token3_hash = self._hash_token(token3)
 
-        token1_obj = await self.refresh_token_repo.get_by_hash(token1_hash)
-        token2_obj = await self.refresh_token_repo.get_by_hash(token2_hash)
-        token3_obj = await self.refresh_token_repo.get_by_hash(token3_hash)
+        token1_obj = await refresh_token_repo.get_by_hash(token1_hash)
+        token2_obj = await refresh_token_repo.get_by_hash(token2_hash)
+        token3_obj = await refresh_token_repo.get_by_hash(token3_hash)
 
         # Verify family_id is the same for all tokens
         assert token1_obj.family_id == token2_obj.family_id == token3_obj.family_id
@@ -250,16 +255,16 @@ class TestRefreshTokenService(BaseTest):
         assert token2_obj.is_used()
         assert not token3_obj.is_used()
 
-    async def test_custom_expiration(self):
+    async def test_custom_expiration(self, user_factory, refresh_token_repo):
         """Test issuing token with custom expiration."""
-        user = await self.create_user()
-        service = RefreshTokenService(self.refresh_token_repo)
+        user = await user_factory()
+        service = RefreshTokenService(refresh_token_repo)
 
         custom_expiration = datetime.now(timezone.utc) + timedelta(minutes=10)
         token = await service.issue(user.id, expires_at=custom_expiration)
 
         token_hash = self._hash_token(token)
-        token_obj = await self.refresh_token_repo.get_by_hash(token_hash)
+        token_obj = await refresh_token_repo.get_by_hash(token_hash)
 
         # Allow for small time differences (within 1 second)
         assert abs((token_obj.expires_at - custom_expiration).total_seconds()) < 1
