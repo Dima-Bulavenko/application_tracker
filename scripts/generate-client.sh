@@ -5,7 +5,7 @@ set -x # Allow to print command into console before a command executes
 
 # Generate OpenAPI schema from running backend application code
 cd backend
-python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ../openapi.json
+uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ../openapi.json
 cd ..
 
 # Move schema to frontend for client generation
