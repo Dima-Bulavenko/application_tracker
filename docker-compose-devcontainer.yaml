@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile_devcontainer
       args:
         PYTHON_VERSION: ${PYTHON_VERSION}
-        POETRY_VERSION: ${POETRY_VERSION}
+        UV_VERSION: ${UV_VERSION}
         NODE_VERSION: ${NODE_VERSION}
     volumes:
       - .:/code:cached
@@ -44,7 +44,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - ${POSTGRES_PORT}:5434
+      - ${POSTGRES_PORT}:5432
     networks:
       - default
   db-test:

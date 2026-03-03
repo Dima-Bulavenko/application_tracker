@@ -47,35 +47,23 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Load cached poetry/pip caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.cache/pip
-          key: poetry-cache-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Ensure clean venv
-        run: rm -rf ./.venv || true
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-root
+        run: uv sync --frozen --all-groups
 
       - name: Run Ruff (linter)
-        run: poetry run ruff check .
+        run: uv run ruff check .
 
       - name: Run Ruff (formatter)
-        run: poetry run ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Run MyPy (type checking)
-        run: poetry run mypy .
+        run: uv run mypy .
 
   # Backend testing
   backend-test:
@@ -128,29 +116,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
         with:
-          version: 1.8.3
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-
-      - name: Load cached poetry/pip caches
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pypoetry
-            ~/.cache/pip
-          key: poetry-cache-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-      - name: Ensure clean venv
-        run: rm -rf ./.venv || true
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
 
       - name: Install dependencies
-        run: poetry install --no-interaction --no-root
+        run: uv sync --frozen --all-groups
 
       - name: Run tests
-        run: poetry run pytest app/tests/ -v
+        run: uv run pytest app/tests/ -v
 
   # Frontend linting and type checking
   # frontend-check:

@@ -33,7 +33,7 @@ This project uses a script to automatically generate a TypeScript client for the
 2. Uses the `hey-api` library to generate TypeScript client code
 3. Creates type-safe API methods and models for the frontend
 
-**Note**: The client generation requires the backend dependencies to be installed (Poetry) and is automatically run during dev container setup.
+**Note**: The client generation requires the backend dependencies to be installed (`uv sync`) and is automatically run during dev container setup.
 
 ## Contributing
 
@@ -77,7 +77,7 @@ See the full specification at: https://www.conventionalcommits.org/en/v1.0.0/
 
 4. **Wait for container setup:**
    - The container will automatically:
-     - Install Python 3.12 with Poetry
+   - Install Python 3.12 with uv
      - Install Node.js 23
      - Install all Python dependencies (backend)
      - Install all Node.js dependencies (frontend)
@@ -113,7 +113,7 @@ See the full specification at: https://www.conventionalcommits.org/en/v1.0.0/
 
 **Requirements:**
 - Python 3.12
-- Poetry 1.8.3
+- uv
 - Node.js 23
 - PostgreSQL server
 
@@ -147,7 +147,7 @@ See the full specification at: https://www.conventionalcommits.org/en/v1.0.0/
 4. **Install Backend Dependencies:**
    ```bash
    cd backend
-   poetry install
+   uv sync --all-groups
    ```
 
 5. **Install Frontend Dependencies:**
