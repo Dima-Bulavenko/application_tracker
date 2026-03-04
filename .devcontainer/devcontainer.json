@@ -3,7 +3,7 @@
 
   "service": "development",
   "workspaceFolder": "/code",
-  "postCreateCommand": "cd backend && uv sync --all-groups && cd ../frontend && npm install && cd .. && bash scripts/generate-client.sh",
+  "postCreateCommand": "cd backend && uv sync --dev && cd ../frontend && npm install && cd .. && bash scripts/generate-client.sh",
   "customizations": {
     "vscode": {
       "settings": { "terminal.integrated.defaultProfile.linux": "zsh" },
