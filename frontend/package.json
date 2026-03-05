@@ -11,7 +11,7 @@
     "format:check": "prettier --check --ignore-unknown .",
     "preview": "vite preview",
     "generate-client": "openapi-ts",
-    "type": "tsc --noEmit"
+    "type": "tsc -b"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
