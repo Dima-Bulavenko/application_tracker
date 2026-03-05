@@ -5,15 +5,15 @@ const querySchema = zGetApplicationsData.shape.query.unwrap().shape;
 
 // Schema with .catch() to handle invalid values gracefully
 export const ApplicationFilterSchema = z.object({
-  order_by: querySchema.order_by.catch(undefined),
-  order_direction: querySchema.order_direction.catch(undefined),
-  status: querySchema.status.catch(undefined),
-  work_type: querySchema.work_type.catch(undefined),
-  work_location: querySchema.work_location.catch(undefined),
-  company_name: querySchema.company_name.catch(undefined),
+  order_by: querySchema.order_by.optional().catch(undefined),
+  order_direction: querySchema.order_direction.optional().catch(undefined),
+  status: querySchema.status.optional().catch(undefined),
+  work_type: querySchema.work_type.optional().catch(undefined),
+  work_location: querySchema.work_location.optional().catch(undefined),
+  company_name: querySchema.company_name.optional().catch(undefined),
 });
 
-export type ApplicationFilter = z.infer<typeof ApplicationFilterSchema>;
+export type ApplicationFilter = z.input<typeof ApplicationFilterSchema>;
 
 const FILTER_STORAGE_KEY = 'appFilters' as const;
 
