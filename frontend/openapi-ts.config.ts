@@ -4,13 +4,13 @@ export default defineConfig({
   input: './openapi.json',
   output: {
     path: 'src/shared/api/gen',
-    format: 'prettier',
+    postProcess: ['prettier'],
   },
   plugins: [
     ...defaultPlugins,
     {
       name: '@hey-api/client-axios',
-      runtimeConfigPath: './client_config.ts',
+      runtimeConfigPath: '../../../../client_config.ts',
       throwOnError: true,
     },
     {
