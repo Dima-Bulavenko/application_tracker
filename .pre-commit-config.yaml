@@ -66,7 +66,7 @@ repos:
         name: typescript typecheck
         language: system
         # ensure deps exist, then run strict project-reference typecheck
-        entry: bash -lc 'cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && ./node_modules/.bin/tsc -b'
+        entry: bash -lc 'cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && ./node_modules/.bin/tsc -b --noEmit'
         files: ^frontend/
         pass_filenames: false
         require_serial: true
