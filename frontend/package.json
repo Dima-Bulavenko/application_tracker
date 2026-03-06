@@ -16,7 +16,6 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@hey-api/client-axios": "^0.9.1",
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^6.4.7",
     "@mui/material": "^6.4.7",
@@ -25,6 +24,7 @@
     "@tanstack/react-query": "^5.85.6",
     "@tanstack/react-router": "^1.133.13",
     "@tanstack/react-router-devtools": "^1.133.13",
+    "axios": "^1.13.6",
     "dayjs": "^1.11.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.9.3",
     "@eslint/js": "^9.15.0",
-    "@hey-api/openapi-ts": "^0.93.1",
+    "@hey-api/openapi-ts": "0.94.0",
     "@hookform/devtools": "^4.4.0",
     "@tanstack/router-plugin": "^1.133.13",
     "@types/node": "^24.2.1",
