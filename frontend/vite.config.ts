@@ -39,4 +39,15 @@ export default defineConfig({
       widgets: fileURLToPath(new URL('./src/widgets', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          mui: ['@mui/material', '@mui/icons-material'],
+          router: ['@tanstack/react-router'],
+          query: ['@tanstack/react-query'],
+        },
+      },
+    },
+  },
 });
