@@ -1,6 +1,6 @@
-import { useController } from 'react-hook-form';
-import type { FieldComponent } from 'shared/types/form';
-import { TextInput } from 'shared/ui/TextInput';
+import { useController } from 'react-hook-form'
+import type { FieldComponent } from 'shared/types/form'
+import { TextInput } from 'shared/ui/TextInput'
 
 /**
  * Application status select field integrated with react-hook-form.
@@ -10,8 +10,8 @@ const ApplicationURLField: FieldComponent = ({
   label = 'Application URL',
   ...props
 }) => {
-  const controller = useController(props);
-  return <TextInput label={label} controller={controller} />;
-};
+  const controller = useController(props)
+  return <TextInput label={label} controller={controller} />
+}
 
-export default ApplicationURLField;
+export default ApplicationURLField

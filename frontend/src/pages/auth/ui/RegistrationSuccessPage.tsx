@@ -1,8 +1,8 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import EmailIcon from '@mui/icons-material/Email';
+import EmailIcon from '@mui/icons-material/Email'
+import Box from '@mui/material/Box'
+import Paper from '@mui/material/Paper'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
 
 export function RegistrationSuccessPage() {
   return (
@@ -13,7 +13,8 @@ export function RegistrationSuccessPage() {
         alignItems: 'center',
         minHeight: '100vh',
         padding: 3,
-      }}>
+      }}
+    >
       <Paper
         elevation={3}
         sx={{
@@ -21,14 +22,16 @@ export function RegistrationSuccessPage() {
           maxWidth: 500,
           width: '100%',
           textAlign: 'center',
-        }}>
+        }}
+      >
         <Stack spacing={3}>
           <Box
             sx={{
               display: 'flex',
               justifyContent: 'center',
               marginBottom: 2,
-            }}>
+            }}
+          >
             <EmailIcon
               sx={{
                 fontSize: 64,
@@ -52,14 +55,16 @@ export function RegistrationSuccessPage() {
               padding: 2,
               borderRadius: 1,
               marginTop: 2,
-            }}>
+            }}
+          >
             <Typography variant='body2' color='text.primary'>
               <strong>Didn't receive the email?</strong>
             </Typography>
             <Typography
               variant='body2'
               color='text.secondary'
-              sx={{ marginTop: 1 }}>
+              sx={{ marginTop: 1 }}
+            >
               Try registering again with the same email address to resend the
               activation email.
             </Typography>
@@ -67,5 +72,5 @@ export function RegistrationSuccessPage() {
         </Stack>
       </Paper>
     </Box>
-  );
+  )
 }

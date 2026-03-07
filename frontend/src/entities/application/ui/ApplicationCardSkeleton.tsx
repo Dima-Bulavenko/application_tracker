@@ -1,9 +1,9 @@
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardHeader from '@mui/material/CardHeader';
-import Divider from '@mui/material/Divider';
-import Skeleton from '@mui/material/Skeleton';
-import Stack from '@mui/material/Stack';
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import CardHeader from '@mui/material/CardHeader'
+import Divider from '@mui/material/Divider'
+import Skeleton from '@mui/material/Skeleton'
+import Stack from '@mui/material/Stack'
 
 export function ApplicationCardSkeleton() {
   return (
@@ -29,7 +29,8 @@ export function ApplicationCardSkeleton() {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={1}
-          divider={<Divider orientation='vertical' flexItem />}>
+          divider={<Divider orientation='vertical' flexItem />}
+        >
           {/* Created date skeleton */}
           <Skeleton variant='text' width={150} height={16} />
           {/* Updated date skeleton */}
@@ -43,7 +44,7 @@ export function ApplicationCardSkeleton() {
         </Stack>
       </CardContent>
     </Card>
-  );
+  )
 }
 
-export default ApplicationCardSkeleton;
+export default ApplicationCardSkeleton

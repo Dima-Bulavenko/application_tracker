@@ -1,10 +1,10 @@
+import type { TextFieldProps } from '@mui/material/TextField'
 import {
-  FieldValues,
-  FieldPath,
-  ControllerRenderProps,
   ControllerFieldState,
-} from 'react-hook-form';
-import type { TextFieldProps } from '@mui/material/TextField';
+  ControllerRenderProps,
+  FieldPath,
+  FieldValues,
+} from 'react-hook-form'
 
 export function buildBaseInputProps<
   TFieldValues extends FieldValues,
@@ -23,5 +23,5 @@ export function buildBaseInputProps<
     value: field.value || '',
     helperText: fieldState.error ? fieldState.error?.message : '',
     error: Boolean(fieldState.error),
-  };
+  }
 }

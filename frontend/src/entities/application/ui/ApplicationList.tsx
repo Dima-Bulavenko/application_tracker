@@ -1,19 +1,19 @@
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { applicationsOptions } from 'entities/application/api/queryOptions';
-import ApplicationCard from './ApplicationCard';
-import ApplicationCardSkeleton from './ApplicationCardSkeleton';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
+import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { applicationsOptions } from 'entities/application/api/queryOptions'
+import ApplicationCard from './ApplicationCard'
+import ApplicationCardSkeleton from './ApplicationCardSkeleton'
 
-const routeApi = getRouteApi('/_authenticated/dashboard');
+const routeApi = getRouteApi('/_authenticated/dashboard')
 
 export function ApplicationList() {
-  const { filter } = routeApi.useSearch();
+  const { filter } = routeApi.useSearch()
   const { error, isFetching, data } = useSuspenseQuery(
     applicationsOptions(filter)
-  );
+  )
 
   if (error) {
     return (
@@ -22,7 +22,7 @@ export function ApplicationList() {
           {error.message}
         </Typography>
       </Box>
-    );
+    )
   }
 
   if (!isFetching && data?.length === 0) {
@@ -30,7 +30,7 @@ export function ApplicationList() {
       <Typography variant='body2' color='text.secondary'>
         No applications yet.
       </Typography>
-    );
+    )
   }
 
   if (isFetching) {
@@ -40,14 +40,16 @@ export function ApplicationList() {
           <ApplicationCardSkeleton key={index} />
         ))}
       </Stack>
-    );
+    )
   }
 
   return (
     <Stack spacing={2}>
-      {data?.map((app) => <ApplicationCard key={app.id} application={app} />)}
+      {data?.map((app) => (
+        <ApplicationCard key={app.id} application={app} />
+      ))}
     </Stack>
-  );
+  )
 }
 
-export default ApplicationList;
+export default ApplicationList

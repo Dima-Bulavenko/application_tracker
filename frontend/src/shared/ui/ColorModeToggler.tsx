@@ -1,30 +1,30 @@
-import { useColorScheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import NightlightRoundIcon from '@mui/icons-material/NightlightRound';
-import IconButton from '@mui/material/IconButton';
+import LightModeIcon from '@mui/icons-material/LightMode'
+import NightlightRoundIcon from '@mui/icons-material/NightlightRound'
+import IconButton from '@mui/material/IconButton'
+import { useColorScheme } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 
-type Mode = 'light' | 'dark' | 'system' | undefined;
+type Mode = 'light' | 'dark' | 'system' | undefined
 
 export function ColorModeToggler() {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const { mode, setMode } = useColorScheme();
+  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
+  const { mode, setMode } = useColorScheme()
   // Compute effective mode when current is 'system'
 
   const isDarkActive = (m: Mode) =>
-    m === 'dark' || (m === 'system' && prefersDarkMode);
+    m === 'dark' || (m === 'system' && prefersDarkMode)
 
   const handleToggle = () => {
-    if (!mode) return; // avoid hydration mismatch
+    if (!mode) return // avoid hydration mismatch
     if (mode === 'system') {
       // On first visit, system is active. Toggle to the opposite of effective mode.
-      setMode(prefersDarkMode ? 'light' : 'dark');
+      setMode(prefersDarkMode ? 'light' : 'dark')
     } else {
-      setMode(mode === 'light' ? 'dark' : 'light');
+      setMode(mode === 'light' ? 'dark' : 'light')
     }
-  };
+  }
 
-  if (!mode) return null;
+  if (!mode) return null
 
   return (
     <IconButton
@@ -42,12 +42,13 @@ export function ColorModeToggler() {
               ? theme.palette.grey[300]
               : theme.palette.grey[800],
         },
-      }}>
+      }}
+    >
       {isDarkActive(mode) ? (
         <NightlightRoundIcon fontSize='small' />
       ) : (
         <LightModeIcon fontSize='small' />
       )}
     </IconButton>
-  );
+  )
 }

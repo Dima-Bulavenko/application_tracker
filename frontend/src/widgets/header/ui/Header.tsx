@@ -1,24 +1,25 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import { ColorModeToggler } from 'shared/ui/ColorModeToggler';
-import { AccountMenu } from 'features/user/ui/AccountMenu';
-import { getRouteApi } from '@tanstack/react-router';
-import { LinkButton } from 'shared/ui/LinkButton';
+import AppBar from '@mui/material/AppBar'
+import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+import Toolbar from '@mui/material/Toolbar'
+import { getRouteApi } from '@tanstack/react-router'
+import { AccountMenu } from 'features/user/ui/AccountMenu'
+import { ColorModeToggler } from 'shared/ui/ColorModeToggler'
+import { LinkButton } from 'shared/ui/LinkButton'
 
-const routeApi = getRouteApi('__root__');
+const routeApi = getRouteApi('__root__')
 
 export function Header() {
   const {
     auth: { user },
-  } = routeApi.useRouteContext();
+  } = routeApi.useRouteContext()
   return (
     <AppBar position='sticky' color='default' elevation={0}>
       <Toolbar sx={{ gap: 1, minHeight: 64 }}>
         <LinkButton
           to={user ? '/dashboard' : '/'}
-          sx={{ backdropFilter: 'none' }}>
+          sx={{ backdropFilter: 'none' }}
+        >
           <Box
             component='img'
             src='/logo.svg'
@@ -40,14 +41,16 @@ export function Header() {
                 size='small'
                 color='primary'
                 variant='text'
-                to='/sign-in'>
+                to='/sign-in'
+              >
                 Login
               </LinkButton>
               <LinkButton
                 size='small'
                 color='primary'
                 variant='contained'
-                to='/register'>
+                to='/register'
+              >
                 Register
               </LinkButton>
             </>
@@ -57,7 +60,7 @@ export function Header() {
         <ColorModeToggler />
       </Toolbar>
     </AppBar>
-  );
+  )
 }
 
-export default Header;
+export default Header

@@ -1,5 +1,5 @@
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
 
 export function SuspenseFallback() {
   return (
@@ -11,8 +11,9 @@ export function SuspenseFallback() {
         width: '100%',
         height: '100%',
         minHeight: '200px',
-      }}>
+      }}
+    >
       <CircularProgress />
     </Box>
-  );
+  )
 }

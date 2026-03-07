@@ -1,26 +1,26 @@
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import { applicationUpdateOptions } from 'entities/application/api/queryOptions';
-import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
-import { WorkTypeField } from 'entities/application/ui/WorkTypeField';
-import { WorkLocationField } from 'entities/application/ui/WorkLocationField';
-import { NoteField } from 'entities/application/ui/NoteField';
-import InterviewDateField from 'entities/application/ui/InterviewDateField';
-import RoleField from 'entities/application/ui/RoleField';
-import CompanyField from 'entities/application/ui/CompanyField';
-import ApplicationURLField from 'entities/application/ui/ApplicationURLField';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod'
+import Button from '@mui/material/Button'
+import Stack from '@mui/material/Stack'
+import { useMutation } from '@tanstack/react-query'
+import { applicationUpdateOptions } from 'entities/application/api/queryOptions'
+import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField'
+import ApplicationURLField from 'entities/application/ui/ApplicationURLField'
+import CompanyField from 'entities/application/ui/CompanyField'
+import InterviewDateField from 'entities/application/ui/InterviewDateField'
+import { NoteField } from 'entities/application/ui/NoteField'
+import RoleField from 'entities/application/ui/RoleField'
+import { WorkLocationField } from 'entities/application/ui/WorkLocationField'
+import { WorkTypeField } from 'entities/application/ui/WorkTypeField'
+import { SubmitHandler, useForm } from 'react-hook-form'
 import type {
-  ApplicationUpdate,
   ApplicationRead,
-} from 'shared/api/gen/types.gen';
-import { getDirtyValues } from 'shared/api/get_dirty_values';
-import { zApplicationUpdate } from 'shared/api/gen/zod.gen';
-import { Form } from 'shared/ui/Form';
-import { FormError } from 'shared/ui/FormError';
-import { useMutation } from '@tanstack/react-query';
-import SubmitButton from 'shared/ui/SubmitButton';
-import { zodResolver } from '@hookform/resolvers/zod';
+  ApplicationUpdate,
+} from 'shared/api/gen/types.gen'
+import { zApplicationUpdate } from 'shared/api/gen/zod.gen'
+import { getDirtyValues } from 'shared/api/get_dirty_values'
+import { Form } from 'shared/ui/Form'
+import { FormError } from 'shared/ui/FormError'
+import SubmitButton from 'shared/ui/SubmitButton'
 
 export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   const {
@@ -31,17 +31,17 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
   } = useForm<ApplicationUpdate>({
     resolver: zodResolver(zApplicationUpdate),
     defaultValues,
-  });
+  })
   const { mutate: updateApp, isPending } = useMutation(
     applicationUpdateOptions(defaultValues.id)
-  );
+  )
   const onSubmit: SubmitHandler<ApplicationUpdate> = async (data, event) => {
-    event?.preventDefault();
-    const newData = getDirtyValues(dirtyFields, data);
+    event?.preventDefault()
+    const newData = getDirtyValues(dirtyFields, data)
     if (newData) {
-      updateApp(newData);
+      updateApp(newData)
     }
-  };
+  }
   return (
     <>
       <Form onSubmit={handleSubmit(onSubmit)}>
@@ -65,10 +65,11 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
           color='primary'
           disabled={!isDirty}
           onClick={() => reset()}
-          variant='contained'>
+          variant='contained'
+        >
           Reset Form
         </Button>
       </Form>
     </>
-  );
+  )
 }

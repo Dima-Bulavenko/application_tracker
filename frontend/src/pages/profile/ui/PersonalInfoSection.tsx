@@ -1,20 +1,20 @@
-import { useState } from 'react';
-import Paper from '@mui/material/Paper';
-import { getRouteApi } from '@tanstack/react-router';
-import { SectionHeader } from './SectionHeader';
-import { UserInfoList } from './UserInfoList';
-import { EditDrawer } from './EditDrawer';
+import Paper from '@mui/material/Paper'
+import { getRouteApi } from '@tanstack/react-router'
+import { useState } from 'react'
+import { EditDrawer } from './EditDrawer'
+import { SectionHeader } from './SectionHeader'
+import { UserInfoList } from './UserInfoList'
 
-const routeApi = getRouteApi('/_authenticated');
+const routeApi = getRouteApi('/_authenticated')
 
 export function PersonalInfoSection() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const {
     auth: { user },
-  } = routeApi.useRouteContext();
+  } = routeApi.useRouteContext()
 
-  const handleOpenDrawer = () => setDrawerOpen(true);
-  const handleCloseDrawer = () => setDrawerOpen(false);
+  const handleOpenDrawer = () => setDrawerOpen(true)
+  const handleCloseDrawer = () => setDrawerOpen(false)
 
   return (
     <>
@@ -29,5 +29,5 @@ export function PersonalInfoSection() {
 
       <EditDrawer open={drawerOpen} onClose={handleCloseDrawer} />
     </>
-  );
+  )
 }

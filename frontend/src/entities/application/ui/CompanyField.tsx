@@ -1,44 +1,44 @@
-import React, { useState } from 'react';
-import { useController } from 'react-hook-form';
-import { type FieldComponent } from 'shared/types/form';
-import CircularProgress from '@mui/material/CircularProgress';
-import Autocomplete from '@mui/material/Autocomplete';
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { getUserCompanies } from 'shared/api/gen/sdk.gen';
-import { TextInput } from 'shared/ui/TextInput';
-import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer';
+import Autocomplete from '@mui/material/Autocomplete'
+import CircularProgress from '@mui/material/CircularProgress'
+import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import React, { useState } from 'react'
+import { useController } from 'react-hook-form'
+import { getUserCompanies } from 'shared/api/gen/sdk.gen'
+import { type FieldComponent } from 'shared/types/form'
+import { TextInput } from 'shared/ui/TextInput'
 
 const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
-  const controller = useController(props);
-  const [open, setOpen] = useState(false);
-  const { field } = controller;
+  const controller = useController(props)
+  const [open, setOpen] = useState(false)
+  const { field } = controller
 
   const debouncedFetching = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      field.onChange(val.trim() === '' ? null : val);
+      const val = e.target.value
+      field.onChange(val.trim() === '' ? null : val)
     },
     { wait: 400 }
-  );
+  )
   const { data = [], isFetching } = useQuery({
     queryKey: ['companies', field.value],
     queryFn: async ({ queryKey }) => {
       const response = await getUserCompanies<true>({
         query: { limit: 30, name_contains: queryKey[1] },
-      });
-      return response.data;
+      })
+      return response.data
     },
     placeholderData: keepPreviousData,
     enabled: open,
     staleTime: 30000,
-  });
+  })
   return (
     <Autocomplete
       options={data?.map((c) => c.name)}
       open={open}
       freeSolo
       onChange={(_, value) => {
-        field.onChange(value);
+        field.onChange(value)
       }}
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
@@ -66,7 +66,7 @@ const CompanyField: FieldComponent = ({ label = 'Company', ...props }) => {
         />
       )}
     />
-  );
-};
+  )
+}
 
-export default CompanyField;
+export default CompanyField

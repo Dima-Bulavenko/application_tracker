@@ -1,16 +1,16 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import Paper from '@mui/material/Paper';
-import { LinkButton } from 'shared/ui/LinkButton';
-import { getRouteApi } from '@tanstack/react-router';
+import Box from '@mui/material/Box'
+import Paper from '@mui/material/Paper'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import { getRouteApi } from '@tanstack/react-router'
+import { LinkButton } from 'shared/ui/LinkButton'
 
-const roteApi = getRouteApi('__root__');
+const roteApi = getRouteApi('__root__')
 
 export function HomePage() {
   const {
     auth: { isAuthenticated },
-  } = roteApi.useRouteContext();
+  } = roteApi.useRouteContext()
   return (
     <Stack spacing={8} sx={{ py: 6 }}>
       {/* Hero Section */}
@@ -22,7 +22,8 @@ export function HomePage() {
           variant='h6'
           color='text.secondary'
           maxWidth={720}
-          mx='auto'>
+          mx='auto'
+        >
           Track and manage all your job applications in one organized workspace.
           Stay on top of every stage—from submission to interviews and offers.
         </Typography>
@@ -53,7 +54,8 @@ export function HomePage() {
               sm: 'repeat(2, 1fr)',
               md: 'repeat(3, 1fr)',
             },
-          }}>
+          }}
+        >
           {[
             {
               title: 'Centralized Tracking',
@@ -71,7 +73,8 @@ export function HomePage() {
             <Paper
               key={feature.title}
               elevation={3}
-              sx={{ p: 3, height: '100%' }}>
+              sx={{ p: 3, height: '100%' }}
+            >
               <Typography variant='h6' gutterBottom>
                 {feature.title}
               </Typography>
@@ -95,5 +98,5 @@ export function HomePage() {
         </Box>
       )}
     </Stack>
-  );
+  )
 }

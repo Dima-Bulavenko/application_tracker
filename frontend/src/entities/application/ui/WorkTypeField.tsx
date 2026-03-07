@@ -1,7 +1,7 @@
-import type { FieldComponent } from 'shared/types/form';
-import { zWorkType } from 'shared/api/gen/zod.gen';
-import { SelectField } from 'shared/ui/SelectField';
-import { useController } from 'react-hook-form';
+import { useController } from 'react-hook-form'
+import { zWorkType } from 'shared/api/gen/zod.gen'
+import type { FieldComponent } from 'shared/types/form'
+import { SelectField } from 'shared/ui/SelectField'
 
 /**
  * Application status select field integrated with react-hook-form.
@@ -11,8 +11,8 @@ export const WorkTypeField: FieldComponent = ({
   label = 'Work Type',
   ...props
 }) => {
-  const options = zWorkType.options;
-  const controller = useController({ ...props });
+  const options = zWorkType.options
+  const controller = useController({ ...props })
   return (
     <SelectField
       {...props}
@@ -20,7 +20,7 @@ export const WorkTypeField: FieldComponent = ({
       options={options}
       controller={controller}
     />
-  );
-};
+  )
+}
 
-export default WorkTypeField;
+export default WorkTypeField

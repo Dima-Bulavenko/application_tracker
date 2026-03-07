@@ -1,44 +1,44 @@
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import { useForm, useController, Control } from 'react-hook-form';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormControl from '@mui/material/FormControl';
-import FormLabel from '@mui/material/FormLabel';
-import { useIsFetching } from '@tanstack/react-query';
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import FormControl from '@mui/material/FormControl'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import FormLabel from '@mui/material/FormLabel'
+import Radio from '@mui/material/Radio'
+import RadioGroup from '@mui/material/RadioGroup'
+import Stack from '@mui/material/Stack'
+import { useIsFetching } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
 
-import { applicationKeys } from 'entities/application/api/queryOptions';
-import CompanyField from 'entities/application/ui/CompanyField';
-
-import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen';
-import { MultipleSelectField } from 'shared/ui/SelectField';
-import { getRouteApi } from '@tanstack/react-router';
+import { applicationKeys } from 'entities/application/api/queryOptions'
+import CompanyField from 'entities/application/ui/CompanyField'
 import {
   ApplicationFilter,
   cleanFilterData,
   filterStorage,
-} from 'features/application/lib/filterStorage';
+} from 'features/application/lib/filterStorage'
+import { Control, useController, useForm } from 'react-hook-form'
+import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
+import { MultipleSelectField } from 'shared/ui/SelectField'
 
 type FilterFormParam = {
-  control: Control<ApplicationFilter>;
-};
+  control: Control<ApplicationFilter>
+}
 
-const routeApi = getRouteApi('/_authenticated/dashboard');
+const routeApi = getRouteApi('/_authenticated/dashboard')
 
 function OrderBy({ control }: FilterFormParam) {
   const { field } = useController<ApplicationFilter>({
     name: 'order_by',
     control,
-  });
+  })
   return (
     <FormControl>
       <FormLabel id='applications-order-by-label'>Order By</FormLabel>
       <RadioGroup
         {...field}
         aria-labelledby='applications-order-by-label'
-        name='application-order-by'>
+        name='application-order-by'
+      >
         <FormControlLabel
           value='time_create'
           control={<Radio />}
@@ -51,14 +51,14 @@ function OrderBy({ control }: FilterFormParam) {
         />
       </RadioGroup>
     </FormControl>
-  );
+  )
 }
 
 function OrderDirection({ control }: FilterFormParam) {
   const { field } = useController<ApplicationFilter>({
     name: 'order_direction',
     control,
-  });
+  })
   return (
     <FormControl>
       <FormLabel id='applications-order-direction-label'>
@@ -67,86 +67,87 @@ function OrderDirection({ control }: FilterFormParam) {
       <RadioGroup
         {...field}
         aria-labelledby='applications-order-direction-label'
-        name='application-order-by'>
+        name='application-order-by'
+      >
         <FormControlLabel value='desc' control={<Radio />} label='Descending' />
         <FormControlLabel value='asc' control={<Radio />} label='Ascending' />
       </RadioGroup>
     </FormControl>
-  );
+  )
 }
 
 function ApplicationStatusField({ control }: FilterFormParam) {
-  const options = zAppStatus.options;
+  const options = zAppStatus.options
   const controller = useController({
     name: 'status',
     control,
-  });
+  })
   return (
     <MultipleSelectField
       controller={controller}
       options={options}
       label='Status'
     />
-  );
+  )
 }
 
 function WorkLocationField({ control }: FilterFormParam) {
-  const options = zWorkLocation.options;
+  const options = zWorkLocation.options
   const controller = useController({
     name: 'work_location',
     control,
-  });
+  })
   return (
     <MultipleSelectField
       controller={controller}
       options={options}
       label='Work Location'
     />
-  );
+  )
 }
 
 function WorkTypeField({ control }: FilterFormParam) {
-  const options = zWorkType.options;
+  const options = zWorkType.options
   const controller = useController({
     name: 'work_type',
     control,
-  });
+  })
   return (
     <MultipleSelectField
       controller={controller}
       options={options}
       label='Work Type'
     />
-  );
+  )
 }
 
 export function FilterApplicationForm() {
-  const { filter } = routeApi.useSearch();
-  const navigate = routeApi.useNavigate();
+  const { filter } = routeApi.useSearch()
+  const navigate = routeApi.useNavigate()
   const { control, handleSubmit, formState, reset } =
     useForm<ApplicationFilter>({
       defaultValues: filter,
-    });
+    })
 
-  const isFetching = useIsFetching({ queryKey: applicationKeys.lists() });
+  const isFetching = useIsFetching({ queryKey: applicationKeys.lists() })
 
   const applyFilter = (data: ApplicationFilter): void => {
-    const cleanedFilters = cleanFilterData(data);
-    const hasActiveFilters = Object.keys(cleanedFilters).length > 0;
+    const cleanedFilters = cleanFilterData(data)
+    const hasActiveFilters = Object.keys(cleanedFilters).length > 0
 
-    filterStorage.save(cleanedFilters);
+    filterStorage.save(cleanedFilters)
     navigate({
       search: () => (hasActiveFilters ? { filter: cleanedFilters } : {}),
-    });
-  };
+    })
+  }
 
   const clearFilters = (): void => {
-    filterStorage.clear();
-    reset({});
-    navigate({ search: () => ({}) });
-  };
+    filterStorage.clear()
+    reset({})
+    navigate({ search: () => ({}) })
+  }
 
-  const hasActiveFilters = Boolean(filter);
+  const hasActiveFilters = Boolean(filter)
 
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
@@ -164,7 +165,8 @@ export function FilterApplicationForm() {
           onClick={clearFilters}
           type='button'
           variant='outlined'
-          color='secondary'>
+          color='secondary'
+        >
           Clear Filters
         </Button>
         <Button
@@ -173,10 +175,11 @@ export function FilterApplicationForm() {
           onClick={handleSubmit(applyFilter)}
           type='button'
           variant='contained'
-          color='primary'>
+          color='primary'
+        >
           Apply Filters
         </Button>
       </Box>
     </Stack>
-  );
+  )
 }

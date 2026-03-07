@@ -1,14 +1,14 @@
-import Logout from '@mui/icons-material/Logout';
-import Avatar from '@mui/material/Avatar';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Tooltip from '@mui/material/Tooltip';
-import { useState } from 'react';
-import { getRouteApi } from '@tanstack/react-router';
-import { LinkButton } from 'shared/ui/LinkButton';
+import Logout from '@mui/icons-material/Logout'
+import Avatar from '@mui/material/Avatar'
+import Divider from '@mui/material/Divider'
+import IconButton from '@mui/material/IconButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import Menu from '@mui/material/Menu'
+import MenuItem from '@mui/material/MenuItem'
+import Tooltip from '@mui/material/Tooltip'
+import { getRouteApi } from '@tanstack/react-router'
+import { useState } from 'react'
+import { LinkButton } from 'shared/ui/LinkButton'
 
 const MenuStyle = {
   paper: {
@@ -37,22 +37,22 @@ const MenuStyle = {
       },
     },
   },
-};
+}
 
-const routeApi = getRouteApi('__root__');
+const routeApi = getRouteApi('__root__')
 
 export function AccountMenu() {
   const {
     auth: { user, logout },
-  } = routeApi.useRouteContext();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const navigate = routeApi.useNavigate();
-  const open = !!anchorEl;
+  } = routeApi.useRouteContext()
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const navigate = routeApi.useNavigate()
+  const open = !!anchorEl
   const handleClick = (e: React.MouseEvent<HTMLElement>) =>
-    setAnchorEl(e.currentTarget);
-  const handleClose = () => setAnchorEl(null);
+    setAnchorEl(e.currentTarget)
+  const handleClose = () => setAnchorEl(null)
 
-  if (!user) return null;
+  if (!user) return null
   return (
     <>
       <Tooltip title='Account settings'>
@@ -62,7 +62,8 @@ export function AccountMenu() {
           sx={{ ml: 2 }}
           aria-controls={open ? 'account-menu' : undefined}
           aria-haspopup='true'
-          aria-expanded={open ? 'true' : undefined}>
+          aria-expanded={open ? 'true' : undefined}
+        >
           <Avatar sx={{ width: 32, height: 32 }}>
             {user.username.charAt(0).toUpperCase()}
           </Avatar>
@@ -76,7 +77,8 @@ export function AccountMenu() {
         onClick={handleClose}
         slotProps={MenuStyle}
         transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
+        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+      >
         <Divider />
         <MenuItem onClick={handleClose}>
           <LinkButton
@@ -86,7 +88,8 @@ export function AccountMenu() {
               alignItems: 'center',
               color: 'inherit',
               padding: 0,
-            }}>
+            }}
+          >
             <Avatar /> Profile
           </LinkButton>
         </MenuItem>
@@ -94,10 +97,11 @@ export function AccountMenu() {
         <MenuItem
           onClick={() => {
             logout().finally(() => {
-              handleClose();
-              navigate({ to: '/' });
-            });
-          }}>
+              handleClose()
+              navigate({ to: '/' })
+            })
+          }}
+        >
           <ListItemIcon>
             <Logout fontSize='small' />
           </ListItemIcon>
@@ -105,5 +109,5 @@ export function AccountMenu() {
         </MenuItem>
       </Menu>
     </>
-  );
+  )
 }

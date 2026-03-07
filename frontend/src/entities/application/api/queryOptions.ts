@@ -1,18 +1,18 @@
+import { mutationOptions, queryOptions } from '@tanstack/react-query'
 import {
   createApplication,
+  deleteApplication,
   getApplicationById,
   getApplications,
   updateApplication,
-  deleteApplication,
-} from 'shared/api/gen/sdk.gen';
+} from 'shared/api/gen/sdk.gen'
 import type {
   ApplicationCreate,
   ApplicationUpdate,
-  UpdateApplicationData,
   DeleteApplicationData,
   GetApplicationsData,
-} from 'shared/api/gen/types.gen';
-import { queryOptions, mutationOptions } from '@tanstack/react-query';
+  UpdateApplicationData,
+} from 'shared/api/gen/types.gen'
 
 export const applicationKeys = {
   all: ['applications'],
@@ -23,7 +23,7 @@ export const applicationKeys = {
   ],
   details: () => [...applicationKeys.all, 'detail'],
   detail: (id: number) => [...applicationKeys.details(), id],
-} as const;
+} as const
 
 export function applicationsOptions(filters?: GetApplicationsData['query']) {
   return queryOptions({
@@ -31,7 +31,7 @@ export function applicationsOptions(filters?: GetApplicationsData['query']) {
     queryFn: () =>
       getApplications<true>({ query: filters }).then((res) => res.data ?? []),
     staleTime: Infinity,
-  });
+  })
 }
 
 export function applicationOptions(application_id: number) {
@@ -42,7 +42,7 @@ export function applicationOptions(application_id: number) {
         (res) => res.data
       ),
     staleTime: Infinity,
-  });
+  })
 }
 
 export function applicationCreateOptions() {
@@ -50,7 +50,7 @@ export function applicationCreateOptions() {
     mutationKey: applicationKeys.all,
     mutationFn: (body: ApplicationCreate) =>
       createApplication({ body }).then((r) => r.data),
-  });
+  })
 }
 
 export function applicationUpdateOptions(
@@ -62,7 +62,7 @@ export function applicationUpdateOptions(
       updateApplication<true>({ body, path: { application_id } }).then(
         (res) => res.data
       ),
-  });
+  })
 }
 
 export function applicationDeleteOptions(
@@ -72,5 +72,5 @@ export function applicationDeleteOptions(
     mutationKey: applicationKeys.all,
     mutationFn: async () =>
       deleteApplication<true>({ path: { application_id } }),
-  });
+  })
 }

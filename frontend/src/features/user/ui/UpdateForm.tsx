@@ -1,43 +1,43 @@
-import { useForm, useController, SubmitHandler } from 'react-hook-form';
-import { zUserUpdate } from 'shared/api/gen/zod.gen';
-import { Form } from 'shared/ui/Form';
-import type { FieldComponent } from 'shared/types/form';
-import { z } from 'zod';
-import { TextInput } from 'shared/ui/TextInput';
-import { FormError } from 'shared/ui/FormError';
-import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import { updateUser } from 'shared/api/gen';
-import { getDirtyValues } from 'shared/api/get_dirty_values';
-import { getRouteApi } from '@tanstack/react-router';
-import SubmitButton from 'shared/ui/SubmitButton';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+import { getRouteApi } from '@tanstack/react-router'
+import { SubmitHandler, useController, useForm } from 'react-hook-form'
+import { updateUser } from 'shared/api/gen'
+import { zUserUpdate } from 'shared/api/gen/zod.gen'
+import { getDirtyValues } from 'shared/api/get_dirty_values'
+import type { FieldComponent } from 'shared/types/form'
+import { Form } from 'shared/ui/Form'
+import { FormError } from 'shared/ui/FormError'
+import SubmitButton from 'shared/ui/SubmitButton'
+import { TextInput } from 'shared/ui/TextInput'
+import { z } from 'zod'
 
-type FormType = z.infer<typeof zUserUpdate>;
+type FormType = z.infer<typeof zUserUpdate>
 
 const FirstNameField: FieldComponent = ({ label = 'First Name', ...props }) => {
-  const controller = useController(props);
-  return <TextInput label={label} controller={controller} />;
-};
+  const controller = useController(props)
+  return <TextInput label={label} controller={controller} />
+}
 
 const SecondNameField: FieldComponent = ({
   label = 'Second Name',
   ...props
 }) => {
-  const controller = useController(props);
-  return <TextInput label={label} controller={controller} />;
-};
+  const controller = useController(props)
+  return <TextInput label={label} controller={controller} />
+}
 
-const routeApi = getRouteApi('/_authenticated');
+const routeApi = getRouteApi('/_authenticated')
 
 type UpdateFormProps = {
-  onSuccess?: () => void;
-};
+  onSuccess?: () => void
+}
 
 export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
   const {
     auth: { user, setUser },
-  } = routeApi.useRouteContext();
+  } = routeApi.useRouteContext()
   const {
     control,
     handleSubmit,
@@ -48,19 +48,20 @@ export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
       first_name: user.first_name,
       second_name: user.second_name,
     },
-  });
+  })
   const onSubmit: SubmitHandler<FormType> = async (data, event) => {
-    event?.preventDefault();
-    const dirtyData = getDirtyValues(dirtyFields, data);
+    event?.preventDefault()
+    const dirtyData = getDirtyValues(dirtyFields, data)
     await updateUser<true>({ body: dirtyData }).then((res) => {
-      setUser(res.data);
-      onSuccess?.();
-    });
-  };
+      setUser(res.data)
+      onSuccess?.()
+    })
+  }
   return (
     <Form
       onSubmit={handleSubmit(onSubmit)}
-      sx={{ p: 0, m: 0, maxWidth: '100%' }}>
+      sx={{ p: 0, m: 0, maxWidth: '100%' }}
+    >
       <Stack spacing={3}>
         <FirstNameField name='first_name' control={control} />
         <SecondNameField name='second_name' control={control} />
@@ -68,11 +69,12 @@ export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
           <SubmitButton
             disabled={!isDirty || isSubmitting}
-            isSubmitting={isSubmitting}>
+            isSubmitting={isSubmitting}
+          >
             Save Changes
           </SubmitButton>
         </Box>
       </Stack>
     </Form>
-  );
+  )
 }

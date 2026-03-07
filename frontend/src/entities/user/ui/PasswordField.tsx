@@ -1,23 +1,23 @@
-import { TextInput } from 'shared/ui/TextInput';
-import type { FieldComponent } from 'shared/types/form';
-import { useController } from 'react-hook-form';
-import { useState } from 'react';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { zUserCreate } from 'shared/api/gen/zod.gen';
+import Visibility from '@mui/icons-material/Visibility'
+import VisibilityOff from '@mui/icons-material/VisibilityOff'
+import IconButton from '@mui/material/IconButton'
+import InputAdornment from '@mui/material/InputAdornment'
+import { useState } from 'react'
+import { useController } from 'react-hook-form'
+import { zUserCreate } from 'shared/api/gen/zod.gen'
+import type { FieldComponent } from 'shared/types/form'
+import { TextInput } from 'shared/ui/TextInput'
 
-const passwordHelp = zUserCreate.shape.password.description;
+const passwordHelp = zUserCreate.shape.password.description
 
 const PasswordField: FieldComponent = ({
   label = 'Password',
   helperText,
   ...props
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const controller = useController(props);
+  const [showPassword, setShowPassword] = useState(false)
+  const handleClickShowPassword = () => setShowPassword((show) => !show)
+  const controller = useController(props)
   return (
     <TextInput
       label={label}
@@ -32,7 +32,8 @@ const PasswordField: FieldComponent = ({
                   showPassword ? 'hide the password' : 'display the password'
                 }
                 onClick={handleClickShowPassword}
-                edge='end'>
+                edge='end'
+              >
                 {showPassword ? <VisibilityOff /> : <Visibility />}
               </IconButton>
             </InputAdornment>
@@ -41,7 +42,7 @@ const PasswordField: FieldComponent = ({
       }}
       controller={controller}
     />
-  );
-};
+  )
+}
 
-export default PasswordField;
+export default PasswordField

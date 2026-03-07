@@ -1,16 +1,16 @@
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import SubmitButton from 'shared/ui/SubmitButton';
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogTitle from '@mui/material/DialogTitle'
+import SubmitButton from 'shared/ui/SubmitButton'
 
 interface DeleteAccountDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  isDeleting: boolean;
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  isDeleting: boolean
 }
 
 export function DeleteAccountDialog({
@@ -24,7 +24,8 @@ export function DeleteAccountDialog({
       open={open}
       onClose={onClose}
       aria-labelledby='delete-account-dialog-title'
-      aria-describedby='delete-account-dialog-description'>
+      aria-describedby='delete-account-dialog-description'
+    >
       <DialogTitle id='delete-account-dialog-title'>Delete Account</DialogTitle>
       <DialogContent>
         <DialogContentText id='delete-account-dialog-description'>
@@ -43,10 +44,11 @@ export function DeleteAccountDialog({
           disabled={isDeleting}
           isSubmitting={isDeleting}
           sx={null}
-          autoFocus>
+          autoFocus
+        >
           Delete Account
         </SubmitButton>
       </DialogActions>
     </Dialog>
-  );
+  )
 }

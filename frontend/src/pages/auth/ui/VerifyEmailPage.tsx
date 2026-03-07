@@ -1,23 +1,23 @@
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
-import { activateUser } from 'shared/api/gen/sdk.gen';
-import { AuthPage } from './AuthPage';
-import { LinkButton } from 'shared/ui/LinkButton';
-import { useQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
+import CircularProgress from '@mui/material/CircularProgress'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import { useQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { activateUser } from 'shared/api/gen/sdk.gen'
+import { LinkButton } from 'shared/ui/LinkButton'
+import { AuthPage } from './AuthPage'
 
-const routeApi = getRouteApi('/verify-email');
+const routeApi = getRouteApi('/verify-email')
 
 export function VerifyEmailPage() {
-  const { token } = routeApi.useSearch();
+  const { token } = routeApi.useSearch()
 
   const { isLoading, isSuccess, isError, error } = useQuery({
     queryKey: ['activateUser', token],
     enabled: !!token,
     retry: false,
     queryFn: () => activateUser({ query: { token } }),
-  });
+  })
 
   if (isLoading) {
     return (
@@ -29,7 +29,7 @@ export function VerifyEmailPage() {
           </Typography>
         </Stack>
       </AuthPage>
-    );
+    )
   }
 
   if (isSuccess) {
@@ -39,7 +39,8 @@ export function VerifyEmailPage() {
         subtitle='Your account has been activated. You can now sign in.'
         footerText="Don't have an account?"
         footerLinkText='Register'
-        footerTo='/register'>
+        footerTo='/register'
+      >
         <Stack spacing={3} alignItems='center'>
           <Typography variant='body2' color='text.secondary' textAlign='center'>
             Welcome aboard! Use your credentials to access your dashboard.
@@ -49,7 +50,7 @@ export function VerifyEmailPage() {
           </LinkButton>
         </Stack>
       </AuthPage>
-    );
+    )
   }
 
   return (
@@ -61,7 +62,8 @@ export function VerifyEmailPage() {
       }
       footerText='Need a new account?'
       footerLinkText='Register'
-      footerTo='/register'>
+      footerTo='/register'
+    >
       <Stack spacing={3} alignItems='center'>
         <Typography variant='body2' color='text.secondary' textAlign='center'>
           You can try signing in or registering again.
@@ -71,5 +73,5 @@ export function VerifyEmailPage() {
         </LinkButton>
       </Stack>
     </AuthPage>
-  );
+  )
 }

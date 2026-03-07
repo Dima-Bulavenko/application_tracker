@@ -1,6 +1,6 @@
-import Container from '@mui/material/Container';
-import { ApplicationListWidget } from 'features/application/ui/ApplicationListWidget';
-import { CreateApplication } from 'features/application/ui/CreateApplication';
+import Container from '@mui/material/Container'
+import { ApplicationListWidget } from 'features/application/ui/ApplicationListWidget'
+import { CreateApplication } from 'features/application/ui/CreateApplication'
 
 export function DashboardPage() {
   return (
@@ -8,5 +8,5 @@ export function DashboardPage() {
       <ApplicationListWidget />
       <CreateApplication />
     </Container>
-  );
+  )
 }

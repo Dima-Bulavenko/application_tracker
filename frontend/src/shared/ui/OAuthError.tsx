@@ -1,13 +1,13 @@
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
+import Alert from '@mui/material/Alert'
+import AlertTitle from '@mui/material/AlertTitle'
+import Box from '@mui/material/Box'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
 
-import type { ReactNode } from 'react';
+import type { ReactNode } from 'react'
 
 interface OAuthErrorProps {
-  authButton: ReactNode;
+  authButton: ReactNode
 }
 
 export default function OAuthError({ authButton }: OAuthErrorProps) {
@@ -20,7 +20,8 @@ export default function OAuthError({ authButton }: OAuthErrorProps) {
         justifyContent: 'center',
         minHeight: '100vh',
         padding: 3,
-      }}>
+      }}
+    >
       <Stack spacing={3} maxWidth={500} width='100%'>
         <Alert severity='error'>
           <AlertTitle>Authentication Error</AlertTitle>
@@ -34,5 +35,5 @@ export default function OAuthError({ authButton }: OAuthErrorProps) {
         {authButton}
       </Stack>
     </Box>
-  );
+  )
 }

@@ -1,16 +1,15 @@
-import Checkbox from '@mui/material/Checkbox';
-import ListItemText from '@mui/material/ListItemText';
-import MenuItem from '@mui/material/MenuItem';
-
-import { TextInput } from './TextInput';
-import type { SelectInputProps, SelectMultipleProps } from 'shared/types/form';
-import { FieldPath, FieldValues } from 'react-hook-form';
+import Checkbox from '@mui/material/Checkbox'
+import ListItemText from '@mui/material/ListItemText'
+import MenuItem from '@mui/material/MenuItem'
+import { FieldPath, FieldValues } from 'react-hook-form'
+import type { SelectInputProps, SelectMultipleProps } from 'shared/types/form'
+import { TextInput } from './TextInput'
 
 const defaultHumanize = (v: string) =>
-  v.charAt(0).toUpperCase() + v.slice(1).replace('_', ' ');
+  v.charAt(0).toUpperCase() + v.slice(1).replace('_', ' ')
 
 const defaultRenderValue = (s: unknown) =>
-  Array.isArray(s) ? s.join(', ') : '';
+  Array.isArray(s) ? s.join(', ') : ''
 
 export function SelectField<
   V extends FieldValues = FieldValues,
@@ -22,15 +21,16 @@ export function SelectField<
   controller,
   ...props
 }: SelectInputProps<V, N>) {
-  const { field } = controller;
+  const { field } = controller
   return (
     <TextInput
       select
       controller={controller}
       onChange={(e) => {
-        field.onChange(e);
+        field.onChange(e)
       }}
-      {...props}>
+      {...props}
+    >
       {children
         ? children
         : options.map((opt) => (
@@ -39,7 +39,7 @@ export function SelectField<
             </MenuItem>
           ))}
     </TextInput>
-  );
+  )
 }
 
 export function MultipleSelectField<
@@ -52,7 +52,7 @@ export function MultipleSelectField<
   renderValue = defaultRenderValue,
   ...props
 }: SelectMultipleProps<V, N>) {
-  const { field } = controller;
+  const { field } = controller
   return (
     <SelectField
       options={options}
@@ -65,12 +65,13 @@ export function MultipleSelectField<
       controller={controller}
       {...props}
       onChange={(e) => {
-        const value = e.target.value;
+        const value = e.target.value
         if (Array.isArray(value) && value.length !== 0)
-          return field.onChange(value);
-        field.onChange(undefined);
+          return field.onChange(value)
+        field.onChange(undefined)
       }}
-      value={Array.isArray(field.value) ? field.value : []}>
+      value={Array.isArray(field.value) ? field.value : []}
+    >
       {options.map((opt) => (
         <MenuItem key={opt} value={opt}>
           <Checkbox
@@ -82,5 +83,5 @@ export function MultipleSelectField<
         </MenuItem>
       ))}
     </SelectField>
-  );
+  )
 }

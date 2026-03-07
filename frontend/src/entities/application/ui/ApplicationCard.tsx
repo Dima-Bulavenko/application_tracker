@@ -1,40 +1,43 @@
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardHeader from '@mui/material/CardHeader';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import type { ApplicationReadWithCompany as ApplicationRead } from 'shared/api/gen/types.gen';
-import { formatDate } from 'shared/lib/date';
-import { humanizeWorkLocation } from 'entities/application/lib/humanize';
-import { humanizeWorkType } from 'entities/application/lib/humanize';
-import { statusColor } from 'entities/application/lib/status';
-import { UpdateApplication } from 'features/application/ui/UpdateApplication';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { applicationDeleteOptions } from 'entities/application/api/queryOptions';
-import { useMutation } from '@tanstack/react-query';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
+import Button from '@mui/material/Button'
+import Card from '@mui/material/Card'
+import CardContent from '@mui/material/CardContent'
+import CardHeader from '@mui/material/CardHeader'
+import Chip from '@mui/material/Chip'
+import Divider from '@mui/material/Divider'
+import Stack from '@mui/material/Stack'
+import Typography from '@mui/material/Typography'
+import { useMutation } from '@tanstack/react-query'
+import { applicationDeleteOptions } from 'entities/application/api/queryOptions'
+import {
+  humanizeWorkLocation,
+  humanizeWorkType,
+} from 'entities/application/lib/humanize'
+import { statusColor } from 'entities/application/lib/status'
+import { UpdateApplication } from 'features/application/ui/UpdateApplication'
+import type { ApplicationReadWithCompany as ApplicationRead } from 'shared/api/gen/types.gen'
+import { formatDate } from 'shared/lib/date'
 
-type Props = { application: ApplicationRead };
+type Props = { application: ApplicationRead }
 
 function DeleteApplicationButton({
   application_id,
 }: {
-  application_id: number;
+  application_id: number
 }) {
   const { mutate: deleteApp, isPending } = useMutation(
     applicationDeleteOptions(application_id)
-  );
+  )
   return (
     <Button
       variant='contained'
       color='error'
       onClick={() => deleteApp()}
-      disabled={isPending}>
+      disabled={isPending}
+    >
       <DeleteForeverIcon />
     </Button>
-  );
+  )
 }
 
 export function ApplicationCard({ application }: Props) {
@@ -47,7 +50,7 @@ export function ApplicationCard({ application }: Props) {
     time_create,
     time_update,
     company,
-  } = application;
+  } = application
   return (
     <Card variant='outlined' sx={{ maxWidth: 720 }}>
       <CardHeader
@@ -93,7 +96,8 @@ export function ApplicationCard({ application }: Props) {
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
-            divider={<Divider orientation='vertical' flexItem />}>
+            divider={<Divider orientation='vertical' flexItem />}
+          >
             {time_create && (
               <Typography variant='caption' color='text.secondary'>
                 Created: {formatDate(time_create)}
@@ -110,7 +114,7 @@ export function ApplicationCard({ application }: Props) {
         <DeleteApplicationButton application_id={application.id} />
       </CardContent>
     </Card>
-  );
+  )
 }
 
-export default ApplicationCard;
+export default ApplicationCard

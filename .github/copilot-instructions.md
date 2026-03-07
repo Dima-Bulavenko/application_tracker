@@ -31,7 +31,7 @@ The application enables users to:
 ### TypeScript Frontend
 - Use **TypeScript strict mode**
 - Follow **React functional components** with hooks
-- Use **ESLint** and **Prettier** for formatting
+- Use **Biome** for linting and formatting
 - Prefer **async/await** over promises
 
 ### General Principles
@@ -53,8 +53,8 @@ The application enables users to:
 - **Import sorting**: Use ruff's import sorting (`--select I --fix`)
 
 ### Frontend Code Standards
-- **ESLint compliance**: All TypeScript/JavaScript code must pass ESLint rules
-- **Prettier formatting**: All frontend code must be formatted with Prettier
+- **Biome compliance**: All TypeScript/JavaScript code must pass Biome checks
+- **Biome formatting**: All frontend code must be formatted with Biome
 - **Supported file types**: Apply formatting to `.js`, `.ts`, `.tsx`, `.jsx`, `.json`, `.yaml`, `.html`, `.css`
 
 ### Code Generation Guidelines
@@ -70,13 +70,13 @@ When generating code, ensure:
 2. **Template files** (HTML/Jinja2):
    - No trailing whitespace
    - End file with exactly one newline
-   - Apply Prettier formatting for HTML structure
+   - Apply Biome formatting where applicable for HTML structure
    - Use consistent indentation (2 spaces for HTML)
 
 3. **Configuration files** (JSON/YAML):
    - No trailing whitespace
    - End file with exactly one newline
-   - Apply Prettier formatting
+   - Apply Biome formatting
    - Use consistent indentation
 
 ## Architecture Guidelines

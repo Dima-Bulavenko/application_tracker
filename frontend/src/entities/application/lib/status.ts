@@ -1,4 +1,4 @@
-import type { AppStatus } from 'shared/api/gen/types.gen';
+import type { AppStatus } from 'shared/api/gen/types.gen'
 
 export const statusColor: Record<
   AppStatus,
@@ -8,4 +8,4 @@ export const statusColor: Record<
   interview: 'warning',
   offer: 'success',
   rejected: 'error',
-};
+}

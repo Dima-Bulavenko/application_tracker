@@ -1,11 +1,11 @@
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import Divider from '@mui/material/Divider';
-import type { UserRead } from 'shared/api/gen';
+import Divider from '@mui/material/Divider'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
+import type { UserRead } from 'shared/api/gen'
 
 interface UserInfoListProps {
-  user: UserRead;
+  user: UserRead
 }
 
 const INFO_ITEMS = [
@@ -18,7 +18,7 @@ const INFO_ITEMS = [
     label: 'Second Name',
     getValue: (user: UserRead) => user.second_name || 'Not set',
   },
-] as const;
+] as const
 
 export function UserInfoList({ user }: UserInfoListProps) {
   return (
@@ -46,5 +46,5 @@ export function UserInfoList({ user }: UserInfoListProps) {
         </div>
       ))}
     </List>
-  );
+  )
 }

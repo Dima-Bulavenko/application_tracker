@@ -1,10 +1,10 @@
-import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
-import type { ButtonProps } from '@mui/material/Button';
+import type { ButtonProps } from '@mui/material/Button'
+import Button from '@mui/material/Button'
+import CircularProgress from '@mui/material/CircularProgress'
 
 interface SubmitButtonProps extends Omit<ButtonProps, 'type'> {
-  isSubmitting: boolean;
-  children: React.ReactNode;
+  isSubmitting: boolean
+  children: React.ReactNode
 }
 
 export default function SubmitButton({
@@ -20,8 +20,9 @@ export default function SubmitButton({
       variant='contained'
       type='submit'
       disabled={isSubmitting || disabled}
-      {...props}>
+      {...props}
+    >
       {isSubmitting ? <CircularProgress size={24} /> : children}
     </Button>
-  );
+  )
 }

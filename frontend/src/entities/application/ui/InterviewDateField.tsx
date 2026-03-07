@@ -1,15 +1,15 @@
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { useController } from 'react-hook-form';
-import { FieldComponent } from 'shared/types/form';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import dayjs from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import dayjs from 'dayjs'
+import { useController } from 'react-hook-form'
+import { FieldComponent } from 'shared/types/form'
 
 const InterviewDateField: FieldComponent = ({
   label = 'Interview date',
   ...props
 }) => {
-  const { field, fieldState } = useController(props);
+  const { field, fieldState } = useController(props)
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <DateTimePicker
@@ -18,7 +18,7 @@ const InterviewDateField: FieldComponent = ({
         inputRef={field.ref}
         value={dayjs(field.value)}
         onChange={(value) => {
-          field.onChange(value?.toISOString() ?? null);
+          field.onChange(value?.toISOString() ?? null)
         }}
         slotProps={{
           actionBar: { actions: ['clear', 'cancel', 'accept'] },
@@ -31,7 +31,7 @@ const InterviewDateField: FieldComponent = ({
         }}
       />
     </LocalizationProvider>
-  );
-};
+  )
+}
 
-export default InterviewDateField;
+export default InterviewDateField

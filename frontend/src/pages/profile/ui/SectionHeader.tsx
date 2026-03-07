@@ -1,12 +1,12 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from '@mui/icons-material/Edit'
+import Box from '@mui/material/Box'
+import Button from '@mui/material/Button'
+import Typography from '@mui/material/Typography'
 
 interface SectionHeaderProps {
-  title: string;
-  subtitle: string;
-  onEditClick: () => void;
+  title: string
+  subtitle: string
+  onEditClick: () => void
 }
 
 export function SectionHeader({
@@ -21,7 +21,8 @@ export function SectionHeader({
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         mb: 3,
-      }}>
+      }}
+    >
       <Box>
         <Typography variant='h6' component='h2' gutterBottom>
           {title}
@@ -34,9 +35,10 @@ export function SectionHeader({
         startIcon={<EditIcon />}
         variant='outlined'
         size='small'
-        onClick={onEditClick}>
+        onClick={onEditClick}
+      >
         Edit
       </Button>
     </Box>
-  );
+  )
 }

@@ -1,7 +1,7 @@
 // Global theme (glass variant only)
-import { createTheme, alpha, Theme } from '@mui/material/styles';
+import { alpha, createTheme, Theme } from '@mui/material/styles'
 
-export type Mode = 'light' | 'dark';
+export type Mode = 'light' | 'dark'
 
 const common = {
   shape: { borderRadius: 18 },
@@ -15,13 +15,13 @@ const common = {
     },
   },
   transitions: { duration: { standard: 240 } },
-};
+}
 
 // Build a theme that includes light & dark color schemes so we can rely on
 // MUI v6 useColorScheme hook (supports 'system' mode automatically).
 export function buildTheme(): Theme {
-  const primary = '#6366F1';
-  const secondary = '#10B981';
+  const primary = '#6366F1'
+  const secondary = '#10B981'
   return createTheme({
     ...common,
     cssVariables: {
@@ -90,5 +90,5 @@ export function buildTheme(): Theme {
       },
       MuiCard: { styleOverrides: { root: { overflow: 'hidden' } } },
     },
-  });
+  })
 }

@@ -1,9 +1,9 @@
-import Box from '@mui/material/Box';
-import type { BoxProps } from '@mui/material/Box';
-import type { Theme } from '@mui/material/styles';
-import type { SxProps } from '@mui/system';
+import type { BoxProps } from '@mui/material/Box'
+import Box from '@mui/material/Box'
+import type { Theme } from '@mui/material/styles'
+import type { SxProps } from '@mui/system'
 
-type BaseFormProps = Omit<BoxProps<'form'>, 'component'>;
+type BaseFormProps = Omit<BoxProps<'form'>, 'component'>
 
 export function Form({ children, sx, ...props }: BaseFormProps) {
   const baseSx = (theme: Theme) => ({
@@ -13,14 +13,14 @@ export function Form({ children, sx, ...props }: BaseFormProps) {
     flexDirection: 'column',
     justifyContent: 'center',
     maxWidth: theme.spacing(55),
-  });
+  })
   const mergedSx: SxProps<Theme> = [
     baseSx,
     ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
-  ];
+  ]
   return (
     <Box component='form' noValidate sx={mergedSx} {...props}>
       {children}
     </Box>
-  );
+  )
 }

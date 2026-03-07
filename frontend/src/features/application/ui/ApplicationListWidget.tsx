@@ -1,6 +1,6 @@
-import { FilterApplication } from './FilterApplication';
-import { ApplicationList } from 'entities/application/ui/ApplicationList';
-import Box from '@mui/material/Box';
+import Box from '@mui/material/Box'
+import { ApplicationList } from 'entities/application/ui/ApplicationList'
+import { FilterApplication } from './FilterApplication'
 
 export function ApplicationListWidget() {
   return (
@@ -11,9 +11,10 @@ export function ApplicationListWidget() {
         gridTemplateColumns: { md: '1fr 360px' },
         gap: 2,
         alignItems: 'start',
-      }}>
+      }}
+    >
       <ApplicationList />
       <FilterApplication />
     </Box>
-  );
+  )
 }

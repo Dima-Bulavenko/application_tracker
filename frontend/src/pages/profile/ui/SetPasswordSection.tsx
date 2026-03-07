@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import Paper from '@mui/material/Paper';
-import { SectionHeader } from './SectionHeader';
-import { SetPasswordDrawer } from './SetPasswordDrawer';
+import Paper from '@mui/material/Paper'
+import { useState } from 'react'
+import { SectionHeader } from './SectionHeader'
+import { SetPasswordDrawer } from './SetPasswordDrawer'
 
 export function SetPasswordSection() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
-  const handleOpenDrawer = () => setDrawerOpen(true);
-  const handleCloseDrawer = () => setDrawerOpen(false);
+  const handleOpenDrawer = () => setDrawerOpen(true)
+  const handleCloseDrawer = () => setDrawerOpen(false)
 
   return (
     <>
@@ -20,5 +20,5 @@ export function SetPasswordSection() {
         <SetPasswordDrawer open={drawerOpen} onClose={handleCloseDrawer} />
       </Paper>
     </>
-  );
+  )
 }
