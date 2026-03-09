@@ -1,21 +1,20 @@
-import Stack from '@mui/material/Stack';
-import { applicationCreateOptions } from 'entities/application/api/queryOptions';
-import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField';
-import { WorkTypeField } from 'entities/application/ui/WorkTypeField';
-import { WorkLocationField } from 'entities/application/ui/WorkLocationField';
-import { NoteField } from 'entities/application/ui/NoteField';
-import InterviewDateField from 'entities/application/ui/InterviewDateField';
-import RoleField from 'entities/application/ui/RoleField';
-import CompanyField from 'entities/application/ui/CompanyField';
-import ApplicationURLField from 'entities/application/ui/ApplicationURLField';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { type ApplicationCreate } from 'shared/api/gen/types.gen';
-import { zApplicationCreate } from 'shared/api/gen/zod.gen';
-import { Form } from 'shared/ui/Form';
-import { FormError } from 'shared/ui/FormError';
-import { useMutation } from '@tanstack/react-query';
-import SubmitButton from 'shared/ui/SubmitButton';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation } from '@tanstack/react-query'
+import { applicationCreateOptions } from 'entities/application/api/queryOptions'
+import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField'
+import ApplicationURLField from 'entities/application/ui/ApplicationURLField'
+import CompanyField from 'entities/application/ui/CompanyField'
+import InterviewDateField from 'entities/application/ui/InterviewDateField'
+import { NoteField } from 'entities/application/ui/NoteField'
+import RoleField from 'entities/application/ui/RoleField'
+import { WorkLocationField } from 'entities/application/ui/WorkLocationField'
+import { WorkTypeField } from 'entities/application/ui/WorkTypeField'
+import { type SubmitHandler, useForm } from 'react-hook-form'
+import type { ApplicationCreate } from 'shared/api/gen/types.gen'
+import { zApplicationCreate } from 'shared/api/gen/zod.gen'
+import { Form } from 'shared/ui/Form'
+import { FormError } from 'shared/ui/FormError'
+import SubmitButton from 'shared/ui/SubmitButton'
 
 export function CreateApplicationForm() {
   const {
@@ -30,17 +29,17 @@ export function CreateApplicationForm() {
       work_location: 'on_site',
       interview_date: null,
     },
-  });
+  })
   const { mutate: createApp, isPending } = useMutation(
     applicationCreateOptions()
-  );
+  )
   const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
-    event?.preventDefault();
-    createApp(data);
-  };
+    event?.preventDefault()
+    createApp(data)
+  }
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={5}>
+      <div className='space-y-5'>
         <RoleField name='role' control={control} />
         <CompanyField name='company.name' control={control} />
         <ApplicationStatusField name='status' control={control} />
@@ -49,9 +48,9 @@ export function CreateApplicationForm() {
         <NoteField name='note' control={control} />
         <InterviewDateField name='interview_date' control={control} />
         <ApplicationURLField name='application_url' control={control} />
-      </Stack>
+      </div>
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isPending}>Create Application</SubmitButton>
     </Form>
-  );
+  )
 }

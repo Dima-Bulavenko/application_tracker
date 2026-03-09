@@ -1,64 +1,46 @@
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Drawer from '@mui/material/Drawer';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
-import EditIcon from '@mui/icons-material/Edit';
-import { Suspense, useState } from 'react';
-import { lazyImport } from 'shared/lib/lazyLoad';
-import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
-import type { ApplicationRead } from 'shared/api/gen/types.gen';
+import { Button } from 'app/components/ui/button'
+import { Separator } from 'app/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from 'app/components/ui/sheet'
+import { Pencil } from 'lucide-react'
+import { Suspense, useState } from 'react'
+import type { ApplicationRead } from 'shared/api/gen/types.gen'
+import { lazyImport } from 'shared/lib/lazyLoad'
+import { SuspenseFallback } from 'shared/ui/SuspenseFallback'
 
 type UpdateApplicationProps = {
-  application: ApplicationRead;
-};
+  application: ApplicationRead
+}
 
 const { UpdateApplicationForm } = lazyImport(
   () => import('./UpdateApplicationForm'),
   'UpdateApplicationForm'
-);
+)
 
 export function UpdateApplication({ application }: UpdateApplicationProps) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
-  const handleClose = () => setDrawerOpen(false);
+  const [open, setOpen] = useState(false)
 
   return (
     <>
-      <Button
-        startIcon={<EditIcon />}
-        variant='contained'
-        color='primary'
-        onClick={() => setDrawerOpen(true)}>
+      <Button onClick={() => setOpen(true)}>
+        <Pencil className='size-4' />
         Edit
       </Button>
-      <Drawer
-        anchor='right'
-        open={drawerOpen}
-        onClose={handleClose}
-        ModalProps={{ keepMounted: true }}
-        slotProps={{
-          paper: {
-            sx: {
-              width: isMobile ? '85vw' : '600px',
-              maxWidth: '600px',
-            },
-          },
-        }}>
-        <Box sx={{ p: 3, height: '100%' }}>
-          <Typography variant='h5' component='h2' gutterBottom>
-            Update Application
-          </Typography>
-          <Divider sx={{ mb: 3 }} />
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent className='w-[85vw] overflow-y-auto sm:max-w-[600px]'>
+          <SheetHeader>
+            <SheetTitle>Update Application</SheetTitle>
+          </SheetHeader>
+          <Separator />
           <Suspense fallback={<SuspenseFallback />}>
-            {drawerOpen && <UpdateApplicationForm {...application} />}
+            {open && <UpdateApplicationForm {...application} />}
           </Suspense>
-        </Box>
-      </Drawer>
+        </SheetContent>
+      </Sheet>
     </>
-  );
+  )
 }

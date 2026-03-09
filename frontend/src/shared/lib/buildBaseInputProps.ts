@@ -1,10 +1,9 @@
-import {
-  FieldValues,
-  FieldPath,
-  ControllerRenderProps,
+import type {
   ControllerFieldState,
-} from 'react-hook-form';
-import type { TextFieldProps } from '@mui/material/TextField';
+  ControllerRenderProps,
+  FieldPath,
+  FieldValues,
+} from 'react-hook-form'
 
 export function buildBaseInputProps<
   TFieldValues extends FieldValues,
@@ -12,16 +11,12 @@ export function buildBaseInputProps<
 >(
   field: ControllerRenderProps<TFieldValues, TName>,
   fieldState: ControllerFieldState
-): Pick<
-  TextFieldProps,
-  'id' | 'variant' | 'label' | 'value' | 'error' | 'helperText'
-> {
+) {
   return {
     id: `${field.name}_id`,
-    variant: 'outlined',
     label: field.name.charAt(0).toUpperCase() + field.name.slice(1),
     value: field.value || '',
     helperText: fieldState.error ? fieldState.error?.message : '',
     error: Boolean(fieldState.error),
-  };
+  }
 }

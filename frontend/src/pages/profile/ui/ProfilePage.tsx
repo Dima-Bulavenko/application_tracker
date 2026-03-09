@@ -1,28 +1,24 @@
-import Stack from '@mui/material/Stack';
-import Container from '@mui/material/Container';
-import { ProfileHeader } from './ProfileHeader';
-import { PersonalInfoSection } from './PersonalInfoSection';
-import { DangerZoneSection } from './DangerZoneSection';
-import { ChangePasswordSection } from './ChangePasswordSection';
-import { getRouteApi } from '@tanstack/react-router';
-import { SetPasswordSection } from './SetPasswordSection';
+import { getRouteApi } from '@tanstack/react-router'
+import { ChangePasswordSection } from './ChangePasswordSection'
+import { DangerZoneSection } from './DangerZoneSection'
+import { PersonalInfoSection } from './PersonalInfoSection'
+import { ProfileHeader } from './ProfileHeader'
+import { SetPasswordSection } from './SetPasswordSection'
 
-const routeApi = getRouteApi('/_authenticated');
+const routeApi = getRouteApi('/_authenticated')
 
 export function ProfilePage() {
   const {
     auth: { user },
-  } = routeApi.useRouteContext();
+  } = routeApi.useRouteContext()
 
   return (
-    <Container maxWidth='md' sx={{ py: 4 }}>
-      <Stack spacing={4}>
-        <ProfileHeader />
-        <PersonalInfoSection />
-        {user.is_password_set && <ChangePasswordSection />}
-        {!user.is_password_set && <SetPasswordSection />}
-        <DangerZoneSection />
-      </Stack>
-    </Container>
-  );
+    <div className='mx-auto max-w-3xl space-y-4 px-4 py-4'>
+      <ProfileHeader />
+      <PersonalInfoSection />
+      {user.is_password_set && <ChangePasswordSection />}
+      {!user.is_password_set && <SetPasswordSection />}
+      <DangerZoneSection />
+    </div>
+  )
 }

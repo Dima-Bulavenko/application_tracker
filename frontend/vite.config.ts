@@ -1,12 +1,14 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { fileURLToPath } from 'node:url';
-import { visualizer } from 'rollup-plugin-visualizer';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import { fileURLToPath } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
+import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
+import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     tanstackRouter({
       target: 'react',
       autoCodeSplitting: true,
@@ -43,11 +45,16 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          mui: ['@mui/material', '@mui/icons-material'],
+          radix: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tooltip',
+          ],
           router: ['@tanstack/react-router'],
           query: ['@tanstack/react-query'],
         },
       },
     },
   },
-});
+})

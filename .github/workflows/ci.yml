@@ -151,10 +151,10 @@ jobs:
   #     - name: Install dependencies
   #       run: npm ci
 
-  # - name: Run ESLint
+  # - name: Run Biome check
   #   run: npm run lint
 
-  # - name: Run Prettier (format check)
+  # - name: Run Biome format check
   #   run: npm run format:check
 
   # - name: Run TypeScript type checking

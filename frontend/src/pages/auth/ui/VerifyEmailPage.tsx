@@ -1,35 +1,33 @@
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
-import { activateUser } from 'shared/api/gen/sdk.gen';
-import { AuthPage } from './AuthPage';
-import { LinkButton } from 'shared/ui/LinkButton';
-import { useQuery } from '@tanstack/react-query';
-import { getRouteApi } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
+import { activateUser } from 'shared/api/gen/sdk.gen'
+import { LinkButton } from 'shared/ui/LinkButton'
+import { AuthPage } from './AuthPage'
 
-const routeApi = getRouteApi('/verify-email');
+const routeApi = getRouteApi('/verify-email')
 
 export function VerifyEmailPage() {
-  const { token } = routeApi.useSearch();
+  const { token } = routeApi.useSearch()
 
   const { isLoading, isSuccess, isError, error } = useQuery({
     queryKey: ['activateUser', token],
     enabled: !!token,
     retry: false,
     queryFn: () => activateUser({ query: { token } }),
-  });
+  })
 
   if (isLoading) {
     return (
       <AuthPage title='Verifying your email...'>
-        <Stack spacing={3} alignItems='center'>
-          <CircularProgress />
-          <Typography variant='body2' color='text.secondary'>
+        <div className='flex flex-col items-center gap-3'>
+          <Loader2 className='size-8 animate-spin text-muted-foreground' />
+          <p className='text-sm text-muted-foreground'>
             Please wait while we confirm your account.
-          </Typography>
-        </Stack>
+          </p>
+        </div>
       </AuthPage>
-    );
+    )
   }
 
   if (isSuccess) {
@@ -39,17 +37,16 @@ export function VerifyEmailPage() {
         subtitle='Your account has been activated. You can now sign in.'
         footerText="Don't have an account?"
         footerLinkText='Register'
-        footerTo='/register'>
-        <Stack spacing={3} alignItems='center'>
-          <Typography variant='body2' color='text.secondary' textAlign='center'>
+        footerTo='/register'
+      >
+        <div className='flex flex-col items-center gap-3'>
+          <p className='text-center text-sm text-muted-foreground'>
             Welcome aboard! Use your credentials to access your dashboard.
-          </Typography>
-          <LinkButton to='/sign-in' variant='contained' color='primary'>
-            Go to Sign In
-          </LinkButton>
-        </Stack>
+          </p>
+          <LinkButton to='/sign-in'>Go to Sign In</LinkButton>
+        </div>
       </AuthPage>
-    );
+    )
   }
 
   return (
@@ -61,15 +58,14 @@ export function VerifyEmailPage() {
       }
       footerText='Need a new account?'
       footerLinkText='Register'
-      footerTo='/register'>
-      <Stack spacing={3} alignItems='center'>
-        <Typography variant='body2' color='text.secondary' textAlign='center'>
+      footerTo='/register'
+    >
+      <div className='flex flex-col items-center gap-3'>
+        <p className='text-center text-sm text-muted-foreground'>
           You can try signing in or registering again.
-        </Typography>
-        <LinkButton to='/sign-in' variant='contained'>
-          Go to Sign In
-        </LinkButton>
-      </Stack>
+        </p>
+        <LinkButton to='/sign-in'>Go to Sign In</LinkButton>
+      </div>
     </AuthPage>
-  );
+  )
 }

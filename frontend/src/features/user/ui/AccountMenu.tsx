@@ -1,109 +1,72 @@
-import Logout from '@mui/icons-material/Logout';
-import Avatar from '@mui/material/Avatar';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import Tooltip from '@mui/material/Tooltip';
-import { useState } from 'react';
-import { getRouteApi } from '@tanstack/react-router';
-import { LinkButton } from 'shared/ui/LinkButton';
+import { getRouteApi } from '@tanstack/react-router'
+import { Avatar, AvatarFallback } from 'app/components/ui/avatar'
+import { Button } from 'app/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'app/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from 'app/components/ui/tooltip'
+import { LogOut, User } from 'lucide-react'
+import { LinkButton } from 'shared/ui/LinkButton'
 
-const MenuStyle = {
-  paper: {
-    elevation: 0,
-    sx: {
-      overflow: 'visible',
-      filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-      mt: 1.5,
-      '& .MuiAvatar-root': {
-        width: 32,
-        height: 32,
-        ml: -0.5,
-        mr: 1,
-      },
-      '&::before': {
-        content: '""',
-        display: 'block',
-        position: 'absolute',
-        top: 0,
-        right: 14,
-        width: 10,
-        height: 10,
-        bgcolor: 'background.paper',
-        transform: 'translateY(-50%) rotate(45deg)',
-        zIndex: 0,
-      },
-    },
-  },
-};
-
-const routeApi = getRouteApi('__root__');
+const routeApi = getRouteApi('__root__')
 
 export function AccountMenu() {
   const {
     auth: { user, logout },
-  } = routeApi.useRouteContext();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const navigate = routeApi.useNavigate();
-  const open = !!anchorEl;
-  const handleClick = (e: React.MouseEvent<HTMLElement>) =>
-    setAnchorEl(e.currentTarget);
-  const handleClose = () => setAnchorEl(null);
+  } = routeApi.useRouteContext()
+  const navigate = routeApi.useNavigate()
 
-  if (!user) return null;
+  if (!user) return null
   return (
-    <>
-      <Tooltip title='Account settings'>
-        <IconButton
-          onClick={handleClick}
-          size='small'
-          sx={{ ml: 2 }}
-          aria-controls={open ? 'account-menu' : undefined}
-          aria-haspopup='true'
-          aria-expanded={open ? 'true' : undefined}>
-          <Avatar sx={{ width: 32, height: 32 }}>
-            {user.username.charAt(0).toUpperCase()}
-          </Avatar>
-        </IconButton>
-      </Tooltip>
-      <Menu
-        anchorEl={anchorEl}
-        id='account-menu'
-        open={open}
-        onClose={handleClose}
-        onClick={handleClose}
-        slotProps={MenuStyle}
-        transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
-        <Divider />
-        <MenuItem onClick={handleClose}>
+    <DropdownMenu>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant='ghost' size='icon' className='ml-2 rounded-full'>
+                <Avatar className='size-8'>
+                  <AvatarFallback>
+                    {user.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Account settings</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      <DropdownMenuContent align='end'>
+        <DropdownMenuItem asChild>
           <LinkButton
             to='/profile'
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              color: 'inherit',
-              padding: 0,
-            }}>
-            <Avatar /> Profile
+            variant='ghost'
+            className='w-full justify-start'
+          >
+            <User className='size-4' />
+            Profile
           </LinkButton>
-        </MenuItem>
-        <Divider />
-        <MenuItem
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
           onClick={() => {
             logout().finally(() => {
-              handleClose();
-              navigate({ to: '/' });
-            });
-          }}>
-          <ListItemIcon>
-            <Logout fontSize='small' />
-          </ListItemIcon>
+              navigate({ to: '/' })
+            })
+          }}
+        >
+          <LogOut className='size-4' />
           Logout
-        </MenuItem>
-      </Menu>
-    </>
-  );
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }

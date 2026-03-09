@@ -1,60 +1,44 @@
-import { Suspense } from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Drawer from '@mui/material/Drawer';
-import Divider from '@mui/material/Divider';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
-import { SuspenseFallback } from 'shared/ui/SuspenseFallback';
-import { SetPasswordForm } from './SetPasswordForm';
-import { getCurrentUser } from 'shared/api/gen';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi } from '@tanstack/react-router'
+import { Separator } from 'app/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from 'app/components/ui/sheet'
+import { Suspense } from 'react'
+import { getCurrentUser } from 'shared/api/gen'
+import { SuspenseFallback } from 'shared/ui/SuspenseFallback'
+import { SetPasswordForm } from './SetPasswordForm'
 
 interface SetPasswordProps {
-  open: boolean;
-  onClose: () => void;
+  open: boolean
+  onClose: () => void
 }
 
-const routeApi = getRouteApi('/_authenticated');
+const routeApi = getRouteApi('/_authenticated')
 
 export function SetPasswordDrawer({ open, onClose }: SetPasswordProps) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-
   const {
     auth: { setUser },
-  } = routeApi.useRouteContext();
+  } = routeApi.useRouteContext()
   const onSuccess = async () => {
-    const { data } = await getCurrentUser();
-    setUser(data);
-    onClose();
-  };
+    const { data } = await getCurrentUser()
+    setUser(data)
+    onClose()
+  }
 
   return (
-    <Drawer
-      anchor='right'
-      open={open}
-      onClose={onClose}
-      slotProps={{
-        root: {
-          keepMounted: true,
-        },
-        paper: {
-          sx: {
-            width: isMobile ? '85vw' : '500px',
-            maxWidth: '500px',
-          },
-        },
-      }}>
-      <Box sx={{ p: 3, height: '100%' }}>
-        <Typography variant='h5' component='h2' gutterBottom>
-          Set Password
-        </Typography>
-        <Divider sx={{ mb: 3 }} />
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className='w-[85vw] overflow-y-auto sm:max-w-[500px]'>
+        <SheetHeader>
+          <SheetTitle>Set Password</SheetTitle>
+        </SheetHeader>
+        <Separator />
         <Suspense fallback={<SuspenseFallback />}>
           {open && <SetPasswordForm onSuccess={onSuccess} />}
         </Suspense>
-      </Box>
-    </Drawer>
-  );
+      </SheetContent>
+    </Sheet>
+  )
 }

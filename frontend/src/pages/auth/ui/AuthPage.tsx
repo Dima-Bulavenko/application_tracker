@@ -1,19 +1,20 @@
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import type { SxProps, Theme } from '@mui/material/styles';
-import { Link } from 'shared/ui/Link';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from 'app/components/ui/card'
+import { Separator } from 'app/components/ui/separator'
+import { Link } from 'shared/ui/Link'
 
 export interface AuthPageProps {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  footerText?: string;
-  footerLinkText?: string;
-  footerTo?: string;
-  sx?: SxProps<Theme>;
+  title: string
+  subtitle?: string
+  children: React.ReactNode
+  footerText?: string
+  footerLinkText?: string
+  footerTo?: string
 }
 
 export function AuthPage({
@@ -23,53 +24,34 @@ export function AuthPage({
   footerText,
   footerLinkText,
   footerTo,
-  sx,
 }: AuthPageProps) {
   return (
-    <Box
-      component='section'
-      sx={(theme) => ({
-        minHeight: '100dvh',
-        display: 'grid',
-        placeItems: 'center',
-        px: 2,
-        py: 8,
-        backgroundColor: 'background.default',
-        ...((typeof sx === 'function' ? sx(theme) : sx) as object),
-      })}>
-      <Paper elevation={4} sx={{ p: 4, width: '100%', maxWidth: 480 }}>
-        <Stack spacing={3}>
-          <Stack spacing={0.5}>
-            <Typography variant='h4' component='h1'>
-              {title}
-            </Typography>
-            {subtitle && (
-              <Typography variant='body2' color='text.secondary'>
-                {subtitle}
-              </Typography>
-            )}
-          </Stack>
-
-          {children}
-
-          {(footerText || (footerLinkText && footerTo)) && (
-            <>
-              <Divider />
-              <Typography
-                variant='body2'
-                color='text.secondary'
-                textAlign='center'>
-                {footerText}{' '}
-                {footerLinkText && footerTo && (
-                  <Link to={footerTo} underline='hover'>
-                    {footerLinkText}
-                  </Link>
-                )}
-              </Typography>
-            </>
+    <section className='grid min-h-dvh place-items-center px-2 py-8'>
+      <Card className='w-full max-w-[480px]'>
+        <CardHeader>
+          <CardTitle className='text-2xl'>{title}</CardTitle>
+          {subtitle && (
+            <p className='text-sm text-muted-foreground'>{subtitle}</p>
           )}
-        </Stack>
-      </Paper>
-    </Box>
-  );
+        </CardHeader>
+        <CardContent className='space-y-3'>{children}</CardContent>
+        {(footerText || (footerLinkText && footerTo)) && (
+          <CardFooter className='flex-col gap-3'>
+            <Separator />
+            <p className='text-center text-sm text-muted-foreground'>
+              {footerText}{' '}
+              {footerLinkText && footerTo && (
+                <Link
+                  to={footerTo}
+                  className='underline-offset-4 hover:underline'
+                >
+                  {footerLinkText}
+                </Link>
+              )}
+            </p>
+          </CardFooter>
+        )}
+      </Card>
+    </section>
+  )
 }

@@ -1,59 +1,45 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import Paper from '@mui/material/Paper';
-import { LinkButton } from 'shared/ui/LinkButton';
-import { getRouteApi } from '@tanstack/react-router';
+import { getRouteApi } from '@tanstack/react-router'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from 'app/components/ui/card'
+import { LinkButton } from 'shared/ui/LinkButton'
 
-const roteApi = getRouteApi('__root__');
+const roteApi = getRouteApi('__root__')
 
 export function HomePage() {
   const {
     auth: { isAuthenticated },
-  } = roteApi.useRouteContext();
+  } = roteApi.useRouteContext()
   return (
-    <Stack spacing={8} sx={{ py: 6 }}>
+    <div className='space-y-16 py-6'>
       {/* Hero Section */}
-      <Box component='section' sx={{ textAlign: 'center' }}>
-        <Typography variant='h2' component='h1' gutterBottom>
+      <section className='text-center'>
+        <h1 className='text-4xl font-bold tracking-tight'>
           Application Tracker
-        </Typography>
-        <Typography
-          variant='h6'
-          color='text.secondary'
-          maxWidth={720}
-          mx='auto'>
+        </h1>
+        <p className='mx-auto mt-2 max-w-[720px] text-lg text-muted-foreground'>
           Track and manage all your job applications in one organized workspace.
           Stay on top of every stage—from submission to interviews and offers.
-        </Typography>
-        <Stack direction='row' spacing={2} justifyContent='center' mt={4}>
+        </p>
+        <div className='mt-4 flex justify-center gap-2'>
           {isAuthenticated ? (
-            <LinkButton to='/dashboard' variant='contained' color='primary'>
-              Go to Dashboard
-            </LinkButton>
+            <LinkButton to='/dashboard'>Go to Dashboard</LinkButton>
           ) : (
             <>
-              <LinkButton to='/register' variant='contained' color='primary'>
-                Get Started
-              </LinkButton>
-              <LinkButton to='/sign-in' variant='outlined'>
+              <LinkButton to='/register'>Get Started</LinkButton>
+              <LinkButton to='/sign-in' variant='outline'>
                 Sign In
               </LinkButton>
             </>
           )}
-        </Stack>
-      </Box>
-      <Box component='section' maxWidth='lg' mx='auto' px={2}>
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 4,
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, 1fr)',
-              md: 'repeat(3, 1fr)',
-            },
-          }}>
+        </div>
+      </section>
+
+      <section className='mx-auto max-w-5xl px-2'>
+        <div className='grid gap-4 sm:grid-cols-2 md:grid-cols-3'>
           {[
             {
               title: 'Centralized Tracking',
@@ -68,32 +54,27 @@ export function HomePage() {
               body: 'Coming soon: analytics to help you understand response rates and optimize your search.',
             },
           ].map((feature) => (
-            <Paper
-              key={feature.title}
-              elevation={3}
-              sx={{ p: 3, height: '100%' }}>
-              <Typography variant='h6' gutterBottom>
-                {feature.title}
-              </Typography>
-              <Typography variant='body2' color='text.secondary'>
-                {feature.body}
-              </Typography>
-            </Paper>
+            <Card key={feature.title} className='h-full'>
+              <CardHeader>
+                <CardTitle className='text-lg'>{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className='text-sm text-muted-foreground'>{feature.body}</p>
+              </CardContent>
+            </Card>
           ))}
-        </Box>
-      </Box>
+        </div>
+      </section>
 
       {/* Auth Prompt */}
       {!isAuthenticated && (
-        <Box component='section' textAlign='center'>
-          <Typography variant='subtitle1' gutterBottom>
+        <section className='text-center'>
+          <p className='mb-2 text-muted-foreground'>
             Create a free account to start organizing your applications.
-          </Typography>
-          <LinkButton to='/register' variant='contained'>
-            Create Account
-          </LinkButton>
-        </Box>
+          </p>
+          <LinkButton to='/register'>Create Account</LinkButton>
+        </section>
       )}
-    </Stack>
-  );
+    </div>
+  )
 }

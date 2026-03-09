@@ -1,38 +1,22 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import { DeleteAccountButton } from 'features/user/ui/DeleteAccountButton';
+import { Card, CardContent } from 'app/components/ui/card'
+import { DeleteAccountButton } from 'features/user/ui/DeleteAccountButton'
+import { TriangleAlert } from 'lucide-react'
 
 export function DangerZoneSection() {
   return (
-    <Paper
-      elevation={1}
-      sx={{
-        p: 3,
-        borderColor: 'error.main',
-        borderWidth: 1,
-        borderStyle: 'solid',
-        bgcolor: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'rgba(211, 47, 47, 0.05)'
-            : 'rgba(211, 47, 47, 0.02)',
-      }}>
-      <Box sx={{ mb: 5 }}>
-        <Typography
-          variant='h6'
-          component='h2'
-          gutterBottom
-          color='error'
-          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningAmberIcon />
-          Danger Zone
-        </Typography>
-        <Typography variant='body2' color='text.secondary'>
-          Permanently delete your account and all associated data
-        </Typography>
-      </Box>
-      <DeleteAccountButton />
-    </Paper>
-  );
+    <Card className='border-destructive bg-destructive/5'>
+      <CardContent>
+        <div className='mb-5'>
+          <h2 className='flex items-center gap-1 text-lg font-semibold text-destructive'>
+            <TriangleAlert className='size-5' />
+            Danger Zone
+          </h2>
+          <p className='text-sm text-muted-foreground'>
+            Permanently delete your account and all associated data
+          </p>
+        </div>
+        <DeleteAccountButton />
+      </CardContent>
+    </Card>
+  )
 }

@@ -1,9 +1,9 @@
-import { linkedinAuthorize } from 'shared/api/gen';
-import SocialAuthorizationButton from './SocialAuthorizationButton';
+import { linkedinAuthorize } from 'shared/api/gen'
+import SocialAuthorizationButton from './SocialAuthorizationButton'
 
 interface LinkedInAuthorizationButtonProps {
-  action?: 'sign-in' | 'sign-up';
-  disabled?: boolean;
+  action?: 'sign-in' | 'sign-up'
+  disabled?: boolean
 }
 
 export default function LinkedInAuthorizationButton({
@@ -11,7 +11,7 @@ export default function LinkedInAuthorizationButton({
   disabled = false,
 }: LinkedInAuthorizationButtonProps) {
   const buttonText =
-    action === 'sign-up' ? 'Sign up with LinkedIn' : 'Sign in with LinkedIn';
+    action === 'sign-up' ? 'Sign up with LinkedIn' : 'Sign in with LinkedIn'
 
   return (
     <SocialAuthorizationButton
@@ -20,5 +20,5 @@ export default function LinkedInAuthorizationButton({
       buttonText={buttonText}
       disabled={disabled}
     />
-  );
+  )
 }

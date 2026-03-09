@@ -37,29 +37,13 @@ repos:
         language: system
         exclude: ^backend/app/tests/
         types_or: [python, pyi]
-      # eslint
-      - id: eslint
-        name: eslint
-        entry: frontend/node_modules/.bin/eslint
+      # biome (linter + formatter)
+      - id: biome-check
+        name: biome check
         language: system
-        args: ['--config', './frontend/eslint.config.js']
-        types_or: [javascript, ts, tsx, jsx]
-      # prettier
-      - id: prettier
-        name: prettier
-        entry: frontend/node_modules/.bin/prettier
-        args:
-          [
-            '--write',
-            '--ignore-unknown',
-            '--config',
-            './frontend/prettier.config.js',
-            '--ignore-path',
-            './frontend/.prettierignore',
-          ]
+        entry: bash -lc 'cd frontend && ./node_modules/.bin/biome check --write .'
         files: ^frontend/
-        language: system
-        types_or: [javascript, ts, tsx, jsx, json, yaml, html, css]
+        pass_filenames: false
 
       # TypeScript typecheck
       - id: ts-typecheck

@@ -1,9 +1,9 @@
-import { googleAuthorize } from 'shared/api/gen';
-import SocialAuthorizationButton from './SocialAuthorizationButton';
+import { googleAuthorize } from 'shared/api/gen'
+import SocialAuthorizationButton from './SocialAuthorizationButton'
 
 interface GoogleAuthorizationButtonProps {
-  action?: 'sign-in' | 'sign-up';
-  disabled?: boolean;
+  action?: 'sign-in' | 'sign-up'
+  disabled?: boolean
 }
 
 export default function GoogleAuthorizationButton({
@@ -11,7 +11,7 @@ export default function GoogleAuthorizationButton({
   disabled = false,
 }: GoogleAuthorizationButtonProps) {
   const buttonText =
-    action === 'sign-up' ? 'Sign up with Google' : 'Sign in with Google';
+    action === 'sign-up' ? 'Sign up with Google' : 'Sign in with Google'
 
   return (
     <SocialAuthorizationButton
@@ -20,5 +20,5 @@ export default function GoogleAuthorizationButton({
       buttonText={buttonText}
       disabled={disabled}
     />
-  );
+  )
 }

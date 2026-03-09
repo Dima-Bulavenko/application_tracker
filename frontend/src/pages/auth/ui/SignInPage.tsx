@@ -1,5 +1,5 @@
-import SignInForm from 'pages/auth/ui/SignInForm';
-import { AuthPage } from './AuthPage';
+import SignInForm from 'pages/auth/ui/SignInForm'
+import { AuthPage } from './AuthPage'
 
 export function SignInPage() {
   return (
@@ -8,8 +8,9 @@ export function SignInPage() {
       subtitle='Sign in to continue tracking your applications'
       footerText="Don't have an account?"
       footerLinkText='Create one'
-      footerTo='/register'>
+      footerTo='/register'
+    >
       <SignInForm />
     </AuthPage>
-  );
+  )
 }

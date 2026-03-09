@@ -24,10 +24,9 @@
         "ms-azuretools.vscode-docker",
         "ecmel.vscode-html-css",
         "solnurkarim.html-to-css-autocompletion",
-        "esbenp.prettier-vscode",
+        "biomejs.biome",
         "bierner.color-info",
         "dsznajder.es7-react-js-snippets",
-        "dbaeumer.vscode-eslint",
         "samuelcolvin.jinjahtml"
       ]
     }

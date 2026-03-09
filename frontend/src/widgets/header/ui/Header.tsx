@@ -1,63 +1,45 @@
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import { ColorModeToggler } from 'shared/ui/ColorModeToggler';
-import { AccountMenu } from 'features/user/ui/AccountMenu';
-import { getRouteApi } from '@tanstack/react-router';
-import { LinkButton } from 'shared/ui/LinkButton';
+import { getRouteApi } from '@tanstack/react-router'
+import { AccountMenu } from 'features/user/ui/AccountMenu'
+import { ColorModeToggler } from 'shared/ui/ColorModeToggler'
+import { LinkButton } from 'shared/ui/LinkButton'
 
-const routeApi = getRouteApi('__root__');
+const routeApi = getRouteApi('__root__')
 
 export function Header() {
   const {
     auth: { user },
-  } = routeApi.useRouteContext();
+  } = routeApi.useRouteContext()
   return (
-    <AppBar position='sticky' color='default' elevation={0}>
-      <Toolbar sx={{ gap: 1, minHeight: 64 }}>
-        <LinkButton
-          to={user ? '/dashboard' : '/'}
-          sx={{ backdropFilter: 'none' }}>
-          <Box
-            component='img'
+    <header className='sticky top-0 z-50 w-full border-b bg-background'>
+      <div className='flex h-16 items-center gap-1 px-4'>
+        <LinkButton to={user ? '/dashboard' : '/'} variant='ghost'>
+          <img
             src='/logo.svg'
             alt='Application Tracker'
-            sx={{
-              height: 30,
-              width: 70,
-            }}
+            className='h-[30px] w-[70px]'
           />
         </LinkButton>
-        <Box sx={{ flex: 1 }} />
+        <div className='flex-1' />
 
-        <Stack direction='row' spacing={1} alignItems='center'>
+        <div className='flex items-center gap-1'>
           {user ? (
             <AccountMenu />
           ) : (
             <>
-              <LinkButton
-                size='small'
-                color='primary'
-                variant='text'
-                to='/sign-in'>
+              <LinkButton size='sm' variant='ghost' to='/sign-in'>
                 Login
               </LinkButton>
-              <LinkButton
-                size='small'
-                color='primary'
-                variant='contained'
-                to='/register'>
+              <LinkButton size='sm' to='/register'>
                 Register
               </LinkButton>
             </>
           )}
-        </Stack>
+        </div>
 
         <ColorModeToggler />
-      </Toolbar>
-    </AppBar>
-  );
+      </div>
+    </header>
+  )
 }
 
-export default Header;
+export default Header

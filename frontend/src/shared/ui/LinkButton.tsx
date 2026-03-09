@@ -1,20 +1,28 @@
-import React from 'react';
-import Button from '@mui/material/Button';
-import { createLink } from '@tanstack/react-router';
-import type { ButtonProps } from '@mui/material';
-import type { LinkComponent } from '@tanstack/react-router';
+import type { LinkComponent } from '@tanstack/react-router'
+import { createLink } from '@tanstack/react-router'
+import { buttonVariants } from 'app/components/ui/button'
+import { cn } from 'app/lib/utils'
+import type { VariantProps } from 'class-variance-authority'
+import React from 'react'
 
-type MUIButtonLinkProps = ButtonProps<'a'>;
+type ButtonLinkProps = React.ComponentProps<'a'> &
+  VariantProps<typeof buttonVariants>
 
-const MUIButtonLinkComponent = React.forwardRef<
+const ButtonLinkComponent = React.forwardRef<
   HTMLAnchorElement,
-  MUIButtonLinkProps
->((props, ref) => <Button ref={ref} component='a' {...props} />);
+  ButtonLinkProps
+>(({ className, variant, size, ...props }, ref) => (
+  <a
+    ref={ref}
+    className={cn(buttonVariants({ variant, size, className }))}
+    {...props}
+  />
+))
 
-const CreatedButtonLinkComponent = createLink(MUIButtonLinkComponent);
+const CreatedButtonLinkComponent = createLink(ButtonLinkComponent)
 
-export const LinkButton: LinkComponent<typeof MUIButtonLinkComponent> = (
+export const LinkButton: LinkComponent<typeof ButtonLinkComponent> = (
   props
 ) => {
-  return <CreatedButtonLinkComponent preload={'intent'} {...props} />;
-};
+  return <CreatedButtonLinkComponent preload='intent' {...props} />
+}

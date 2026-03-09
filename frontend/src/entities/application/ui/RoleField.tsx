@@ -1,10 +1,10 @@
-import { useController } from 'react-hook-form';
-import type { FieldComponent } from 'shared/types/form';
-import { TextInput } from 'shared/ui/TextInput';
+import { useController } from 'react-hook-form'
+import type { FieldComponent } from 'shared/types/form'
+import { TextInput } from 'shared/ui/TextInput'
 
 const RoleField: FieldComponent = ({ label = 'Role', ...props }) => {
-  const controller = useController(props);
-  return <TextInput label={label} controller={controller} />;
-};
+  const controller = useController(props)
+  return <TextInput label={label} controller={controller} />
+}
 
-export default RoleField;
+export default RoleField

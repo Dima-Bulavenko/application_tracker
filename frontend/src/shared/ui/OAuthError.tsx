@@ -1,38 +1,30 @@
-import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-
-import type { ReactNode } from 'react';
+import { Alert, AlertDescription, AlertTitle } from 'app/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 interface OAuthErrorProps {
-  authButton: ReactNode;
+  authButton: ReactNode
 }
 
 export default function OAuthError({ authButton }: OAuthErrorProps) {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        padding: 3,
-      }}>
-      <Stack spacing={3} maxWidth={500} width='100%'>
-        <Alert severity='error'>
+    <div className='flex min-h-screen flex-col items-center justify-center p-6'>
+      <div className='flex w-full max-w-[500px] flex-col gap-6'>
+        <Alert variant='destructive'>
+          <AlertCircle className='size-4' />
           <AlertTitle>Authentication Error</AlertTitle>
-          An error occurred during authentication. Please try signing in again.
+          <AlertDescription>
+            An error occurred during authentication. Please try signing in
+            again.
+          </AlertDescription>
         </Alert>
 
-        <Typography variant='body2' color='text.secondary' textAlign='center'>
+        <p className='text-center text-sm text-muted-foreground'>
           If the problem persists, please contact support.
-        </Typography>
+        </p>
 
         {authButton}
-      </Stack>
-    </Box>
-  );
+      </div>
+    </div>
+  )
 }

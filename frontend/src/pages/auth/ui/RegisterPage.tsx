@@ -1,5 +1,5 @@
-import RegisterForm from 'pages/auth/ui/RegisterForm';
-import { AuthPage } from './AuthPage';
+import RegisterForm from 'pages/auth/ui/RegisterForm'
+import { AuthPage } from './AuthPage'
 
 export function RegisterPage() {
   return (
@@ -8,8 +8,9 @@ export function RegisterPage() {
       subtitle='Start organizing your job applications today'
       footerText='Already have an account?'
       footerLinkText='Sign in'
-      footerTo='/sign-in'>
+      footerTo='/sign-in'
+    >
       <RegisterForm />
     </AuthPage>
-  );
+  )
 }

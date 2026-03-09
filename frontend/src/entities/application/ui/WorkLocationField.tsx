@@ -1,7 +1,7 @@
-import type { FieldComponent } from 'shared/types/form';
-import { zWorkLocation } from 'shared/api/gen/zod.gen';
-import { SelectField } from 'shared/ui/SelectField';
-import { useController } from 'react-hook-form';
+import { useController } from 'react-hook-form'
+import { zWorkLocation } from 'shared/api/gen/zod.gen'
+import type { FieldComponent } from 'shared/types/form'
+import { SelectField } from 'shared/ui/SelectField'
 
 /**
  * Application status select field integrated with react-hook-form.
@@ -11,8 +11,8 @@ export const WorkLocationField: FieldComponent = ({
   label = 'Work Location',
   ...props
 }) => {
-  const options = zWorkLocation.options;
-  const controller = useController({ ...props });
+  const options = zWorkLocation.options
+  const controller = useController({ ...props })
   return (
     <SelectField
       {...props}
@@ -20,7 +20,7 @@ export const WorkLocationField: FieldComponent = ({
       options={options}
       controller={controller}
     />
-  );
-};
+  )
+}
 
-export default WorkLocationField;
+export default WorkLocationField

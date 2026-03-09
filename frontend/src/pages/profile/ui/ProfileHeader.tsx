@@ -1,21 +1,15 @@
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import PersonIcon from '@mui/icons-material/Person';
+import { User } from 'lucide-react'
 
 export function ProfileHeader() {
   return (
-    <Box>
-      <Typography
-        variant='h4'
-        component='h1'
-        gutterBottom
-        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <PersonIcon fontSize='large' />
+    <div>
+      <h1 className='flex items-center gap-1 text-2xl font-bold'>
+        <User className='size-7' />
         Profile Settings
-      </Typography>
-      <Typography variant='body2' color='text.secondary'>
+      </h1>
+      <p className='text-sm text-muted-foreground'>
         Manage your account information and preferences
-      </Typography>
-    </Box>
-  );
+      </p>
+    </div>
+  )
 }
