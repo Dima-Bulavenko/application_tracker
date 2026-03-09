@@ -1,7 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import Button from '@mui/material/Button'
-import Stack from '@mui/material/Stack'
 import { useMutation } from '@tanstack/react-query'
+import { Button } from 'app/components/ui/button'
 import { applicationUpdateOptions } from 'entities/application/api/queryOptions'
 import { ApplicationStatusField } from 'entities/application/ui/ApplicationStatusField'
 import ApplicationURLField from 'entities/application/ui/ApplicationURLField'
@@ -11,7 +10,7 @@ import { NoteField } from 'entities/application/ui/NoteField'
 import RoleField from 'entities/application/ui/RoleField'
 import { WorkLocationField } from 'entities/application/ui/WorkLocationField'
 import { WorkTypeField } from 'entities/application/ui/WorkTypeField'
-import { SubmitHandler, useForm } from 'react-hook-form'
+import { type SubmitHandler, useForm } from 'react-hook-form'
 import type {
   ApplicationRead,
   ApplicationUpdate,
@@ -43,33 +42,30 @@ export function UpdateApplicationForm(defaultValues: ApplicationRead) {
     }
   }
   return (
-    <>
-      <Form onSubmit={handleSubmit(onSubmit)}>
-        <Stack spacing={5}>
-          <RoleField name='role' control={control} />
-          <CompanyField name='company.name' control={control} />
-          <ApplicationStatusField name='status' control={control} />
-          <WorkTypeField name='work_type' control={control} />
-          <WorkLocationField name='work_location' control={control} />
-          <NoteField name='note' control={control} />
-          <InterviewDateField name='interview_date' control={control} />
-          <ApplicationURLField name='application_url' control={control} />
-        </Stack>
-        <FormError message={errors.root?.message} />
-        <SubmitButton isSubmitting={isPending} disabled={!isDirty || isPending}>
-          Update Application
-        </SubmitButton>
-        <Button
-          sx={{ mt: 3 }}
-          type='button'
-          color='primary'
-          disabled={!isDirty}
-          onClick={() => reset()}
-          variant='contained'
-        >
-          Reset Form
-        </Button>
-      </Form>
-    </>
+    <Form onSubmit={handleSubmit(onSubmit)}>
+      <div className='space-y-5'>
+        <RoleField name='role' control={control} />
+        <CompanyField name='company.name' control={control} />
+        <ApplicationStatusField name='status' control={control} />
+        <WorkTypeField name='work_type' control={control} />
+        <WorkLocationField name='work_location' control={control} />
+        <NoteField name='note' control={control} />
+        <InterviewDateField name='interview_date' control={control} />
+        <ApplicationURLField name='application_url' control={control} />
+      </div>
+      <FormError message={errors.root?.message} />
+      <SubmitButton isSubmitting={isPending} disabled={!isDirty || isPending}>
+        Update Application
+      </SubmitButton>
+      <Button
+        type='button'
+        variant='outline'
+        disabled={!isDirty}
+        onClick={() => reset()}
+        className='mt-3'
+      >
+        Reset Form
+      </Button>
+    </Form>
   )
 }

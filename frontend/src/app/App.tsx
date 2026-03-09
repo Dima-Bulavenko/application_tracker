@@ -1,5 +1,3 @@
-import CssBaseline from '@mui/material/CssBaseline'
-import { ThemeProvider } from '@mui/material/styles'
 import {
   MutationCache,
   QueryClient,
@@ -14,7 +12,6 @@ import {
 } from 'features/user/hooks/useUser'
 import { useEffect } from 'react'
 import { useAuth } from 'shared/hooks/useAuth'
-import { buildTheme } from 'shared/theme'
 import { AuthProvider } from './AuthProvider'
 import { router } from './router'
 
@@ -52,13 +49,10 @@ function InnerApp() {
 
 export function App() {
   return (
-    <ThemeProvider theme={buildTheme()} defaultMode='system' noSsr>
-      <CssBaseline />
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <InnerApp />
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <InnerApp />
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }

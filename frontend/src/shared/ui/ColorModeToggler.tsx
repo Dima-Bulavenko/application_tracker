@@ -1,54 +1,42 @@
-import LightModeIcon from '@mui/icons-material/LightMode'
-import NightlightRoundIcon from '@mui/icons-material/NightlightRound'
-import IconButton from '@mui/material/IconButton'
-import { useColorScheme } from '@mui/material/styles'
-import useMediaQuery from '@mui/material/useMediaQuery'
+import { Button } from 'app/components/ui/button'
+import { Moon, Sun } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
-type Mode = 'light' | 'dark' | 'system' | undefined
+type Theme = 'light' | 'dark'
+
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'light'
+  const stored = localStorage.getItem('theme') as Theme | null
+  if (stored) return stored
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light'
+}
 
 export function ColorModeToggler() {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
-  const { mode, setMode } = useColorScheme()
-  // Compute effective mode when current is 'system'
+  const [theme, setTheme] = useState<Theme>(getInitialTheme)
 
-  const isDarkActive = (m: Mode) =>
-    m === 'dark' || (m === 'system' && prefersDarkMode)
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('dark', theme === 'dark')
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
-  const handleToggle = () => {
-    if (!mode) return // avoid hydration mismatch
-    if (mode === 'system') {
-      // On first visit, system is active. Toggle to the opposite of effective mode.
-      setMode(prefersDarkMode ? 'light' : 'dark')
-    } else {
-      setMode(mode === 'light' ? 'dark' : 'light')
-    }
-  }
-
-  if (!mode) return null
+  const toggleTheme = () =>
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
 
   return (
-    <IconButton
+    <Button
+      variant='ghost'
+      size='icon'
       aria-label='Toggle color mode'
-      onClick={handleToggle}
-      size='small'
-      sx={{
-        ml: 1,
-        width: 36,
-        height: 36,
-        color: 'text.primary',
-        '&:hover': {
-          bgcolor: (theme) =>
-            theme.palette.mode === 'light'
-              ? theme.palette.grey[300]
-              : theme.palette.grey[800],
-        },
-      }}
+      onClick={toggleTheme}
     >
-      {isDarkActive(mode) ? (
-        <NightlightRoundIcon fontSize='small' />
+      {theme === 'dark' ? (
+        <Moon className='size-4' />
       ) : (
-        <LightModeIcon fontSize='small' />
+        <Sun className='size-4' />
       )}
-    </IconButton>
+    </Button>
   )
 }

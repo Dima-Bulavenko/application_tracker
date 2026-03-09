@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import Stack from '@mui/material/Stack'
 import PasswordField from 'entities/user/ui/PasswordField'
 import { type SubmitHandler, useForm } from 'react-hook-form'
 import { changePassword } from 'shared/api/gen'
@@ -76,7 +75,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
 
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={2}>
+      <div className='space-y-2'>
         <PasswordField
           name='old_password'
           control={control}
@@ -95,7 +94,7 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
           label='Confirm New Password'
           helperText=''
         />
-      </Stack>
+      </div>
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Change Password</SubmitButton>
     </Form>

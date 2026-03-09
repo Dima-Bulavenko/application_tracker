@@ -1,4 +1,4 @@
-import Paper from '@mui/material/Paper'
+import { Card, CardContent } from 'app/components/ui/card'
 import { useState } from 'react'
 import { SectionHeader } from './SectionHeader'
 import { SetPasswordDrawer } from './SetPasswordDrawer'
@@ -11,14 +11,16 @@ export function SetPasswordSection() {
 
   return (
     <>
-      <Paper elevation={1} sx={{ p: 3 }}>
-        <SectionHeader
-          title='Set Password'
-          subtitle='Create a password for your account'
-          onEditClick={handleOpenDrawer}
-        />
-        <SetPasswordDrawer open={drawerOpen} onClose={handleCloseDrawer} />
-      </Paper>
+      <Card>
+        <CardContent>
+          <SectionHeader
+            title='Set Password'
+            subtitle='Create a password for your account'
+            onEditClick={handleOpenDrawer}
+          />
+          <SetPasswordDrawer open={drawerOpen} onClose={handleCloseDrawer} />
+        </CardContent>
+      </Card>
     </>
   )
 }

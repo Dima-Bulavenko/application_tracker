@@ -1,5 +1,4 @@
-import type { TextFieldProps } from '@mui/material/TextField'
-import {
+import type {
   ControllerFieldState,
   ControllerRenderProps,
   FieldPath,
@@ -12,13 +11,9 @@ export function buildBaseInputProps<
 >(
   field: ControllerRenderProps<TFieldValues, TName>,
   fieldState: ControllerFieldState
-): Pick<
-  TextFieldProps,
-  'id' | 'variant' | 'label' | 'value' | 'error' | 'helperText'
-> {
+) {
   return {
     id: `${field.name}_id`,
-    variant: 'outlined',
     label: field.name.charAt(0).toUpperCase() + field.name.slice(1),
     value: field.value || '',
     helperText: fieldState.error ? fieldState.error?.message : '',

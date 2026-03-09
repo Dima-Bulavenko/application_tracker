@@ -1,9 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import Stack from '@mui/material/Stack'
 import { getRouteApi } from '@tanstack/react-router'
 import EmailField from 'entities/user/ui/EmailField'
 import PasswordField from 'entities/user/ui/PasswordField'
-import { SubmitHandler, useForm } from 'react-hook-form'
+import { type SubmitHandler, useForm } from 'react-hook-form'
 import type { UserLogin } from 'shared/api/gen/types.gen'
 import { zUserLogin } from 'shared/api/gen/zod.gen'
 import { Form } from 'shared/ui/Form'
@@ -36,10 +35,10 @@ export default function SignInForm() {
   }
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={5}>
+      <div className='space-y-5'>
         <EmailField name='username' control={control} />
         <PasswordField name='password' control={control} />
-      </Stack>
+      </div>
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Sign In</SubmitButton>
       <GoogleAuthorizationButton />

@@ -1,34 +1,21 @@
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'
-import type { BoxProps } from '@mui/material/Box'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import { PropsWithChildren } from 'react'
+import { AlertCircle } from 'lucide-react'
+import type { PropsWithChildren } from 'react'
 
-type FormErrorProps = PropsWithChildren<
-  Omit<BoxProps, 'component' | 'children'> & {
-    message?: string
-  }
->
+type FormErrorProps = PropsWithChildren<{
+  message?: string
+}>
 
-// A compact, inline form error message (smaller than MUI Alert)
-export function FormError({ message, children, ...props }: FormErrorProps) {
+export function FormError({ message, children }: FormErrorProps) {
   const content = message ?? children
   if (!content) return null
   return (
-    <Box
+    <div
       role='alert'
       aria-live='polite'
-      display='flex'
-      alignItems='center'
-      gap={1}
-      color={(theme) => theme.palette.error.main}
-      sx={{ mt: 1 }}
-      {...props}
+      className='mt-2 flex items-center gap-2 text-destructive'
     >
-      <ErrorOutlineIcon fontSize='medium' />
-      <Typography variant='caption' sx={{ m: 0 }}>
-        {content}
-      </Typography>
-    </Box>
+      <AlertCircle className='size-5 shrink-0' />
+      <p className='text-sm'>{content}</p>
+    </div>
   )
 }

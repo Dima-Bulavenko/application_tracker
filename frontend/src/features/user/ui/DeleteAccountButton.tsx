@@ -1,7 +1,7 @@
-import DeleteIcon from '@mui/icons-material/Delete'
 import { getRouteApi } from '@tanstack/react-router'
+import { Button } from 'app/components/ui/button'
+import { Loader2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import SubmitButton from 'shared/ui/SubmitButton'
 import { useDeleteUser } from '../hooks/useDeleteUser'
 import { DeleteAccountDialog } from './DeleteAccountDialog'
 
@@ -33,17 +33,14 @@ export function DeleteAccountButton() {
 
   return (
     <>
-      <SubmitButton
-        variant='outlined'
-        color='error'
-        startIcon={<DeleteIcon />}
-        isSubmitting={isDeleting}
-        disabled={isDeleting}
-        sx={null}
-        onClick={handleOpen}
-      >
+      <Button variant='destructive' disabled={isDeleting} onClick={handleOpen}>
+        {isDeleting ? (
+          <Loader2 className='size-4 animate-spin' />
+        ) : (
+          <Trash2 className='size-4' />
+        )}
         Delete Account
-      </SubmitButton>
+      </Button>
       <DeleteAccountDialog
         open={open}
         onClose={handleClose}

@@ -1,5 +1,3 @@
-import Container from '@mui/material/Container'
-import Stack from '@mui/material/Stack'
 import { getRouteApi } from '@tanstack/react-router'
 import { ChangePasswordSection } from './ChangePasswordSection'
 import { DangerZoneSection } from './DangerZoneSection'
@@ -15,14 +13,12 @@ export function ProfilePage() {
   } = routeApi.useRouteContext()
 
   return (
-    <Container maxWidth='md' sx={{ py: 4 }}>
-      <Stack spacing={4}>
-        <ProfileHeader />
-        <PersonalInfoSection />
-        {user.is_password_set && <ChangePasswordSection />}
-        {!user.is_password_set && <SetPasswordSection />}
-        <DangerZoneSection />
-      </Stack>
-    </Container>
+    <div className='mx-auto max-w-3xl space-y-4 px-4 py-4'>
+      <ProfileHeader />
+      <PersonalInfoSection />
+      {user.is_password_set && <ChangePasswordSection />}
+      {!user.is_password_set && <SetPasswordSection />}
+      <DangerZoneSection />
+    </div>
   )
 }

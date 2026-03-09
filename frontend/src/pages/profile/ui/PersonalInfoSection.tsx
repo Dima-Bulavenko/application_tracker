@@ -1,5 +1,5 @@
-import Paper from '@mui/material/Paper'
 import { getRouteApi } from '@tanstack/react-router'
+import { Card, CardContent } from 'app/components/ui/card'
 import { useState } from 'react'
 import { EditDrawer } from './EditDrawer'
 import { SectionHeader } from './SectionHeader'
@@ -18,14 +18,16 @@ export function PersonalInfoSection() {
 
   return (
     <>
-      <Paper elevation={1} sx={{ p: 3 }}>
-        <SectionHeader
-          title='Personal Information'
-          subtitle='Your profile details'
-          onEditClick={handleOpenDrawer}
-        />
-        <UserInfoList user={user} />
-      </Paper>
+      <Card>
+        <CardContent>
+          <SectionHeader
+            title='Personal Information'
+            subtitle='Your profile details'
+            onEditClick={handleOpenDrawer}
+          />
+          <UserInfoList user={user} />
+        </CardContent>
+      </Card>
 
       <EditDrawer open={drawerOpen} onClose={handleCloseDrawer} />
     </>

@@ -1,19 +1,9 @@
-import Box from '@mui/material/Box'
-import CircularProgress from '@mui/material/CircularProgress'
+import { Loader2 } from 'lucide-react'
 
 export function SuspenseFallback() {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        height: '100%',
-        minHeight: '200px',
-      }}
-    >
-      <CircularProgress />
-    </Box>
+    <div className='flex min-h-[200px] w-full items-center justify-center'>
+      <Loader2 className='size-8 animate-spin text-muted-foreground' />
+    </div>
   )
 }

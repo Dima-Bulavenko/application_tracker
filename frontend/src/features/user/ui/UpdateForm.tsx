@@ -1,8 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import Box from '@mui/material/Box'
-import Stack from '@mui/material/Stack'
 import { getRouteApi } from '@tanstack/react-router'
-import { SubmitHandler, useController, useForm } from 'react-hook-form'
+import { type SubmitHandler, useController, useForm } from 'react-hook-form'
 import { updateUser } from 'shared/api/gen'
 import { zUserUpdate } from 'shared/api/gen/zod.gen'
 import { getDirtyValues } from 'shared/api/get_dirty_values'
@@ -58,23 +56,20 @@ export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
     })
   }
   return (
-    <Form
-      onSubmit={handleSubmit(onSubmit)}
-      sx={{ p: 0, m: 0, maxWidth: '100%' }}
-    >
-      <Stack spacing={3}>
+    <Form onSubmit={handleSubmit(onSubmit)} className='max-w-full p-0'>
+      <div className='space-y-3'>
         <FirstNameField name='first_name' control={control} />
         <SecondNameField name='second_name' control={control} />
         <FormError message={errors.root?.message} />
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+        <div className='flex justify-end pt-1'>
           <SubmitButton
             disabled={!isDirty || isSubmitting}
             isSubmitting={isSubmitting}
           >
             Save Changes
           </SubmitButton>
-        </Box>
-      </Stack>
+        </div>
+      </div>
     </Form>
   )
 }

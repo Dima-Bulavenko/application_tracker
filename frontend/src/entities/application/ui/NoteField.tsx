@@ -1,14 +1,10 @@
 import { useController } from 'react-hook-form'
 import type { FieldComponent } from 'shared/types/form'
-import { TextInput } from 'shared/ui/TextInput'
+import { TextareaInput } from 'shared/ui/TextareaInput'
 
-/**
- * Application status select field integrated with react-hook-form.
- * Values are sourced from generated zod enum to stay in sync with API.
- */
 export const NoteField: FieldComponent = ({ label = 'Note', ...props }) => {
   const controller = useController(props)
-  return <TextInput rows={3} multiline label={label} controller={controller} />
+  return <TextareaInput rows={3} label={label} controller={controller} />
 }
 
 export default NoteField

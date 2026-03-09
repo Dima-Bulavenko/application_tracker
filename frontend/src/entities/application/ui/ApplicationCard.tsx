@@ -1,13 +1,13 @@
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import CardHeader from '@mui/material/CardHeader'
-import Chip from '@mui/material/Chip'
-import Divider from '@mui/material/Divider'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import { useMutation } from '@tanstack/react-query'
+import { Badge } from 'app/components/ui/badge'
+import { Button } from 'app/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from 'app/components/ui/card'
+import { Separator } from 'app/components/ui/separator'
 import { applicationDeleteOptions } from 'entities/application/api/queryOptions'
 import {
   humanizeWorkLocation,
@@ -15,6 +15,7 @@ import {
 } from 'entities/application/lib/humanize'
 import { statusColor } from 'entities/application/lib/status'
 import { UpdateApplication } from 'features/application/ui/UpdateApplication'
+import { Trash2 } from 'lucide-react'
 import type { ApplicationReadWithCompany as ApplicationRead } from 'shared/api/gen/types.gen'
 import { formatDate } from 'shared/lib/date'
 
@@ -30,12 +31,12 @@ function DeleteApplicationButton({
   )
   return (
     <Button
-      variant='contained'
-      color='error'
+      variant='destructive'
+      size='icon'
       onClick={() => deleteApp()}
       disabled={isPending}
     >
-      <DeleteForeverIcon />
+      <Trash2 className='size-4' />
     </Button>
   )
 }
@@ -52,66 +53,52 @@ export function ApplicationCard({ application }: Props) {
     company,
   } = application
   return (
-    <Card variant='outlined' sx={{ maxWidth: 720 }}>
-      <CardHeader
-        title={role}
-        subheader={`${company.name}`}
-        slotProps={{ title: { fontWeight: 600 } }}
-      />
-      <CardContent>
-        <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
+    <Card className='max-w-[720px]'>
+      <CardHeader>
+        <CardTitle>{role}</CardTitle>
+        <p className='text-sm text-muted-foreground'>{company.name}</p>
+      </CardHeader>
+      <CardContent className='space-y-3'>
+        <div className='flex flex-wrap gap-2'>
           {status && (
-            <Chip
-              size='small'
-              label={`Status: ${status}`}
-              color={statusColor[status]}
-            />
+            <Badge className={statusColor[status]}>Status: {status}</Badge>
           )}
           {work_type && (
-            <Chip
-              size='small'
-              label={humanizeWorkType(work_type)}
-              variant='outlined'
-            />
+            <Badge variant='outline'>{humanizeWorkType(work_type)}</Badge>
           )}
           {work_location && (
-            <Chip
-              size='small'
-              label={humanizeWorkLocation(work_location)}
-              variant='outlined'
-            />
+            <Badge variant='outline'>
+              {humanizeWorkLocation(work_location)}
+            </Badge>
           )}
           {interview_date && (
-            <Chip
-              size='small'
-              label={`Interview: ${formatDate(interview_date)}`}
-              variant='outlined'
-            />
+            <Badge variant='outline'>
+              Interview: {formatDate(interview_date)}
+            </Badge>
           )}
-        </Stack>
+        </div>
 
-        {(time_create || time_update) && <Divider sx={{ my: 1.5 }} />}
+        {(time_create || time_update) && <Separator />}
 
         {(time_create || time_update) && (
-          <Stack
-            direction={{ xs: 'column', sm: 'row' }}
-            spacing={1}
-            divider={<Divider orientation='vertical' flexItem />}
-          >
+          <div className='flex flex-col gap-1 sm:flex-row sm:gap-3'>
             {time_create && (
-              <Typography variant='caption' color='text.secondary'>
+              <span className='text-xs text-muted-foreground'>
                 Created: {formatDate(time_create)}
-              </Typography>
+              </span>
             )}
             {time_update && (
-              <Typography variant='caption' color='text.secondary'>
+              <span className='text-xs text-muted-foreground'>
                 Updated: {formatDate(time_update)}
-              </Typography>
+              </span>
             )}
-          </Stack>
+          </div>
         )}
-        <UpdateApplication application={application} />
-        <DeleteApplicationButton application_id={application.id} />
+
+        <div className='flex gap-2'>
+          <UpdateApplication application={application} />
+          <DeleteApplicationButton application_id={application.id} />
+        </div>
       </CardContent>
     </Card>
   )

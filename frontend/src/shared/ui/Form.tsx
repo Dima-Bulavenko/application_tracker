@@ -1,26 +1,18 @@
-import type { BoxProps } from '@mui/material/Box'
-import Box from '@mui/material/Box'
-import type { Theme } from '@mui/material/styles'
-import type { SxProps } from '@mui/system'
+type BaseFormProps = React.ComponentProps<'form'>
 
-type BaseFormProps = Omit<BoxProps<'form'>, 'component'>
-
-export function Form({ children, sx, ...props }: BaseFormProps) {
-  const baseSx = (theme: Theme) => ({
-    p: theme.spacing(3),
-    m: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    maxWidth: theme.spacing(55),
-  })
-  const mergedSx: SxProps<Theme> = [
-    baseSx,
-    ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
-  ]
+export function Form({ children, className, ...props }: BaseFormProps) {
   return (
-    <Box component='form' noValidate sx={mergedSx} {...props}>
+    <form
+      noValidate
+      className={[
+        'mx-auto flex max-w-[440px] flex-col justify-center p-6',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      {...props}
+    >
       {children}
-    </Box>
+    </form>
   )
 }

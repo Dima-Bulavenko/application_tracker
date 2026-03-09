@@ -1,6 +1,3 @@
-import Box from '@mui/material/Box'
-import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { applicationsOptions } from 'entities/application/api/queryOptions'
@@ -17,38 +14,32 @@ export function ApplicationList() {
 
   if (error) {
     return (
-      <Box display='flex' flexDirection='column' alignItems='center' gap={1}>
-        <Typography color='error' variant='body2'>
-          {error.message}
-        </Typography>
-      </Box>
+      <div className='flex flex-col items-center gap-2'>
+        <p className='text-sm text-destructive'>{error.message}</p>
+      </div>
     )
   }
 
   if (!isFetching && data?.length === 0) {
-    return (
-      <Typography variant='body2' color='text.secondary'>
-        No applications yet.
-      </Typography>
-    )
+    return <p className='text-sm text-muted-foreground'>No applications yet.</p>
   }
 
   if (isFetching) {
     return (
-      <Stack spacing={2}>
+      <div className='space-y-4'>
         {Array.from({ length: 5 }).map((_, index) => (
           <ApplicationCardSkeleton key={index} />
         ))}
-      </Stack>
+      </div>
     )
   }
 
   return (
-    <Stack spacing={2}>
+    <div className='space-y-4'>
       {data?.map((app) => (
         <ApplicationCard key={app.id} application={app} />
       ))}
-    </Stack>
+    </div>
   )
 }
 

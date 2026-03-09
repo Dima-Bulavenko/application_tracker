@@ -1,47 +1,33 @@
-import Card from '@mui/material/Card'
-import CardContent from '@mui/material/CardContent'
-import CardHeader from '@mui/material/CardHeader'
-import Divider from '@mui/material/Divider'
-import Skeleton from '@mui/material/Skeleton'
-import Stack from '@mui/material/Stack'
+import { Card, CardContent, CardHeader } from 'app/components/ui/card'
+import { Separator } from 'app/components/ui/separator'
+import { Skeleton } from 'app/components/ui/skeleton'
 
 export function ApplicationCardSkeleton() {
   return (
-    <Card variant='outlined' sx={{ maxWidth: 720 }}>
-      <CardHeader
-        title={<Skeleton variant='text' width='60%' height={32} />}
-        subheader={<Skeleton variant='text' width='40%' height={20} />}
-      />
-      <CardContent>
-        <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
-          {/* Status chip skeleton */}
-          <Skeleton variant='rounded' width={90} height={24} />
-          {/* Work type chip skeleton */}
-          <Skeleton variant='rounded' width={80} height={24} />
-          {/* Work location chip skeleton */}
-          <Skeleton variant='rounded' width={75} height={24} />
-          {/* Interview date chip skeleton */}
-          <Skeleton variant='rounded' width={120} height={24} />
-        </Stack>
+    <Card className='max-w-[720px]'>
+      <CardHeader>
+        <Skeleton className='h-8 w-3/5' />
+        <Skeleton className='h-5 w-2/5' />
+      </CardHeader>
+      <CardContent className='space-y-3'>
+        <div className='flex flex-wrap gap-2'>
+          <Skeleton className='h-6 w-[90px] rounded-full' />
+          <Skeleton className='h-6 w-[80px] rounded-full' />
+          <Skeleton className='h-6 w-[75px] rounded-full' />
+          <Skeleton className='h-6 w-[120px] rounded-full' />
+        </div>
 
-        <Divider sx={{ my: 1.5 }} />
+        <Separator />
 
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          divider={<Divider orientation='vertical' flexItem />}
-        >
-          {/* Created date skeleton */}
-          <Skeleton variant='text' width={150} height={16} />
-          {/* Updated date skeleton */}
-          <Skeleton variant='text' width={150} height={16} />
-        </Stack>
+        <div className='flex gap-3'>
+          <Skeleton className='h-4 w-[150px]' />
+          <Skeleton className='h-4 w-[150px]' />
+        </div>
 
-        {/* Action buttons skeleton */}
-        <Stack direction='row' spacing={1} sx={{ mt: 2 }}>
-          <Skeleton variant='rounded' width={100} height={36} />
-          <Skeleton variant='rounded' width={56} height={36} />
-        </Stack>
+        <div className='flex gap-2'>
+          <Skeleton className='h-9 w-[100px] rounded-md' />
+          <Skeleton className='h-9 w-14 rounded-md' />
+        </div>
       </CardContent>
     </Card>
   )

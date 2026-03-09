@@ -45,7 +45,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          mui: ['@mui/material', '@mui/icons-material'],
+          radix: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tooltip',
+          ],
           router: ['@tanstack/react-router'],
           query: ['@tanstack/react-query'],
         },

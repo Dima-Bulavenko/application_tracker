@@ -1,5 +1,6 @@
-import Button from '@mui/material/Button'
-import { ReactNode, useState } from 'react'
+import { Button } from 'app/components/ui/button'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
 
 interface SocialSignInButtonProps {
   provider: string
@@ -37,21 +38,12 @@ export default function SocialAuthorizationButton({
   return (
     <Button
       type='button'
-      variant='outlined'
-      fullWidth
+      variant='outline'
+      className='w-full'
       onClick={handleClick}
       disabled={disabled || isLoading}
-      startIcon={icon}
-      sx={{
-        textTransform: 'none',
-        borderColor: 'divider',
-        color: 'text.primary',
-        '&:hover': {
-          borderColor: 'primary.main',
-          backgroundColor: 'action.hover',
-        },
-      }}
     >
+      {icon}
       {buttonText}
     </Button>
   )

@@ -1,7 +1,4 @@
-import Divider from '@mui/material/Divider'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemText from '@mui/material/ListItemText'
+import { Separator } from 'app/components/ui/separator'
 import type { UserRead } from 'shared/api/gen'
 
 interface UserInfoListProps {
@@ -22,29 +19,16 @@ const INFO_ITEMS = [
 
 export function UserInfoList({ user }: UserInfoListProps) {
   return (
-    <List disablePadding>
+    <div>
       {INFO_ITEMS.map((item, index) => (
         <div key={item.label}>
-          <ListItem disableGutters sx={{ py: 1.5 }}>
-            <ListItemText
-              primary={item.label}
-              secondary={item.getValue(user)}
-              slotProps={{
-                primary: {
-                  variant: 'body2',
-                  color: 'text.secondary',
-                  sx: { mb: 0.5 },
-                },
-                secondary: {
-                  variant: 'body1',
-                  color: 'text.primary',
-                },
-              }}
-            />
-          </ListItem>
-          {index < INFO_ITEMS.length - 1 && <Divider />}
+          <div className='py-3'>
+            <p className='mb-0.5 text-sm text-muted-foreground'>{item.label}</p>
+            <p>{item.getValue(user)}</p>
+          </div>
+          {index < INFO_ITEMS.length - 1 && <Separator />}
         </div>
       ))}
-    </List>
+    </div>
   )
 }

@@ -1,22 +1,18 @@
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import FormControl from '@mui/material/FormControl'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import FormLabel from '@mui/material/FormLabel'
-import Radio from '@mui/material/Radio'
-import RadioGroup from '@mui/material/RadioGroup'
-import Stack from '@mui/material/Stack'
 import { useIsFetching } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { Button } from 'app/components/ui/button'
+import { Label } from 'app/components/ui/label'
+import { RadioGroup, RadioGroupItem } from 'app/components/ui/radio-group'
 
 import { applicationKeys } from 'entities/application/api/queryOptions'
 import CompanyField from 'entities/application/ui/CompanyField'
 import {
-  ApplicationFilter,
+  type ApplicationFilter,
   cleanFilterData,
   filterStorage,
 } from 'features/application/lib/filterStorage'
-import { Control, useController, useForm } from 'react-hook-form'
+import { Loader2 } from 'lucide-react'
+import { type Control, useController, useForm } from 'react-hook-form'
 import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
 import { MultipleSelectField } from 'shared/ui/SelectField'
 
@@ -27,56 +23,50 @@ type FilterFormParam = {
 const routeApi = getRouteApi('/_authenticated/dashboard')
 
 function OrderBy({ control }: FilterFormParam) {
-  const { field } = useController<ApplicationFilter>({
+  const { field } = useController<ApplicationFilter, 'order_by'>({
     name: 'order_by',
     control,
   })
   return (
-    <FormControl>
-      <FormLabel id='applications-order-by-label'>Order By</FormLabel>
-      <RadioGroup
-        {...field}
-        aria-labelledby='applications-order-by-label'
-        name='application-order-by'
-      >
-        <FormControlLabel
-          value='time_create'
-          control={<Radio />}
-          label='Time Create'
-        />
-        <FormControlLabel
-          value='time_update'
-          control={<Radio />}
-          label='Time Update'
-        />
+    <fieldset className='space-y-2'>
+      <Label>Order By</Label>
+      <RadioGroup value={field.value ?? ''} onValueChange={field.onChange}>
+        <label className='flex items-center gap-2'>
+          <RadioGroupItem value='time_create' />
+          <span className='text-sm'>Time Create</span>
+        </label>
+        <label className='flex items-center gap-2'>
+          <RadioGroupItem value='time_update' />
+          <span className='text-sm'>Time Update</span>
+        </label>
       </RadioGroup>
-    </FormControl>
+    </fieldset>
   )
 }
 
 function OrderDirection({ control }: FilterFormParam) {
-  const { field } = useController<ApplicationFilter>({
+  const { field } = useController<ApplicationFilter, 'order_direction'>({
     name: 'order_direction',
     control,
   })
   return (
-    <FormControl>
-      <FormLabel id='applications-order-direction-label'>
-        Order Direction
-      </FormLabel>
-      <RadioGroup
-        {...field}
-        aria-labelledby='applications-order-direction-label'
-        name='application-order-by'
-      >
-        <FormControlLabel value='desc' control={<Radio />} label='Descending' />
-        <FormControlLabel value='asc' control={<Radio />} label='Ascending' />
+    <fieldset className='space-y-2'>
+      <Label>Order Direction</Label>
+      <RadioGroup value={field.value ?? ''} onValueChange={field.onChange}>
+        <label className='flex items-center gap-2'>
+          <RadioGroupItem value='desc' />
+          <span className='text-sm'>Descending</span>
+        </label>
+        <label className='flex items-center gap-2'>
+          <RadioGroupItem value='asc' />
+          <span className='text-sm'>Ascending</span>
+        </label>
       </RadioGroup>
-    </FormControl>
+    </fieldset>
   )
 }
 
-function ApplicationStatusField({ control }: FilterFormParam) {
+function ApplicationStatusFilter({ control }: FilterFormParam) {
   const options = zAppStatus.options
   const controller = useController({
     name: 'status',
@@ -91,7 +81,7 @@ function ApplicationStatusField({ control }: FilterFormParam) {
   )
 }
 
-function WorkLocationField({ control }: FilterFormParam) {
+function WorkLocationFilter({ control }: FilterFormParam) {
   const options = zWorkLocation.options
   const controller = useController({
     name: 'work_location',
@@ -106,7 +96,7 @@ function WorkLocationField({ control }: FilterFormParam) {
   )
 }
 
-function WorkTypeField({ control }: FilterFormParam) {
+function WorkTypeFilter({ control }: FilterFormParam) {
   const options = zWorkType.options
   const controller = useController({
     name: 'work_type',
@@ -150,36 +140,33 @@ export function FilterApplicationForm() {
   const hasActiveFilters = Boolean(filter)
 
   return (
-    <Stack spacing={3} sx={{ p: 2 }}>
-      <Box>
+    <div className='space-y-6 p-4'>
+      <div className='space-y-4'>
         <OrderBy control={control} />
         <OrderDirection control={control} />
-      </Box>
-      <ApplicationStatusField control={control} />
-      <WorkLocationField control={control} />
-      <WorkTypeField control={control} />
+      </div>
+      <ApplicationStatusFilter control={control} />
+      <WorkLocationFilter control={control} />
+      <WorkTypeFilter control={control} />
       <CompanyField control={control} name='company_name' />
-      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+      <div className='flex justify-end gap-2'>
         <Button
           disabled={!formState.isDirty && !hasActiveFilters}
           onClick={clearFilters}
           type='button'
-          variant='outlined'
-          color='secondary'
+          variant='outline'
         >
           Clear Filters
         </Button>
         <Button
-          loading={!!isFetching}
           disabled={!formState.isDirty}
           onClick={handleSubmit(applyFilter)}
           type='button'
-          variant='contained'
-          color='primary'
         >
+          {isFetching ? <Loader2 className='size-4 animate-spin' /> : null}
           Apply Filters
         </Button>
-      </Box>
-    </Stack>
+      </div>
+    </div>
   )
 }

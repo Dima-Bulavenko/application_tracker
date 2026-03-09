@@ -1,10 +1,13 @@
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogContentText from '@mui/material/DialogContentText'
-import DialogTitle from '@mui/material/DialogTitle'
-import SubmitButton from 'shared/ui/SubmitButton'
+import { Button } from 'app/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from 'app/components/ui/dialog'
+import { Loader2 } from 'lucide-react'
 
 interface DeleteAccountDialogProps {
   open: boolean
@@ -20,35 +23,31 @@ export function DeleteAccountDialog({
   isDeleting,
 }: DeleteAccountDialogProps) {
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      aria-labelledby='delete-account-dialog-title'
-      aria-describedby='delete-account-dialog-description'
-    >
-      <DialogTitle id='delete-account-dialog-title'>Delete Account</DialogTitle>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
-        <DialogContentText id='delete-account-dialog-description'>
-          Are you sure you want to delete your account? This action is permanent
-          and cannot be undone. All your data will be permanently removed.
-        </DialogContentText>
+        <DialogHeader>
+          <DialogTitle>Delete Account</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete your account? This action is
+            permanent and cannot be undone. All your data will be permanently
+            removed.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant='outline' onClick={onClose} disabled={isDeleting}>
+            Cancel
+          </Button>
+          <Button
+            variant='destructive'
+            onClick={onConfirm}
+            disabled={isDeleting}
+            autoFocus
+          >
+            {isDeleting ? <Loader2 className='size-4 animate-spin' /> : null}
+            Delete Account
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={isDeleting}>
-          Cancel
-        </Button>
-        <SubmitButton
-          onClick={onConfirm}
-          color='error'
-          variant='outlined'
-          disabled={isDeleting}
-          isSubmitting={isDeleting}
-          sx={null}
-          autoFocus
-        >
-          Delete Account
-        </SubmitButton>
-      </DialogActions>
     </Dialog>
   )
 }

@@ -1,8 +1,8 @@
-import type { ButtonProps } from '@mui/material/Button'
-import Button from '@mui/material/Button'
-import CircularProgress from '@mui/material/CircularProgress'
+import { Button } from 'app/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
-interface SubmitButtonProps extends Omit<ButtonProps, 'type'> {
+interface SubmitButtonProps
+  extends Omit<React.ComponentProps<typeof Button>, 'type'> {
   isSubmitting: boolean
   children: React.ReactNode
 }
@@ -15,14 +15,12 @@ export default function SubmitButton({
 }: SubmitButtonProps) {
   return (
     <Button
-      sx={{ mt: 5 }}
-      color='primary'
-      variant='contained'
       type='submit'
       disabled={isSubmitting || disabled}
+      className='mt-5'
       {...props}
     >
-      {isSubmitting ? <CircularProgress size={24} /> : children}
+      {isSubmitting ? <Loader2 className='size-5 animate-spin' /> : children}
     </Button>
   )
 }

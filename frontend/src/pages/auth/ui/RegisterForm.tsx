@@ -1,5 +1,4 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import Stack from '@mui/material/Stack'
 import { useNavigate } from '@tanstack/react-router'
 import EmailField from 'entities/user/ui/EmailField'
 import PasswordField from 'entities/user/ui/PasswordField'
@@ -39,10 +38,10 @@ export default function RegisterForm() {
 
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
-      <Stack spacing={5}>
+      <div className='space-y-5'>
         <EmailField name='username' control={control} />
         <PasswordField name='password' control={control} />
-      </Stack>
+      </div>
       <FormError message={errors.root?.message} />
       <SubmitButton isSubmitting={isSubmitting}>Sign Up</SubmitButton>
       <GoogleAuthorizationButton />
