@@ -3,62 +3,62 @@ import { Label } from 'app/components/ui/label'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from 'app/components/ui/select'
-import type { FieldPath, FieldValues } from 'react-hook-form'
-import type { SelectInputProps, SelectMultipleProps } from 'shared/types/form'
+import type {
+  FieldPath,
+  FieldValues,
+  UseControllerReturn,
+} from 'react-hook-form'
+import type { SelectMultipleProps } from 'shared/types/form'
 
 const defaultHumanize = (v: string) =>
   v.charAt(0).toUpperCase() + v.slice(1).replace('_', ' ')
 
-export function SelectField<
+export type SelectInputProps<
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+> = {
+  label?: string
+  placeholder?: string
+  options: readonly string[]
+  controller: UseControllerReturn<TFieldValues, TName>
+  id: string
+}
+
+export function SelectInput<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({
-  humanize = defaultHumanize,
-  options,
-  controller,
-  label,
-  helperText,
-}: SelectInputProps<V, N>) {
+>({ label, options, controller, id, placeholder }: SelectInputProps<V, N>) {
   const { field, fieldState } = controller
-  const errorMessage = fieldState?.error?.message
-  const id = `${field.name}_id`
-
   return (
-    <div className='space-y-2'>
-      {label && <Label htmlFor={id}>{label}</Label>}
-      <Select
-        value={field.value ?? ''}
-        onValueChange={(value) => field.onChange(value)}
-        disabled={field.disabled}
+    <Select
+      name={field.name}
+      onValueChange={field.onChange}
+      value={field.value}
+    >
+      <SelectTrigger
+        id={id}
+        aria-invalid={fieldState.invalid}
+        className='w-full'
       >
-        <SelectTrigger
-          id={id}
-          ref={field.ref}
-          onBlur={field.onBlur}
-          className='w-full'
-          aria-invalid={!!fieldState?.error}
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((opt) => (
-            <SelectItem key={opt} value={opt}>
-              {humanize(opt)}
+        {placeholder ?? <SelectValue placeholder='Select a fruit' />}
+      </SelectTrigger>
+      <SelectContent position='popper'>
+        <SelectGroup>
+          {label ?? <SelectLabel>{label}</SelectLabel>}
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {defaultHumanize(option)}
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-      {errorMessage && (
-        <p className='text-sm text-destructive'>{errorMessage}</p>
-      )}
-      {!errorMessage && helperText && (
-        <p className='text-sm text-muted-foreground'>{helperText}</p>
-      )}
-    </div>
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   )
 }
 

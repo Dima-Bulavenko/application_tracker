@@ -1,26 +1,33 @@
-import { useController } from 'react-hook-form'
+import { FieldPath, FieldValues, useController } from 'react-hook-form'
 import { zAppStatus } from 'shared/api/gen/zod.gen'
-import type { FieldComponent } from 'shared/types/form'
-import { SelectField } from 'shared/ui/SelectField'
+import type { BaseFormFiledProps } from 'shared/types/form'
+import { FormField } from 'shared/ui/FormField'
+import { SelectInput } from 'shared/ui/SelectField'
 
 /**
  * Application status select field integrated with react-hook-form.
  * Values are sourced from generated zod enum to stay in sync with API.
  */
-export const ApplicationStatusField: FieldComponent = ({
-  label = 'Status',
-  ...props
-}) => {
+export function ApplicationStatusField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label = 'Status', description, ...props }: BaseFormFiledProps<V, N>) {
   const options = zAppStatus.options
   const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
   return (
-    <SelectField
-      {...props}
+    <FormField
       label={label}
-      options={options}
       controller={controller}
-    />
+      htmlFor={id}
+      description={description}
+    >
+      <SelectInput
+        {...props}
+        options={options}
+        controller={controller}
+        id={id}
+      />
+    </FormField>
   )
 }
-
-export default ApplicationStatusField

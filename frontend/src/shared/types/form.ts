@@ -1,28 +1,19 @@
 import type React from 'react'
 import type { ReactNode } from 'react'
 import type {
-  Control,
   FieldPath,
   FieldValues,
   UseControllerProps,
   UseControllerReturn,
 } from 'react-hook-form'
 
-export type BaseInputProps<
+export type BaseFormFiledProps<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
-> = Omit<UseControllerProps<V, N>, 'control'> & {
-  control: Control<V, N>
+> = UseControllerProps<V, N> & {
   label?: string
-  helperText?: string
+  description?: string
 }
-
-export type FieldComponent = <
-  V extends FieldValues = FieldValues,
-  N extends FieldPath<V> = FieldPath<V>,
->(
-  props: BaseInputProps<V, N>
-) => React.JSX.Element
 
 export type TextInputProps<
   V extends FieldValues = FieldValues,
