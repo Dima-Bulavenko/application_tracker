@@ -1,3 +1,4 @@
+import type React from 'react'
 import type { ReactNode } from 'react'
 import type {
   Control,
@@ -21,7 +22,7 @@ export type FieldComponent = <
   N extends FieldPath<V> = FieldPath<V>,
 >(
   props: BaseInputProps<V, N>
-) => JSX.Element
+) => React.JSX.Element
 
 export type TextInputProps<
   V extends FieldValues = FieldValues,
