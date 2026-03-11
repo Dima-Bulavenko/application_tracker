@@ -1,9 +1,9 @@
+import { DevTool } from '@hookform/devtools'
 import { useIsFetching } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { Button } from 'app/components/ui/button'
 import { Label } from 'app/components/ui/label'
 import { RadioGroup, RadioGroupItem } from 'app/components/ui/radio-group'
-
 import { applicationKeys } from 'entities/application/api/queryOptions'
 import CompanyField from 'entities/application/ui/CompanyField'
 import {
@@ -14,7 +14,8 @@ import {
 import { Loader2 } from 'lucide-react'
 import { type Control, useController, useForm } from 'react-hook-form'
 import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
-import { MultipleSelectField } from 'shared/ui/SelectField'
+import { FormField } from 'shared/ui/FormField'
+import { SelectMultipleInput } from 'shared/ui/SelectField'
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -72,12 +73,16 @@ function ApplicationStatusFilter({ control }: FilterFormParam) {
     name: 'status',
     control,
   })
+  const id = `${controller.field.name}_id`
   return (
-    <MultipleSelectField
-      controller={controller}
-      options={options}
-      label='Status'
-    />
+    <FormField controller={controller} htmlFor={id} label='Application Status'>
+      <SelectMultipleInput
+        id={id}
+        controller={controller}
+        options={options}
+        placeholder='Select Status'
+      />
+    </FormField>
   )
 }
 
@@ -87,12 +92,16 @@ function WorkLocationFilter({ control }: FilterFormParam) {
     name: 'work_location',
     control,
   })
+  const id = `${controller.field.name}_id`
   return (
-    <MultipleSelectField
-      controller={controller}
-      options={options}
-      label='Work Location'
-    />
+    <FormField controller={controller} htmlFor={id} label='Work Location'>
+      <SelectMultipleInput
+        id={id}
+        controller={controller}
+        options={options}
+        placeholder='Select Work Locations'
+      />
+    </FormField>
   )
 }
 
@@ -102,12 +111,16 @@ function WorkTypeFilter({ control }: FilterFormParam) {
     name: 'work_type',
     control,
   })
+  const id = `${controller.field.name}_id`
   return (
-    <MultipleSelectField
-      controller={controller}
-      options={options}
-      label='Work Type'
-    />
+    <FormField controller={controller} htmlFor={id} label='Work Type'>
+      <SelectMultipleInput
+        id={id}
+        controller={controller}
+        options={options}
+        placeholder='Select Work Types'
+      />
+    </FormField>
   )
 }
 
@@ -167,6 +180,7 @@ export function FilterApplicationForm() {
           Apply Filters
         </Button>
       </div>
+      <DevTool control={control} placement='bottom-left' />
     </div>
   )
 }

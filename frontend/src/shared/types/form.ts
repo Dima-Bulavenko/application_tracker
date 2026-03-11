@@ -50,14 +50,3 @@ export type SelectInputProps<
   humanize?: (v: string) => string
   children?: ReactNode
 }
-
-export type SelectMultipleProps<
-  V extends FieldValues = FieldValues,
-  N extends FieldPath<V> = FieldPath<V>,
-> = {
-  controller: UseControllerReturn<V, N>
-  options: readonly string[]
-  label?: string
-  helperText?: string
-  humanize?: (v: string) => string
-}

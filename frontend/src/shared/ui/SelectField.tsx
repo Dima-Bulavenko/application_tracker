@@ -1,5 +1,15 @@
-import { Checkbox } from 'app/components/ui/checkbox'
-import { Label } from 'app/components/ui/label'
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from 'app/components/ui/combobox'
 import {
   Select,
   SelectContent,
@@ -9,12 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'app/components/ui/select'
+import React from 'react'
 import type {
   FieldPath,
   FieldValues,
   UseControllerReturn,
 } from 'react-hook-form'
-import type { SelectMultipleProps } from 'shared/types/form'
 
 const defaultHumanize = (v: string) =>
   v.charAt(0).toUpperCase() + v.slice(1).replace('_', ' ')
@@ -62,47 +72,60 @@ export function SelectInput<
   )
 }
 
-export function MultipleSelectField<
+export type SelectMultipleProps<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({
-  options,
-  controller,
-  humanize = defaultHumanize,
-  label,
-  helperText,
-}: SelectMultipleProps<V, N>) {
-  const { field, fieldState } = controller
-  const selectedValues: string[] = Array.isArray(field.value) ? field.value : []
-  const errorMessage = fieldState?.error?.message
+> = Omit<SelectInputProps<V, N>, 'label'>
 
-  const toggleOption = (opt: string) => {
-    const next = selectedValues.includes(opt)
-      ? selectedValues.filter((v) => v !== opt)
-      : [...selectedValues, opt]
-    field.onChange(next.length > 0 ? next : undefined)
-  }
+export function SelectMultipleInput<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ options, controller, placeholder, id }: SelectMultipleProps<V, N>) {
+  const {
+    field,
+    fieldState,
+    formState: { isSubmitting },
+  } = controller
+  const anchor = useComboboxAnchor()
 
   return (
-    <div className='space-y-2'>
-      {label && <Label>{label}</Label>}
-      <div className='space-y-1'>
-        {options.map((opt) => (
-          <label key={opt} className='flex items-center gap-2'>
-            <Checkbox
-              checked={selectedValues.includes(opt)}
-              onCheckedChange={() => toggleOption(opt)}
-            />
-            <span className='text-sm'>{humanize(opt)}</span>
-          </label>
-        ))}
-      </div>
-      {errorMessage && (
-        <p className='text-sm text-destructive'>{errorMessage}</p>
-      )}
-      {!errorMessage && helperText && (
-        <p className='text-sm text-muted-foreground'>{helperText}</p>
-      )}
-    </div>
+    <Combobox
+      id={id}
+      name={field.name}
+      multiple
+      autoHighlight
+      items={options}
+      value={field.value}
+      onValueChange={field.onChange}
+      disabled={isSubmitting}
+    >
+      <ComboboxChips ref={anchor} className='w-full max-w-xs'>
+        <ComboboxValue>
+          {(values) => (
+            <React.Fragment>
+              {values.map((value: string) => (
+                <ComboboxChip key={value}>
+                  {defaultHumanize(value)}
+                </ComboboxChip>
+              ))}
+              <ComboboxChipsInput
+                aria-invalid={fieldState.invalid}
+                placeholder={field.value?.length ? undefined : placeholder}
+              />
+            </React.Fragment>
+          )}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent anchor={anchor}>
+        <ComboboxEmpty>No items found.</ComboboxEmpty>
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item} value={item}>
+              {defaultHumanize(item)}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
   )
 }
