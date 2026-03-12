@@ -2,8 +2,6 @@ import { DevTool } from '@hookform/devtools'
 import { useIsFetching } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { Button } from 'app/components/ui/button'
-import { Label } from 'app/components/ui/label'
-import { RadioGroup, RadioGroupItem } from 'app/components/ui/radio-group'
 import { applicationKeys } from 'entities/application/api/queryOptions'
 import CompanyField from 'entities/application/ui/CompanyField'
 import {
@@ -13,9 +11,14 @@ import {
 } from 'features/application/lib/filterStorage'
 import { Loader2 } from 'lucide-react'
 import { type Control, useController, useForm } from 'react-hook-form'
-import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
+import {
+  zApplicationOrderBy,
+  zAppStatus,
+  zWorkLocation,
+  zWorkType,
+} from 'shared/api/gen/zod.gen'
 import { FormField } from 'shared/ui/FormField'
-import { SelectMultipleInput } from 'shared/ui/SelectField'
+import { SelectInput, SelectMultipleInput } from 'shared/ui/SelectField'
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -24,46 +27,29 @@ type FilterFormParam = {
 const routeApi = getRouteApi('/_authenticated/dashboard')
 
 function OrderBy({ control }: FilterFormParam) {
-  const { field } = useController<ApplicationFilter, 'order_by'>({
+  const controller = useController<ApplicationFilter, 'order_by'>({
     name: 'order_by',
     control,
   })
+  const id = `${controller.field.name}_id`
+  const options = zApplicationOrderBy.options
   return (
-    <fieldset className='space-y-2'>
-      <Label>Order By</Label>
-      <RadioGroup value={field.value ?? ''} onValueChange={field.onChange}>
-        <label className='flex items-center gap-2'>
-          <RadioGroupItem value='time_create' />
-          <span className='text-sm'>Time Create</span>
-        </label>
-        <label className='flex items-center gap-2'>
-          <RadioGroupItem value='time_update' />
-          <span className='text-sm'>Time Update</span>
-        </label>
-      </RadioGroup>
-    </fieldset>
+    <FormField controller={controller} htmlFor={id} label='Order By'>
+      <SelectInput controller={controller} id={id} options={options} />
+    </FormField>
   )
 }
 
 function OrderDirection({ control }: FilterFormParam) {
-  const { field } = useController<ApplicationFilter, 'order_direction'>({
+  const controller = useController<ApplicationFilter, 'order_direction'>({
     name: 'order_direction',
     control,
   })
+  const id = `${controller.field.name}_id`
   return (
-    <fieldset className='space-y-2'>
-      <Label>Order Direction</Label>
-      <RadioGroup value={field.value ?? ''} onValueChange={field.onChange}>
-        <label className='flex items-center gap-2'>
-          <RadioGroupItem value='desc' />
-          <span className='text-sm'>Descending</span>
-        </label>
-        <label className='flex items-center gap-2'>
-          <RadioGroupItem value='asc' />
-          <span className='text-sm'>Ascending</span>
-        </label>
-      </RadioGroup>
-    </fieldset>
+    <FormField controller={controller} htmlFor={id} label='Order Direction'>
+      <SelectInput controller={controller} id={id} options={['asc', 'desc']} />
+    </FormField>
   )
 }
 
