@@ -16,6 +16,7 @@ export type FormFieldProps<
 > = {
   label: string
   description?: string
+  required?: boolean
   children: React.ReactNode
   controller: UseControllerReturn<TFieldValues, TName>
   htmlFor: string
@@ -27,6 +28,7 @@ export function FormField<
 >({
   label,
   description,
+  required,
   children,
   controller,
   htmlFor,
@@ -34,7 +36,7 @@ export function FormField<
   const { fieldState } = controller
   return (
     <Field data-invalid={fieldState.invalid}>
-      <FieldLabel htmlFor={htmlFor}>{label}</FieldLabel>
+      <FieldLabel htmlFor={htmlFor}>{label}{required && <span className="text-destructive">*</span>}</FieldLabel>
       {children}
       {description && <FieldDescription>{description}</FieldDescription>}
       {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
