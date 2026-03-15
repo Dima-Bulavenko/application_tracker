@@ -1,3 +1,4 @@
+import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer'
 import {
   Combobox,
   ComboboxChip,
@@ -5,11 +6,13 @@ import {
   ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxInput,
   ComboboxItem,
   ComboboxList,
   ComboboxValue,
   useComboboxAnchor,
 } from 'app/components/ui/combobox'
+import { InputGroupAddon } from 'app/components/ui/input-group'
 import {
   Select,
   SelectContent,
@@ -19,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'app/components/ui/select'
+import { Spinner } from 'app/components/ui/spinner'
 import React from 'react'
 import type {
   FieldPath,
@@ -122,6 +126,72 @@ export function SelectMultipleInput<
           {(item) => (
             <ComboboxItem key={item} value={item}>
               {defaultHumanize(item)}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
+
+type SelectSearchProps<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+> = Omit<SelectInputProps<V, N>, 'label'> & {
+  isFetching: boolean
+  open: boolean
+  setOpen: (open: boolean) => void
+}
+
+export function AsyncSelectInput<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({
+  options,
+  controller,
+  placeholder,
+  id,
+  isFetching,
+  open,
+  setOpen,
+}: SelectSearchProps<V, N>) {
+  const {
+    field,
+    fieldState,
+    formState: { isSubmitting },
+  } = controller
+
+  const debouncedFetching = useDebouncedCallback(field.onChange, { wait: 400 })
+
+  return (
+    <Combobox
+      id={id}
+      name={field.name}
+      autoHighlight
+      items={options}
+      value={field.value}
+      onValueChange={field.onChange}
+      onInputValueChange={debouncedFetching}
+      open={open}
+      onOpenChange={setOpen}
+      disabled={isSubmitting}
+    >
+      <ComboboxInput
+        placeholder={placeholder}
+        aria-invalid={fieldState.invalid}
+      >
+        {isFetching && (
+          <InputGroupAddon align='inline-end'>
+            <Spinner className='size-5' />
+          </InputGroupAddon>
+        )}
+      </ComboboxInput>
+      <ComboboxContent>
+        {!isFetching && <ComboboxEmpty>No items found.</ComboboxEmpty>}
+        <ComboboxList>
+          {(item) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
             </ComboboxItem>
           )}
         </ComboboxList>

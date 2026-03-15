@@ -1,15 +1,19 @@
 import { DevTool } from '@hookform/devtools'
-import { useIsFetching } from '@tanstack/react-query'
+import { keepPreviousData, useIsFetching, useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { Button } from 'app/components/ui/button'
-import { applicationKeys } from 'entities/application/api/queryOptions'
-import CompanyField from 'entities/application/ui/CompanyField'
+import { FieldGroup } from 'app/components/ui/field'
+import {
+  applicationKeys,
+  userCompaniesOptions,
+} from 'entities/application/api/queryOptions'
 import {
   type ApplicationFilter,
   cleanFilterData,
   filterStorage,
 } from 'features/application/lib/filterStorage'
 import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { type Control, useController, useForm } from 'react-hook-form'
 import {
   zApplicationOrderBy,
@@ -18,7 +22,11 @@ import {
   zWorkType,
 } from 'shared/api/gen/zod.gen'
 import { FormField } from 'shared/ui/FormField'
-import { SelectInput, SelectMultipleInput } from 'shared/ui/SelectField'
+import {
+  AsyncSelectInput,
+  SelectInput,
+  SelectMultipleInput,
+} from 'shared/ui/SelectField'
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -110,12 +118,49 @@ function WorkTypeFilter({ control }: FilterFormParam) {
   )
 }
 
+function CompanyNameFilter({ control }: FilterFormParam) {
+  const controller = useController<ApplicationFilter, 'company_name'>({
+    name: 'company_name',
+    control,
+  })
+  const [open, setOpen] = useState(false)
+  const { data = [], isFetching } = useQuery({
+    ...userCompaniesOptions({name_contains: controller.field.value, limit: 30}),
+    select: (data) => data.map((company) => company.name),
+    enabled: open,
+    placeholderData: keepPreviousData,
+  })
+  console.log(data)
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField controller={controller} htmlFor={id} label='Company Name'>
+      <AsyncSelectInput
+        controller={controller}
+        id={id}
+        options={data}
+        placeholder='Select Company'
+        isFetching={isFetching}
+        open={open}
+        setOpen={setOpen}
+      />
+    </FormField>
+  )
+}
+
 export function FilterApplicationForm() {
   const { filter } = routeApi.useSearch()
   const navigate = routeApi.useNavigate()
   const { control, handleSubmit, formState, reset } =
     useForm<ApplicationFilter>({
-      defaultValues: filter,
+      defaultValues: {
+        company_name: '',
+        status: [],
+        work_location: [],
+        work_type: [],
+        order_by: 'time_create',
+        order_direction: 'desc',
+        ...filter,
+      },
     })
 
   const isFetching = useIsFetching({ queryKey: applicationKeys.lists() })
@@ -140,14 +185,14 @@ export function FilterApplicationForm() {
 
   return (
     <div className='space-y-6 p-4'>
-      <div className='space-y-4'>
+      <ApplicationStatusFilter control={control} />
+      <WorkTypeFilter control={control} />
+      <CompanyNameFilter control={control} />
+      <WorkLocationFilter control={control} />
+      <FieldGroup className="grid max-w-sm grid-cols-2">
         <OrderBy control={control} />
         <OrderDirection control={control} />
-      </div>
-      <ApplicationStatusFilter control={control} />
-      <WorkLocationFilter control={control} />
-      <WorkTypeFilter control={control} />
-      <CompanyField control={control} name='company_name' />
+      </FieldGroup>
       <div className='flex justify-end gap-2'>
         <Button
           disabled={!formState.isDirty && !hasActiveFilters}
