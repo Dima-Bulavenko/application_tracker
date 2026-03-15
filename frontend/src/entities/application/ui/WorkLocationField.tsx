@@ -2,7 +2,7 @@ import { FieldPath, FieldValues, useController } from 'react-hook-form'
 import { zWorkLocation } from 'shared/api/gen/zod.gen'
 import type { BaseFormFiledProps } from 'shared/types/form'
 import { FormField } from 'shared/ui/FormField'
-import { SelectInput } from 'shared/ui/SelectField'
+import { SelectInput } from 'shared/ui/SelectInput'
 
 /**
  * Application status select field integrated with react-hook-form.

@@ -1,5 +1,8 @@
-import { DevTool } from '@hookform/devtools'
-import { keepPreviousData, useIsFetching, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useIsFetching,
+  useQuery,
+} from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { Button } from 'app/components/ui/button'
 import { FieldGroup } from 'app/components/ui/field'
@@ -26,7 +29,7 @@ import {
   AsyncSelectInput,
   SelectInput,
   SelectMultipleInput,
-} from 'shared/ui/SelectField'
+} from 'shared/ui/SelectInput'
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -125,7 +128,10 @@ function CompanyNameFilter({ control }: FilterFormParam) {
   })
   const [open, setOpen] = useState(false)
   const { data = [], isFetching } = useQuery({
-    ...userCompaniesOptions({name_contains: controller.field.value, limit: 30}),
+    ...userCompaniesOptions({
+      name_contains: controller.field.value,
+      limit: 30,
+    }),
     select: (data) => data.map((company) => company.name),
     enabled: open,
     placeholderData: keepPreviousData,
@@ -189,7 +195,7 @@ export function FilterApplicationForm() {
       <WorkTypeFilter control={control} />
       <CompanyNameFilter control={control} />
       <WorkLocationFilter control={control} />
-      <FieldGroup className="grid max-w-sm grid-cols-2">
+      <FieldGroup className='grid max-w-sm grid-cols-2'>
         <OrderBy control={control} />
         <OrderDirection control={control} />
       </FieldGroup>
@@ -211,7 +217,6 @@ export function FilterApplicationForm() {
           Apply Filters
         </Button>
       </div>
-      <DevTool control={control} placement='bottom-left' />
     </div>
   )
 }
