@@ -4,10 +4,7 @@ export function Form({ children, className, ...props }: BaseFormProps) {
   return (
     <form
       noValidate
-      className={[
-        'mx-auto flex max-w-[440px] flex-col justify-center p-6',
-        className,
-      ]
+      className={['flex max-w-110 flex-col justify-center px-5', className]
         .filter(Boolean)
         .join(' ')}
       {...props}
