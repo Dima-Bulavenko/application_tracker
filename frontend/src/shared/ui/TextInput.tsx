@@ -1,41 +1,35 @@
-import { Input } from 'app/components/ui/input'
-import { Label } from 'app/components/ui/label'
-import type { FieldPath, FieldValues } from 'react-hook-form'
-import type { TextInputProps } from 'shared/types/form'
+import { InputGroup, InputGroupInput } from 'app/components/ui/input-group'
+import type {
+  FieldPath,
+  FieldValues,
+  UseControllerReturn,
+} from 'react-hook-form'
+
+type TextInputProps<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+> = { controller: UseControllerReturn<V, N>; id: string } & Omit<
+  React.ComponentProps<'input'>,
+  'name' | 'value' | 'onChange' | 'id'
+>
 
 export function TextInput<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label, controller, helperText, ...props }: TextInputProps<V, N>) {
+>({ controller, children, ...props }: TextInputProps<V, N>) {
   const { field, fieldState, formState } = controller
-  const errorMessage = fieldState?.error?.message
-  const id = `${field.name}_id`
 
   return (
-    <div className='space-y-2'>
-      {label && <Label htmlFor={id}>{label}</Label>}
-      <Input
-        id={id}
-        disabled={
-          formState.isSubmitting || formState.isLoading || field.disabled
-        }
-        onBlur={field.onBlur}
-        onChange={(e) => {
-          const val = e.target.value
-          field.onChange(val.trim() === '' ? null : val)
-        }}
+    <InputGroup>
+      <InputGroupInput
         name={field.name}
-        ref={field.ref}
-        value={field.value ?? ''}
-        aria-invalid={!!fieldState?.error}
+        value={field.value}
+        onChange={field.onChange}
+        aria-invalid={fieldState.invalid}
+        disabled={formState.isSubmitting}
         {...props}
       />
-      {errorMessage && (
-        <p className='text-sm text-destructive'>{errorMessage}</p>
-      )}
-      {!errorMessage && helperText && (
-        <p className='text-sm text-muted-foreground'>{helperText}</p>
-      )}
-    </div>
+      {children}
+    </InputGroup>
   )
 }

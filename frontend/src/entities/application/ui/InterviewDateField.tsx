@@ -1,7 +1,7 @@
 import { Input } from 'app/components/ui/input'
-import { Label } from 'app/components/ui/label'
-import { useController } from 'react-hook-form'
-import type { FieldComponent } from 'shared/types/form'
+import { FieldPath, FieldValues, useController } from 'react-hook-form'
+import type { BaseFormFiledProps } from 'shared/types/form'
+import { FormField } from 'shared/ui/FormField'
 
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -11,17 +11,25 @@ function toDatetimeLocal(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-const InterviewDateField: FieldComponent = ({
+export default function InterviewDateField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({
   label = 'Interview date',
+  description,
   ...props
-}) => {
-  const { field, fieldState } = useController(props)
-  const errorMessage = fieldState.error?.message
+}: BaseFormFiledProps<V, N>) {
+  const controller = useController({ ...props })
+  const { field, fieldState } = controller
   const id = `${field.name}_id`
 
   return (
-    <div className='space-y-2'>
-      <Label htmlFor={id}>{label}</Label>
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
       <Input
         id={id}
         type='datetime-local'
@@ -35,11 +43,6 @@ const InterviewDateField: FieldComponent = ({
         }}
         aria-invalid={!!fieldState.error}
       />
-      {errorMessage && (
-        <p className='text-sm text-destructive'>{errorMessage}</p>
-      )}
-    </div>
+    </FormField>
   )
 }
-
-export default InterviewDateField

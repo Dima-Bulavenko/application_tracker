@@ -1,27 +1,21 @@
-import { useDebouncedCallback } from '@tanstack/react-pacer/debouncer'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from 'app/components/ui/combobox'
-import { Spinner } from 'app/components/ui/spinner'
 import { useState } from 'react'
-import { useController } from 'react-hook-form'
+import { FieldPath, FieldValues, useController } from 'react-hook-form'
 import { getUserCompanies } from 'shared/api/gen/sdk.gen'
+import type { BaseFormFiledProps } from 'shared/types/form'
+import { FormField } from 'shared/ui/FormField'
+import { AsyncSelectInput } from 'shared/ui/SelectInput'
 
-const CompanyField = ({ label = 'Company', ...props }) => {
-  const controller = useController(props)
+export default function CompanyField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label = 'Company', description, ...props }: BaseFormFiledProps<V, N>) {
+  const controller = useController({ ...props })
   const [open, setOpen] = useState(false)
-  const { field, fieldState } = controller
-  console.log('Field val', field.value)
+  const { field } = controller
+  const id = `${controller.field.name}_id`
 
-  const debouncedFetching = useDebouncedCallback(field.onChange, { wait: 400 })
-
-  const { data = [], isFetching } = useQuery({
+  const { data, isFetching } = useQuery({
     queryKey: ['companies', field.value],
     queryFn: async ({ queryKey }) => {
       const response = await getUserCompanies<true>({
@@ -31,33 +25,25 @@ const CompanyField = ({ label = 'Company', ...props }) => {
     },
     placeholderData: keepPreviousData,
     enabled: open,
-    staleTime: 30000,
+    staleTime: Infinity,
     select: (data) => data.map((company) => company.name),
   })
 
   return (
-    <Combobox
-      items={data}
-      value={field.value}
-      // onValueChange={field.onChange}
-      open={open}
-      onOpenChange={setOpen}
-      onInputValueChange={debouncedFetching}
+    <FormField
+      controller={controller}
+      htmlFor={id}
+      label={label}
+      description={description}
     >
-      <ComboboxInput placeholder='Company Field' />
-      <ComboboxContent>
-        {isFetching && <Spinner className='size-7' />}
-        {!isFetching && <ComboboxEmpty>No items found.</ComboboxEmpty>}
-        <ComboboxList>
-          {(item) => (
-            <ComboboxItem key={item} value={item}>
-              {item}
-            </ComboboxItem>
-          )}
-        </ComboboxList>
-      </ComboboxContent>
-    </Combobox>
+      <AsyncSelectInput
+        setOpen={setOpen}
+        open={open}
+        isFetching={isFetching}
+        controller={controller}
+        options={data ?? []}
+        id={id}
+      />
+    </FormField>
   )
 }
-
-export default CompanyField

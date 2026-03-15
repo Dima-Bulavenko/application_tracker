@@ -3,20 +3,26 @@ import { Input } from 'app/components/ui/input'
 import { Label } from 'app/components/ui/label'
 import { Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
-import { useController } from 'react-hook-form'
+import { FieldPath, FieldValues, useController } from 'react-hook-form'
 import { zUserCreate } from 'shared/api/gen/zod.gen'
-import type { FieldComponent } from 'shared/types/form'
+import type { BaseFormFiledProps } from 'shared/types/form'
 
 const passwordHelp = zUserCreate.shape.password.description
 
-const PasswordField: FieldComponent = ({
-  label = 'Password',
-  helperText,
-  ...props
-}) => {
+type PasswordFieldProps<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+> = BaseFormFiledProps<V, N> & {
+  helperText?: string
+}
+
+export default function PasswordField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label = 'Password', helperText, ...props }: PasswordFieldProps<V, N>) {
   const [showPassword, setShowPassword] = useState(false)
   const handleClickShowPassword = () => setShowPassword((show) => !show)
-  const controller = useController(props)
+  const controller = useController({ ...props })
   const { field, fieldState, formState } = controller
   const errorMessage = fieldState?.error?.message
   const id = `${field.name}_id`
@@ -70,5 +76,3 @@ const PasswordField: FieldComponent = ({
     </div>
   )
 }
-
-export default PasswordField

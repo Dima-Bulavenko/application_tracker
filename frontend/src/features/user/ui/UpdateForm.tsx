@@ -1,28 +1,59 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { getRouteApi } from '@tanstack/react-router'
-import { type SubmitHandler, useController, useForm } from 'react-hook-form'
+import {
+  FieldPath,
+  FieldValues,
+  type SubmitHandler,
+  useController,
+  useForm,
+} from 'react-hook-form'
 import { updateUser } from 'shared/api/gen'
 import { zUserUpdate } from 'shared/api/gen/zod.gen'
 import { getDirtyValues } from 'shared/api/get_dirty_values'
+import type { BaseFormFiledProps } from 'shared/types/form'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
+import { FormField } from 'shared/ui/FormField'
 import SubmitButton from 'shared/ui/SubmitButton'
 import { TextInput } from 'shared/ui/TextInput'
 import { z } from 'zod'
 
 type FormType = z.infer<typeof zUserUpdate>
 
-const FirstNameField: FieldComponent = ({ label = 'First Name', ...props }) => {
-  const controller = useController(props)
-  return <TextInput label={label} controller={controller} />
+function FirstNameField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label = 'First Name', description, ...props }: BaseFormFiledProps<V, N>) {
+  const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
+      <TextInput controller={controller} id={id} />
+    </FormField>
+  )
 }
 
-const SecondNameField: FieldComponent = ({
-  label = 'Second Name',
-  ...props
-}) => {
-  const controller = useController(props)
-  return <TextInput label={label} controller={controller} />
+function SecondNameField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label = 'Second Name', description, ...props }: BaseFormFiledProps<V, N>) {
+  const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
+      <TextInput controller={controller} id={id} />
+    </FormField>
+  )
 }
 
 const routeApi = getRouteApi('/_authenticated')

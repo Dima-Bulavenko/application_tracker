@@ -1,10 +1,22 @@
-import { useController } from 'react-hook-form'
-import type { FieldComponent } from 'shared/types/form'
+import { FieldPath, FieldValues, useController } from 'react-hook-form'
+import type { BaseFormFiledProps } from 'shared/types/form'
+import { FormField } from 'shared/ui/FormField'
 import { TextInput } from 'shared/ui/TextInput'
 
-const RoleField: FieldComponent = ({ label = 'Role', ...props }) => {
-  const controller = useController(props)
-  return <TextInput label={label} controller={controller} />
+export default function RoleField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({ label = 'Role', description, ...props }: BaseFormFiledProps<V, N>) {
+  const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
+      <TextInput controller={controller} id={id} />
+    </FormField>
+  )
 }
-
-export default RoleField

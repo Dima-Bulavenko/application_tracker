@@ -1,17 +1,26 @@
-import { useController } from 'react-hook-form'
-import type { FieldComponent } from 'shared/types/form'
+import { FieldPath, FieldValues, useController } from 'react-hook-form'
+import type { BaseFormFiledProps } from 'shared/types/form'
+import { FormField } from 'shared/ui/FormField'
 import { TextInput } from 'shared/ui/TextInput'
 
-/**
- * Application status select field integrated with react-hook-form.
- * Values are sourced from generated zod enum to stay in sync with API.
- */
-const ApplicationURLField: FieldComponent = ({
+export default function ApplicationURLField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+>({
   label = 'Application URL',
+  description,
   ...props
-}) => {
-  const controller = useController(props)
-  return <TextInput label={label} controller={controller} />
+}: BaseFormFiledProps<V, N>) {
+  const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
+      <TextInput controller={controller} id={id} />
+    </FormField>
+  )
 }
-
-export default ApplicationURLField
