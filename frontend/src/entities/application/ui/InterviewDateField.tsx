@@ -1,15 +1,7 @@
-import { Input } from 'app/components/ui/input'
 import { FieldPath, FieldValues, useController } from 'react-hook-form'
 import type { BaseFormFiledProps } from 'shared/types/form'
+import { DateInput } from 'shared/ui/DateInput'
 import { FormField } from 'shared/ui/FormField'
-
-function toDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-}
 
 export default function InterviewDateField<
   V extends FieldValues = FieldValues,
@@ -20,7 +12,7 @@ export default function InterviewDateField<
   ...props
 }: BaseFormFiledProps<V, N>) {
   const controller = useController({ ...props })
-  const { field, fieldState } = controller
+  const { field } = controller
   const id = `${field.name}_id`
 
   return (
@@ -30,19 +22,7 @@ export default function InterviewDateField<
       htmlFor={id}
       description={description}
     >
-      <Input
-        id={id}
-        type='datetime-local'
-        name={field.name}
-        ref={field.ref}
-        value={toDatetimeLocal(field.value)}
-        onBlur={field.onBlur}
-        onChange={(e) => {
-          const val = e.target.value
-          field.onChange(val ? new Date(val).toISOString() : null)
-        }}
-        aria-invalid={!!fieldState.error}
-      />
+      <DateInput controller={controller} id={id} />
     </FormField>
   )
 }
