@@ -20,6 +20,7 @@ export type FormFieldProps<
   children: React.ReactNode
   controller: UseControllerReturn<TFieldValues, TName>
   htmlFor: string
+  disabled?: boolean
 }
 
 export function FormField<
@@ -32,10 +33,14 @@ export function FormField<
   children,
   controller,
   htmlFor,
+  disabled,
 }: FormFieldProps<TFieldValues, TName>) {
   const { fieldState } = controller
   return (
-    <Field data-invalid={fieldState.invalid}>
+    <Field
+      data-invalid={fieldState.invalid}
+      data-disabled={controller.formState.isSubmitting || disabled}
+    >
       <FieldLabel htmlFor={htmlFor}>
         {label}
         {required && <span className='text-destructive'>*</span>}
