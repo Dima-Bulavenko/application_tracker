@@ -8,12 +8,12 @@ import {
 } from 'app/components/ui/sheet'
 import { Pencil } from 'lucide-react'
 import { Suspense, useState } from 'react'
-import type { ApplicationRead } from 'shared/api/gen/types.gen'
+import type { ApplicationReadWithCompany } from 'shared/api/gen/types.gen'
 import { lazyImport } from 'shared/lib/lazyLoad'
 import { SuspenseFallback } from 'shared/ui/SuspenseFallback'
 
 type UpdateApplicationProps = {
-  application: ApplicationRead
+  application: ApplicationReadWithCompany
 }
 
 const { UpdateApplicationForm } = lazyImport(

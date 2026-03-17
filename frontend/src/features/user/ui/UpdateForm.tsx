@@ -1,29 +1,83 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { getRouteApi } from '@tanstack/react-router'
-import { type SubmitHandler, useController, useForm } from 'react-hook-form'
+import {
+  FieldPath,
+  FieldValues,
+  type SubmitHandler,
+  useController,
+  useForm,
+} from 'react-hook-form'
 import { updateUser } from 'shared/api/gen'
-import { zUserUpdate } from 'shared/api/gen/zod.gen'
 import { getDirtyValues } from 'shared/api/get_dirty_values'
-import type { FieldComponent } from 'shared/types/form'
+import type { BaseFormFiledProps } from 'shared/types/form'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
+import { FormField } from 'shared/ui/FormField'
 import SubmitButton from 'shared/ui/SubmitButton'
 import { TextInput } from 'shared/ui/TextInput'
 import { z } from 'zod'
 
-type FormType = z.infer<typeof zUserUpdate>
+const nullableTextSchema = z.preprocess((value: string) => {
+  if (typeof value !== 'string') {
+    return value
+  }
 
-const FirstNameField: FieldComponent = ({ label = 'First Name', ...props }) => {
-  const controller = useController(props)
-  return <TextInput label={label} controller={controller} />
+  const trimmedValue = value.trim()
+  return trimmedValue === '' ? null : trimmedValue
+}, z.string().max(40).nullable())
+
+const updateUserFormSchema = z.object({
+  first_name: nullableTextSchema,
+  second_name: nullableTextSchema,
+})
+
+type InputT = z.input<typeof updateUserFormSchema>
+type OutputT = z.output<typeof updateUserFormSchema>
+
+function FirstNameField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+  TTransformedValues = V,
+>({
+  label = 'First Name',
+  description,
+  ...props
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
+  const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
+      <TextInput controller={controller} id={id} />
+    </FormField>
+  )
 }
 
-const SecondNameField: FieldComponent = ({
+function SecondNameField<
+  V extends FieldValues = FieldValues,
+  N extends FieldPath<V> = FieldPath<V>,
+  TTransformedValues = V,
+>({
   label = 'Second Name',
+  description,
   ...props
-}) => {
-  const controller = useController(props)
-  return <TextInput label={label} controller={controller} />
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
+  const controller = useController({ ...props })
+  const id = `${controller.field.name}_id`
+  return (
+    <FormField
+      label={label}
+      controller={controller}
+      htmlFor={id}
+      description={description}
+    >
+      <TextInput controller={controller} id={id} />
+    </FormField>
+  )
 }
 
 const routeApi = getRouteApi('/_authenticated')
@@ -40,14 +94,14 @@ export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
     control,
     handleSubmit,
     formState: { errors, isDirty, dirtyFields, isSubmitting },
-  } = useForm<FormType>({
-    resolver: zodResolver(zUserUpdate),
+  } = useForm<InputT, unknown, OutputT>({
+    resolver: zodResolver(updateUserFormSchema),
     defaultValues: {
-      first_name: user.first_name,
-      second_name: user.second_name,
+      first_name: user.first_name ?? '',
+      second_name: user.second_name ?? '',
     },
   })
-  const onSubmit: SubmitHandler<FormType> = async (data, event) => {
+  const onSubmit: SubmitHandler<OutputT> = async (data, event) => {
     event?.preventDefault()
     const dirtyData = getDirtyValues(dirtyFields, data)
     await updateUser<true>({ body: dirtyData }).then((res) => {

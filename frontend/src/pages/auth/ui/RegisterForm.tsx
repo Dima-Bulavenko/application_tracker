@@ -18,7 +18,13 @@ export default function RegisterForm() {
     handleSubmit,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<UserCreate>({ resolver: zodResolver(zUserCreate) })
+  } = useForm<UserCreate>({
+    resolver: zodResolver(zUserCreate),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  })
 
   const navigate = useNavigate()
 

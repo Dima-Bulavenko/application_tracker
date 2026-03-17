@@ -10,32 +10,67 @@ import RoleField from 'entities/application/ui/RoleField'
 import { WorkLocationField } from 'entities/application/ui/WorkLocationField'
 import { WorkTypeField } from 'entities/application/ui/WorkTypeField'
 import { type SubmitHandler, useForm } from 'react-hook-form'
-import type { ApplicationCreate } from 'shared/api/gen/types.gen'
-import { zApplicationCreate } from 'shared/api/gen/zod.gen'
+import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { z } from 'zod'
+
+const nullableTextSchema = z.preprocess((value: string) => {
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  const trimmedValue = value.trim()
+  return trimmedValue === '' ? null : trimmedValue
+}, z.string().nullable())
+
+const nullableIsoDatetimeSchema = z.preprocess(
+  (value: string) => (value === '' ? null : value),
+  z.iso.datetime({ offset: true }).nullable()
+)
+
+const createApplicationFormSchema = z.object({
+  role: z.string().trim().min(1, 'Role is required').max(40),
+  company: z.object({
+    name: z.string().trim().min(1, 'Company is required').max(40),
+  }),
+  status: zAppStatus,
+  work_type: zWorkType,
+  work_location: zWorkLocation,
+  note: nullableTextSchema,
+  application_url: nullableTextSchema,
+  interview_date: nullableIsoDatetimeSchema,
+})
+
+type InputT = z.input<typeof createApplicationFormSchema>
+type OutputT = z.output<typeof createApplicationFormSchema>
 
 export function CreateApplicationForm() {
   const {
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<ApplicationCreate>({
-    resolver: zodResolver(zApplicationCreate),
+  } = useForm<InputT, unknown, OutputT>({
+    resolver: zodResolver(createApplicationFormSchema),
     defaultValues: {
+      application_url: '',
+      company: { name: '' },
+      note: '',
+      role: '',
       status: 'applied',
       work_type: 'full_time',
       work_location: 'on_site',
-      interview_date: null,
+      interview_date: '',
     },
   })
   const { mutate: createApp, isPending } = useMutation(
     applicationCreateOptions()
   )
-  const onSubmit: SubmitHandler<ApplicationCreate> = (data, event) => {
+  const onSubmit: SubmitHandler<OutputT> = (data, event) => {
     event?.preventDefault()
-    createApp(data)
+    const payload = createApplicationFormSchema.parse(data)
+    createApp(payload)
   }
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
