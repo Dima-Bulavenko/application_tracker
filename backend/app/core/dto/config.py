@@ -30,3 +30,11 @@ class BaseModelDTO(BaseModel):
 class GenericFilterParams(BaseModelDTO):
     limit: int = Field(10, ge=1, le=50, description="Number of items to return")
     offset: int = Field(0, ge=0, description="Number of items to skip before starting to collect the result set")
+
+
+class PaginatedResponse[T](BaseModelDTO):
+    items: list[T]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool

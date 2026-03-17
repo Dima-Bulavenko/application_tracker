@@ -9,6 +9,7 @@ from app.core.dto import (
     ApplicationRead,
     ApplicationReadWithCompany,
     ApplicationUpdate,
+    PaginatedResponse,
 )
 from app.core.exceptions import ApplicationNotFoundError, UserNotAuthorizedError
 from app.dependencies import ActiveUserDep, ApplicationServiceDep
@@ -26,9 +27,15 @@ async def get_applications(
     app_service: ApplicationServiceDep,
     user: ActiveUserDep,
     filter_param: Annotated[ApplicationFilterParams, Query()],
-) -> list[ApplicationReadWithCompany]:
-    apps = await app_service.get_applications_by_user_email(user.email, filter_param)
-    return apps
+) -> PaginatedResponse[ApplicationReadWithCompany]:
+    apps, total, has_more = await app_service.get_applications_by_user_email(user.email, filter_param)
+    return PaginatedResponse(
+        items=apps,
+        total=total,
+        limit=filter_param.limit,
+        offset=filter_param.offset,
+        has_more=has_more,
+    )
 
 
 @router.post("")

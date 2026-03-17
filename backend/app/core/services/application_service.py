@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
 
 from app.core.domain import Application, Company
@@ -32,20 +33,25 @@ class ApplicationService:
 
     async def get_applications_by_user_email(
         self, email: str, filter_param: ApplicationFilterParams
-    ) -> list[ApplicationReadWithCompany]:
-        applications = await self.app_repo.get_by_user_email(email, filter_param)
+    ) -> tuple[list[ApplicationReadWithCompany], int, bool]:
+        applications, total = await asyncio.gather(
+            self.app_repo.get_by_user_email(email, filter_param),
+            self.app_repo.count_by_user_email(email, filter_param),
+        )
+        has_more = filter_param.offset + len(applications) < total
         if not applications:
-            return []
+            return [], total, has_more
         companies_ids = {app.company_id for app in applications}
         companies = await self.company_repo.get_by_ids(companies_ids)
         companies_dict = {company.id: company for company in companies}
-        return [
+        application_with_company = [
             ApplicationReadWithCompany(
                 **app.model_dump(),
                 company=CompanyRead.model_validate(companies_dict[app.company_id]),
             )
             for app in applications
         ]
+        return application_with_company, total, has_more
 
     async def create(self, app: ApplicationCreate, user_id: int):
         company = await self.company_repo.get_by_name(app.company.name)

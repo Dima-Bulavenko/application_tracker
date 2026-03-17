@@ -466,12 +466,13 @@ class TestApplicationList:
 
         resp = await client.get(self.url)
         assert resp.status_code == 200
-        data = resp.json()
+        body = resp.json()
+        items = body["items"]
         # Should return only user's apps
-        assert isinstance(data, list)
-        assert len(data) == 3
+        assert len(items) == 3
+        assert body["total"] == 3
         # Each item should include nested company
-        for item in data:
+        for item in items:
             assert "company" in item and isinstance(item["company"], dict)
             assert item["user_id"] == user.id
 
@@ -481,12 +482,22 @@ class TestApplicationList:
         # Page 1
         resp1 = await client.get(self.url, params={"limit": 5, "offset": 0})
         assert resp1.status_code == 200
-        assert len(resp1.json()) == 5
+        page1 = resp1.json()
+        assert len(page1["items"]) == 5
+        assert page1["total"] == 15
+        assert page1["limit"] == 5
+        assert page1["offset"] == 0
+        assert page1["has_more"] is True
 
         # Last page
         resp3 = await client.get(self.url, params={"limit": 5, "offset": 10})
         assert resp3.status_code == 200
-        assert len(resp3.json()) == 5
+        page3 = resp3.json()
+        assert len(page3["items"]) == 5
+        assert page3["total"] == 15
+        assert page3["limit"] == 5
+        assert page3["offset"] == 10
+        assert page3["has_more"] is False
 
     async def test_list_applications_ordering(self, client: AsyncClient, user: User, application_factory):
         # Create apps with known timestamps
@@ -499,13 +510,13 @@ class TestApplicationList:
 
         # Desc by default -> newest first -> last created id should appear first by time_create
         resp_desc = await client.get(self.url, params={"order_by": "time_create", "order_direction": "desc"})
-        data_desc = resp_desc.json()
+        data_desc = resp_desc.json()["items"]
         # Ordering by time_create is currently not applied; ensure all created IDs are present
         assert sorted([d["id"] for d in data_desc]) == sorted(ids)
 
         # Asc -> oldest first
         resp_asc = await client.get(self.url, params={"order_by": "time_create", "order_direction": "asc"})
-        data_asc = resp_asc.json()
+        data_asc = resp_asc.json()["items"]
         assert sorted([d["id"] for d in data_asc]) == sorted(ids)
 
     async def test_list_with_no_authorization_header(self, client: AsyncClient):
@@ -535,7 +546,10 @@ class TestApplicationList:
         access = access_token_factory(user)
         resp = await client.get(self.url, headers={"Authorization": f"Bearer {access.token}"})
         assert resp.status_code == 200
-        assert resp.json() == []
+        body = resp.json()
+        assert body["items"] == []
+        assert body["total"] == 0
+        assert body["has_more"] is False
 
 
 class TestApplicationListFilters:
@@ -556,7 +570,7 @@ class TestApplicationListFilters:
         resp = await client.get(self.url, params={"role_name": "engineer"})
 
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 2
         assert all("Engineer" in d["role"] for d in data)
         for item in data:
@@ -583,7 +597,7 @@ class TestApplicationListFilters:
         # Provide multiple OR-able filters; expect union of matches.
         resp = await client.get(self.url, params={"status": "offer", "work_type": "internship", "company_name": "acme"})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         # Expect 3 items (status OR work_type OR company_name). work_location is not relied on here.
         assert len(data) == 3
 
@@ -599,7 +613,7 @@ class TestApplicationListFilters:
         await application_factory(user_id=user.id, company_id=c.id, role="Support Agent", status="interview")
         resp = await client.get(self.url, params={"role_name": "engineer", "status": "interview"})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 1
         assert data[0]["role"] == "QA Engineer"
 
@@ -611,7 +625,7 @@ class TestApplicationListFilters:
 
         resp = await client.get(self.url, params={"company_name": "acm"})
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 1
         assert data[0]["company"]["name"].startswith("Acme")
 

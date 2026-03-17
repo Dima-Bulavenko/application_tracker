@@ -14,6 +14,9 @@ class IApplicationRepository(ABC):
     async def get_by_user_email(self, email: str, filter_param: ApplicationFilterParams) -> list[Application]: ...
 
     @abstractmethod
+    async def count_by_user_email(self, email: str, filter_param: ApplicationFilterParams) -> int: ...
+
+    @abstractmethod
     async def get_by_id(self, application_id: int) -> Application | None: ...
 
     @abstractmethod
