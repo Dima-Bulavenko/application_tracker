@@ -6,11 +6,12 @@ import { FormField } from 'shared/ui/FormField'
 export default function InterviewDateField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
+  TTransformedValues = V,
 >({
   label = 'Interview date',
   description,
   ...props
-}: BaseFormFiledProps<V, N>) {
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const controller = useController({ ...props })
   const { field } = controller
   const id = `${field.name}_id`

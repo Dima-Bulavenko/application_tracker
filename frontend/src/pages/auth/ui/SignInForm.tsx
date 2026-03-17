@@ -21,6 +21,10 @@ export default function SignInForm() {
     formState: { errors, isSubmitting },
   } = useForm<UserLogin>({
     resolver: zodResolver(zUserLogin),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
   })
   const {
     auth: { login },

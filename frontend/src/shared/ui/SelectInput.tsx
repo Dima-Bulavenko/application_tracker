@@ -57,10 +57,11 @@ export function SelectInput<
     >
       <SelectTrigger
         id={id}
+        onBlur={field.onBlur}
         aria-invalid={fieldState.invalid}
         className='w-full'
       >
-        {placeholder ?? <SelectValue placeholder='Select a fruit' />}
+        {placeholder ?? <SelectValue placeholder={placeholder} />}
       </SelectTrigger>
       <SelectContent position='popper'>
         <SelectGroup>
@@ -103,7 +104,11 @@ export function SelectMultipleInput<
       onValueChange={field.onChange}
       disabled={isSubmitting}
     >
-      <ComboboxChips ref={anchor} className='w-full max-w-xs'>
+      <ComboboxChips
+        onBlur={field.onBlur}
+        ref={anchor}
+        className='w-full max-w-xs'
+      >
         <ComboboxValue>
           {(values) => (
             <React.Fragment>
@@ -177,6 +182,7 @@ export function AsyncSelectInput<
       disabled={isSubmitting}
     >
       <ComboboxInput
+        onBlur={field.onBlur}
         placeholder={placeholder}
         aria-invalid={fieldState.invalid}
       >

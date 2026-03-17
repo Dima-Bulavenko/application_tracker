@@ -38,10 +38,7 @@ export default function PasswordField<
             formState.isSubmitting || formState.isLoading || field.disabled
           }
           onBlur={field.onBlur}
-          onChange={(e) => {
-            const val = e.target.value
-            field.onChange(val.trim() === '' ? null : val)
-          }}
+          onChange={field.onChange}
           name={field.name}
           ref={field.ref}
           value={field.value ?? ''}

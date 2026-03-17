@@ -11,7 +11,12 @@ import { SelectInput } from 'shared/ui/SelectInput'
 export function ApplicationStatusField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label = 'Status', description, ...props }: BaseFormFiledProps<V, N>) {
+  TTransformedValues = V,
+>({
+  label = 'Status',
+  description,
+  ...props
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const options = zAppStatus.options
   const controller = useController({ ...props })
   const id = `${controller.field.name}_id`

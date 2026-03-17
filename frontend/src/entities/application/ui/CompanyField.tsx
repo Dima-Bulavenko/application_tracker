@@ -9,7 +9,12 @@ import { AsyncSelectInput } from 'shared/ui/SelectInput'
 export default function CompanyField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label = 'Company', description, ...props }: BaseFormFiledProps<V, N>) {
+  TTransformedValues = V,
+>({
+  label = 'Company',
+  description,
+  ...props
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const controller = useController({ ...props })
   const [open, setOpen] = useState(false)
   const { field } = controller

@@ -10,7 +10,8 @@ import type {
 export type BaseFormFiledProps<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
-> = UseControllerProps<V, N> & {
+  TTransformedValues = V,
+> = UseControllerProps<V, N, TTransformedValues> & {
   label?: string
   description?: string
 }

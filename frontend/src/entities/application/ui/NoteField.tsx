@@ -5,7 +5,8 @@ import { TextareaInput } from 'shared/ui/TextareaInput'
 export function NoteField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label = 'Note', ...props }: BaseFormFiledProps<V, N>) {
+  TTransformedValues = V,
+>({ label = 'Note', ...props }: BaseFormFiledProps<V, N, TTransformedValues>) {
   const controller = useController({ ...props })
   return <TextareaInput rows={3} label={label} controller={controller} />
 }

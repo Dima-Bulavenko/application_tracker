@@ -11,11 +11,12 @@ import { SelectInput } from 'shared/ui/SelectInput'
 export function WorkLocationField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
+  TTransformedValues = V,
 >({
   label = 'Work Location',
   description,
   ...props
-}: BaseFormFiledProps<V, N>) {
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const options = zWorkLocation.options
   const controller = useController({ ...props })
   const id = `${controller.field.name}_id`

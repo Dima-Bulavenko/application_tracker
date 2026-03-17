@@ -6,11 +6,12 @@ import { TextInput } from 'shared/ui/TextInput'
 export default function ApplicationURLField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
+  TTransformedValues = V,
 >({
   label = 'Application URL',
   description,
   ...props
-}: BaseFormFiledProps<V, N>) {
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const controller = useController({ ...props })
   const id = `${controller.field.name}_id`
   return (

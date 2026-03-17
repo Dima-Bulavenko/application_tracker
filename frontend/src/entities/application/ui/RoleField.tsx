@@ -6,7 +6,12 @@ import { TextInput } from 'shared/ui/TextInput'
 export default function RoleField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label = 'Role', description, ...props }: BaseFormFiledProps<V, N>) {
+  TTransformedValues = V,
+>({
+  label = 'Role',
+  description,
+  ...props
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const controller = useController({ ...props })
   const id = `${controller.field.name}_id`
   return (

@@ -11,30 +11,67 @@ import RoleField from 'entities/application/ui/RoleField'
 import { WorkLocationField } from 'entities/application/ui/WorkLocationField'
 import { WorkTypeField } from 'entities/application/ui/WorkTypeField'
 import { type SubmitHandler, useForm } from 'react-hook-form'
-import type {
-  ApplicationRead,
-  ApplicationUpdate,
-} from 'shared/api/gen/types.gen'
-import { zApplicationUpdate } from 'shared/api/gen/zod.gen'
+import type { ApplicationReadWithCompany } from 'shared/api/gen/types.gen'
+import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
 import { getDirtyValues } from 'shared/api/get_dirty_values'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { z } from 'zod'
 
-export function UpdateApplicationForm(defaultValues: ApplicationRead) {
+const nullableTextSchema = z.preprocess((value: string) => {
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  const trimmedValue = value.trim()
+  return trimmedValue === '' ? null : trimmedValue
+}, z.string().nullable())
+
+const nullableIsoDatetimeSchema = z.preprocess(
+  (value: string) => (value === '' ? null : value),
+  z.iso.datetime({ offset: true }).nullable()
+)
+
+const updateApplicationFormSchema = z.object({
+  role: z.string().trim().min(1, 'Role is required').max(40),
+  company: z.object({
+    name: z.string().trim().min(1, 'Company is required').max(40),
+  }),
+  status: zAppStatus,
+  work_type: zWorkType,
+  work_location: zWorkLocation,
+  note: nullableTextSchema,
+  application_url: nullableTextSchema,
+  interview_date: nullableIsoDatetimeSchema,
+})
+
+type InputT = z.input<typeof updateApplicationFormSchema>
+type OutputT = z.output<typeof updateApplicationFormSchema>
+
+export function UpdateApplicationForm(appData: ApplicationReadWithCompany) {
   const {
     control,
     handleSubmit,
     reset,
     formState: { errors, dirtyFields, isDirty },
-  } = useForm<ApplicationUpdate>({
-    resolver: zodResolver(zApplicationUpdate),
-    defaultValues,
+  } = useForm<InputT, unknown, OutputT>({
+    resolver: zodResolver(updateApplicationFormSchema),
+    defaultValues: {
+      role: appData.role,
+      company: { name: appData.company.name },
+      status: appData.status,
+      work_type: appData.work_type,
+      work_location: appData.work_location,
+      note: appData.note ?? '',
+      application_url: appData.application_url ?? '',
+      interview_date: appData.interview_date ?? '',
+    },
   })
   const { mutate: updateApp, isPending } = useMutation(
-    applicationUpdateOptions(defaultValues.id)
+    applicationUpdateOptions(appData.id)
   )
-  const onSubmit: SubmitHandler<ApplicationUpdate> = async (data, event) => {
+  const onSubmit: SubmitHandler<OutputT> = (data, event) => {
     event?.preventDefault()
     const newData = getDirtyValues(dirtyFields, data)
     if (newData) {

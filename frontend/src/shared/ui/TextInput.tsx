@@ -25,6 +25,7 @@ export function TextInput<
         name={field.name}
         value={field.value}
         onChange={field.onChange}
+        onBlur={field.onBlur}
         aria-invalid={fieldState.invalid}
         disabled={formState.isSubmitting}
         {...props}

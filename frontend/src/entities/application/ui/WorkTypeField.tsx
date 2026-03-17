@@ -11,7 +11,12 @@ import { SelectInput } from 'shared/ui/SelectInput'
 export function WorkTypeField<
   V extends FieldValues = FieldValues,
   N extends FieldPath<V> = FieldPath<V>,
->({ label = 'Work Type', description, ...props }: BaseFormFiledProps<V, N>) {
+  TTransformedValues = V,
+>({
+  label = 'Work Type',
+  description,
+  ...props
+}: BaseFormFiledProps<V, N, TTransformedValues>) {
   const options = zWorkType.options
   const controller = useController({ ...props })
   const id = `${controller.field.name}_id`
