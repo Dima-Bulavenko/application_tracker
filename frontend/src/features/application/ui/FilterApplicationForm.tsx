@@ -1,3 +1,4 @@
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   keepPreviousData,
   useIsFetching,
@@ -10,11 +11,6 @@ import {
   applicationKeys,
   userCompaniesOptions,
 } from 'entities/application/api/queryOptions'
-import {
-  type ApplicationFilter,
-  cleanFilterData,
-  filterStorage,
-} from 'features/application/lib/filterStorage'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { type Control, useController, useForm } from 'react-hook-form'
@@ -30,6 +26,21 @@ import {
   SelectInput,
   SelectMultipleInput,
 } from 'shared/ui/SelectInput'
+import z from 'zod'
+
+export const zApplicationFilterSchema = z.object({
+  order_by: zApplicationOrderBy,
+  order_direction: z.enum(['asc', 'desc']),
+  status: z.array(zAppStatus),
+  work_type: z.array(zWorkType),
+  work_location: z.array(zWorkLocation),
+  role_name: z.string().max(40, 'Role name must be at most 40 characters'),
+  company_name: z
+    .string()
+    .max(40, 'Company name must be at most 40 characters'),
+})
+
+type ApplicationFilter = z.infer<typeof zApplicationFilterSchema>
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -136,7 +147,6 @@ function CompanyNameFilter({ control }: FilterFormParam) {
     enabled: open,
     placeholderData: keepPreviousData,
   })
-  console.log(data)
   const id = `${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Company Name'>
@@ -153,38 +163,34 @@ function CompanyNameFilter({ control }: FilterFormParam) {
   )
 }
 
+export const defaultFilters: ApplicationFilter = {
+  company_name: '',
+  status: [],
+  work_location: [],
+  work_type: [],
+  order_by: 'time_create',
+  order_direction: 'desc',
+  role_name: '',
+}
+
 export function FilterApplicationForm() {
   const { filter } = routeApi.useSearch()
   const navigate = routeApi.useNavigate()
   const { control, handleSubmit, formState, reset } =
     useForm<ApplicationFilter>({
+      resolver: zodResolver(zApplicationFilterSchema),
       defaultValues: {
-        company_name: '',
-        status: [],
-        work_location: [],
-        work_type: [],
-        order_by: 'time_create',
-        order_direction: 'desc',
+        ...defaultFilters,
         ...filter,
       },
     })
 
   const isFetching = useIsFetching({ queryKey: applicationKeys.lists() })
 
-  const applyFilter = (data: ApplicationFilter): void => {
-    const cleanedFilters = cleanFilterData(data)
-    const hasActiveFilters = Object.keys(cleanedFilters).length > 0
-
-    filterStorage.save(cleanedFilters)
+  const applyFilter = (filter: ApplicationFilter): void => {
     navigate({
-      search: () => (hasActiveFilters ? { filter: cleanedFilters } : {}),
+      search: { filter },
     })
-  }
-
-  const clearFilters = (): void => {
-    filterStorage.clear()
-    reset({})
-    navigate({ search: () => ({}) })
   }
 
   const hasActiveFilters = Boolean(filter)
@@ -202,14 +208,17 @@ export function FilterApplicationForm() {
       <div className='flex justify-end gap-2'>
         <Button
           disabled={!formState.isDirty && !hasActiveFilters}
-          onClick={clearFilters}
+          onClick={() => {
+            reset()
+            navigate({ search: { filter: defaultFilters } })
+          }}
           type='button'
           variant='outline'
         >
           Clear Filters
         </Button>
         <Button
-          disabled={!formState.isDirty}
+          // disabled={!formState.isDirty}
           onClick={handleSubmit(applyFilter)}
           type='button'
         >

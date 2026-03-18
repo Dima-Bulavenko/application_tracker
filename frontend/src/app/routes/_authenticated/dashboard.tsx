@@ -1,45 +1,40 @@
-import { createFileRoute, SearchSchemaInput } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { applicationsOptions } from 'entities/application/api/queryOptions'
-import {
-  ApplicationFilter,
-  filterStorage,
-  hasFilters,
-  parseFilters,
-} from 'features/application/lib/filterStorage'
+import { zApplicationFilterSchema } from 'features/application/ui/FilterApplicationForm'
 import { DashboardPage } from 'pages/dashboard/ui/DashboardPage'
+import { getPaginationPrams } from 'shared/lib/getPaginationPrams'
+import z from 'zod'
 
-type SearchParams = { filter?: ApplicationFilter } & SearchSchemaInput
+const af = zApplicationFilterSchema.shape
 
-const resolveFilters = (
-  search: SearchParams
-): ApplicationFilter | undefined => {
-  // Priority 1: Explicit URL params (with validation)
-  if (hasFilters(search.filter)) {
-    const parsed = parseFilters(search.filter)
-    if (parsed && hasFilters(parsed)) {
-      return parsed
-    }
-  }
+export const ApplicationFilterSearchSchema = z.object({
+  order_by: af.order_by.optional().catch(undefined),
+  order_direction: af.order_direction.optional().catch(undefined),
+  status: af.status.min(1).optional().catch(undefined),
+  work_type: af.work_type.min(1).optional().catch(undefined),
+  work_location: af.work_location.min(1).optional().catch(undefined),
+  role_name: af.role_name.min(1).optional().catch(undefined),
+  company_name: af.company_name.min(1).optional().catch(undefined),
+})
 
-  // Priority 2: Stored filters from previous session
-  const storedFilters = filterStorage.get()
-  if (storedFilters) {
-    const parsed = parseFilters(storedFilters)
-    if (parsed && hasFilters(parsed)) {
-      return parsed
-    }
-  }
-
-  return undefined
-}
+export const DashboardSearchSchema = z.object({
+  filter: ApplicationFilterSearchSchema.optional().catch(undefined),
+  page: z.int().gte(1).positive().default(1).catch(1),
+})
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
-  validateSearch: (search: SearchParams) => {
-    const filter = resolveFilters(search)
-    return filter ? { filter } : {}
+  validateSearch: DashboardSearchSchema,
+  search: {
+    middlewares: [stripSearchParams({ page: 1 })],
   },
-  loaderDeps: ({ search: { filter } }) => ({ filter }),
-  loader: ({ context: { queryClient }, deps: { filter } }) =>
-    queryClient.ensureQueryData(applicationsOptions(filter)),
+  loaderDeps: ({ search: { page, filter } }) => ({ filter, page }),
+  loader: ({ context: { queryClient }, deps: { filter, page } }) => {
+    queryClient.ensureQueryData(
+      applicationsOptions({
+        ...filter,
+        ...getPaginationPrams(page),
+      })
+    )
+  },
   component: DashboardPage,
 })

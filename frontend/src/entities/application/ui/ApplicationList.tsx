@@ -8,9 +8,11 @@ const routeApi = getRouteApi('/_authenticated/dashboard')
 
 export function ApplicationList() {
   const { filter } = routeApi.useSearch()
-  const { error, isFetching, data } = useSuspenseQuery(
-    applicationsOptions(filter)
-  )
+  const {
+    error,
+    isFetching,
+    data: { items },
+  } = useSuspenseQuery(applicationsOptions({ ...filter, limit: 10, offset: 0 }))
 
   if (error) {
     return (
@@ -20,7 +22,7 @@ export function ApplicationList() {
     )
   }
 
-  if (!isFetching && data?.length === 0) {
+  if (!isFetching && items?.length === 0) {
     return <p className='text-sm text-muted-foreground'>No applications yet.</p>
   }
 
@@ -36,7 +38,7 @@ export function ApplicationList() {
 
   return (
     <div className='space-y-4'>
-      {data?.map((app) => (
+      {items?.map((app) => (
         <ApplicationCard key={app.id} application={app} />
       ))}
     </div>

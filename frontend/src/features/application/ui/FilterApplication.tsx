@@ -13,7 +13,6 @@ const { FilterApplicationForm } = lazyImport(
 
 export function FilterApplication() {
   const [open, setOpen] = useState(false)
-
   const filterPanel = (
     <Suspense fallback={<SuspenseFallback />}>
       <FilterApplicationForm />
