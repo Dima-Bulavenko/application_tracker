@@ -1,6 +1,9 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { applicationsOptions } from 'entities/application/api/queryOptions'
-import { zApplicationFilterSchema } from 'features/application/ui/FilterApplicationForm'
+import {
+  defaultFilters,
+  zApplicationFilterSchema,
+} from 'features/application/ui/FilterApplicationForm'
 import { DashboardPage } from 'pages/dashboard/ui/DashboardPage'
 import { getPaginationPrams } from 'shared/lib/getPaginationPrams'
 import z from 'zod'
@@ -25,7 +28,15 @@ export const DashboardSearchSchema = z.object({
 export const Route = createFileRoute('/_authenticated/dashboard')({
   validateSearch: DashboardSearchSchema,
   search: {
-    middlewares: [stripSearchParams({ page: 1 })],
+    middlewares: [
+      stripSearchParams({
+        filter: {
+          order_by: defaultFilters.order_by,
+          order_direction: defaultFilters.order_direction,
+        },
+        page: 1,
+      }),
+    ],
   },
   loaderDeps: ({ search: { page, filter } }) => ({ filter, page }),
   loader: ({ context: { queryClient }, deps: { filter, page } }) => {

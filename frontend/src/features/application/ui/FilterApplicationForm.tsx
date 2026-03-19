@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+
 import {
   keepPreviousData,
   useIsFetching,
@@ -12,7 +13,7 @@ import {
   userCompaniesOptions,
 } from 'entities/application/api/queryOptions'
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { type Control, useController, useForm } from 'react-hook-form'
 import {
   zApplicationOrderBy,
@@ -176,24 +177,33 @@ export const defaultFilters: ApplicationFilter = {
 export function FilterApplicationForm() {
   const { filter } = routeApi.useSearch()
   const navigate = routeApi.useNavigate()
-  const { control, handleSubmit, formState, reset } =
-    useForm<ApplicationFilter>({
-      resolver: zodResolver(zApplicationFilterSchema),
-      defaultValues: {
-        ...defaultFilters,
-        ...filter,
-      },
-    })
-
+  const {
+    control,
+    handleSubmit,
+    formState: { isDirty },
+    reset,
+  } = useForm<ApplicationFilter>({
+    resolver: zodResolver(zApplicationFilterSchema),
+    defaultValues: {
+      ...defaultFilters,
+      ...filter,
+    },
+  })
   const isFetching = useIsFetching({ queryKey: applicationKeys.lists() })
+  const hasAppliedFilters = Boolean(filter && Object.keys(filter).length > 0)
 
-  const applyFilter = (filter: ApplicationFilter): void => {
-    navigate({
-      search: { filter },
-    })
+  useEffect(() => {
+    reset({ ...defaultFilters, ...filter })
+  }, [filter, reset])
+
+  const clearFilters = () => {
+    if (filter) {
+      navigate({ search: ({ filter, ...rest }) => ({ ...rest }) })
+      return
+    }
+
+    reset(defaultFilters)
   }
-
-  const hasActiveFilters = Boolean(filter)
 
   return (
     <div className='space-y-6 p-4'>
@@ -207,19 +217,18 @@ export function FilterApplicationForm() {
       </FieldGroup>
       <div className='flex justify-end gap-2'>
         <Button
-          disabled={!formState.isDirty && !hasActiveFilters}
-          onClick={() => {
-            reset()
-            navigate({ search: { filter: defaultFilters } })
-          }}
+          disabled={!isDirty && !hasAppliedFilters}
+          onClick={clearFilters}
           type='button'
           variant='outline'
         >
           Clear Filters
         </Button>
         <Button
-          // disabled={!formState.isDirty}
-          onClick={handleSubmit(applyFilter)}
+          disabled={!isDirty}
+          onClick={handleSubmit((filter) =>
+            navigate({ search: (prev) => ({ ...prev, filter: filter }) })
+          )}
           type='button'
         >
           {isFetching ? <Loader2 className='size-4 animate-spin' /> : null}
