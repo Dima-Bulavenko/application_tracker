@@ -54,7 +54,7 @@ function OrderBy({ control }: FilterFormParam) {
     name: 'order_by',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   const options = zApplicationOrderBy.options
   return (
     <FormField controller={controller} htmlFor={id} label='Order By'>
@@ -68,7 +68,7 @@ function OrderDirection({ control }: FilterFormParam) {
     name: 'order_direction',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Order Direction'>
       <SelectInput controller={controller} id={id} options={['asc', 'desc']} />
@@ -82,7 +82,7 @@ function ApplicationStatusFilter({ control }: FilterFormParam) {
     name: 'status',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Application Status'>
       <SelectMultipleInput
@@ -101,7 +101,7 @@ function WorkLocationFilter({ control }: FilterFormParam) {
     name: 'work_location',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Work Location'>
       <SelectMultipleInput
@@ -120,7 +120,7 @@ function WorkTypeFilter({ control }: FilterFormParam) {
     name: 'work_type',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Work Type'>
       <SelectMultipleInput
@@ -148,7 +148,7 @@ function CompanyNameFilter({ control }: FilterFormParam) {
     enabled: open,
     placeholderData: keepPreviousData,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Company Name'>
       <AsyncSelectInput
