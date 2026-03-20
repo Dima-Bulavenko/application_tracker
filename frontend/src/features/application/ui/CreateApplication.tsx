@@ -3,6 +3,7 @@ import { Separator } from 'app/components/ui/separator'
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from 'app/components/ui/sheet'
@@ -32,6 +33,9 @@ export function CreateApplication() {
         <SheetContent className='w-[85vw] overflow-y-auto sm:max-w-[600px]'>
           <SheetHeader>
             <SheetTitle>Create Application</SheetTitle>
+            <SheetDescription>
+              Add a new job application to track
+            </SheetDescription>
           </SheetHeader>
           <Separator />
           <Suspense fallback={<SuspenseFallback />}>

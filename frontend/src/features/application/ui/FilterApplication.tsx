@@ -1,5 +1,11 @@
 import { Button } from 'app/components/ui/button'
-import { Sheet, SheetContent } from 'app/components/ui/sheet'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from 'app/components/ui/sheet'
 import { Filter } from 'lucide-react'
 import { Suspense, useState } from 'react'
 
@@ -32,6 +38,12 @@ export function FilterApplication() {
         </Button>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent className='w-[85vw] max-w-[420px] overflow-y-auto'>
+            <SheetHeader>
+              <SheetTitle>Filter Applications</SheetTitle>
+              <SheetDescription>
+                Narrow down your applications by filters
+              </SheetDescription>
+            </SheetHeader>
             {open && filterPanel}
           </SheetContent>
         </Sheet>

@@ -3,6 +3,7 @@ import { Separator } from 'app/components/ui/separator'
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from 'app/components/ui/sheet'
@@ -34,6 +35,9 @@ export function UpdateApplication({ application }: UpdateApplicationProps) {
         <SheetContent className='w-[85vw] overflow-y-auto sm:max-w-[600px]'>
           <SheetHeader>
             <SheetTitle>Update Application</SheetTitle>
+            <SheetDescription>
+              Make changes to your application details with
+            </SheetDescription>
           </SheetHeader>
           <Separator />
           <Suspense fallback={<SuspenseFallback />}>
