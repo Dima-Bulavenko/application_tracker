@@ -92,6 +92,7 @@ jobs:
 
     env:
       POSTGRES_HOST_TEST: localhost
+      POSTGRES_PORT_TEST: 5432
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
       POSTGRES_USER: test_user
