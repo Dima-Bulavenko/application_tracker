@@ -31,7 +31,7 @@ jobs:
         working-directory: ./backend
         env:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
-          DOCKER_BUILDKIT: 0
+          DOCKER_BUILDKIT: 1
         run: |
           IMAGE_TAG=latest
           docker build \
