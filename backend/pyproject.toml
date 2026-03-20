@@ -20,6 +20,7 @@ dependencies = [
 [dependency-groups]
 lambda = [
     "awslambdaric>=4.0.0",
+    "python-multipart>=0.0.22",
 ]
 dev = [
     "fastapi[standard]>=0.135.1",
