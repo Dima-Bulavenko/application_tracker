@@ -31,7 +31,9 @@ from app.tests.factories import (
 
 @pytest.fixture(scope="session")
 def postgres_url():
-    return url_object.set(host=env.str("POSTGRES_HOST_TEST")).render_as_string(hide_password=False)
+    return url_object.set(host=env.str("POSTGRES_HOST_TEST"), port=env.int("POSTGRES_PORT_TEST")).render_as_string(
+        hide_password=False
+    )
 
 
 @pytest.fixture(name="engine", scope="session")

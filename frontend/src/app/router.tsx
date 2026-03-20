@@ -3,6 +3,7 @@ import { routeTree } from './routeTree.gen'
 
 export const router = createRouter({
   routeTree,
+  defaultPreloadStaleTime: 0,
   context: {
     auth: undefined!,
     queryClient: undefined!,

@@ -1,3 +1,5 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+
 import {
   keepPreviousData,
   useIsFetching,
@@ -10,13 +12,8 @@ import {
   applicationKeys,
   userCompaniesOptions,
 } from 'entities/application/api/queryOptions'
-import {
-  type ApplicationFilter,
-  cleanFilterData,
-  filterStorage,
-} from 'features/application/lib/filterStorage'
 import { Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { type Control, useController, useForm } from 'react-hook-form'
 import {
   zApplicationOrderBy,
@@ -30,6 +27,21 @@ import {
   SelectInput,
   SelectMultipleInput,
 } from 'shared/ui/SelectInput'
+import z from 'zod'
+
+export const zApplicationFilterSchema = z.object({
+  order_by: zApplicationOrderBy,
+  order_direction: z.enum(['asc', 'desc']),
+  status: z.array(zAppStatus),
+  work_type: z.array(zWorkType),
+  work_location: z.array(zWorkLocation),
+  role_name: z.string().max(40, 'Role name must be at most 40 characters'),
+  company_name: z
+    .string()
+    .max(40, 'Company name must be at most 40 characters'),
+})
+
+type ApplicationFilter = z.infer<typeof zApplicationFilterSchema>
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -42,7 +54,7 @@ function OrderBy({ control }: FilterFormParam) {
     name: 'order_by',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   const options = zApplicationOrderBy.options
   return (
     <FormField controller={controller} htmlFor={id} label='Order By'>
@@ -56,7 +68,7 @@ function OrderDirection({ control }: FilterFormParam) {
     name: 'order_direction',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Order Direction'>
       <SelectInput controller={controller} id={id} options={['asc', 'desc']} />
@@ -70,7 +82,7 @@ function ApplicationStatusFilter({ control }: FilterFormParam) {
     name: 'status',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Application Status'>
       <SelectMultipleInput
@@ -89,7 +101,7 @@ function WorkLocationFilter({ control }: FilterFormParam) {
     name: 'work_location',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Work Location'>
       <SelectMultipleInput
@@ -108,7 +120,7 @@ function WorkTypeFilter({ control }: FilterFormParam) {
     name: 'work_type',
     control,
   })
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Work Type'>
       <SelectMultipleInput
@@ -136,8 +148,7 @@ function CompanyNameFilter({ control }: FilterFormParam) {
     enabled: open,
     placeholderData: keepPreviousData,
   })
-  console.log(data)
-  const id = `${controller.field.name}_id`
+  const id = `filter_${controller.field.name}_id`
   return (
     <FormField controller={controller} htmlFor={id} label='Company Name'>
       <AsyncSelectInput
@@ -153,41 +164,46 @@ function CompanyNameFilter({ control }: FilterFormParam) {
   )
 }
 
+export const defaultFilters: ApplicationFilter = {
+  company_name: '',
+  status: [],
+  work_location: [],
+  work_type: [],
+  order_by: 'time_create',
+  order_direction: 'desc',
+  role_name: '',
+}
+
 export function FilterApplicationForm() {
   const { filter } = routeApi.useSearch()
   const navigate = routeApi.useNavigate()
-  const { control, handleSubmit, formState, reset } =
-    useForm<ApplicationFilter>({
-      defaultValues: {
-        company_name: '',
-        status: [],
-        work_location: [],
-        work_type: [],
-        order_by: 'time_create',
-        order_direction: 'desc',
-        ...filter,
-      },
-    })
-
+  const {
+    control,
+    handleSubmit,
+    formState: { isDirty },
+    reset,
+  } = useForm<ApplicationFilter>({
+    resolver: zodResolver(zApplicationFilterSchema),
+    defaultValues: {
+      ...defaultFilters,
+      ...filter,
+    },
+  })
   const isFetching = useIsFetching({ queryKey: applicationKeys.lists() })
+  const hasAppliedFilters = Boolean(filter && Object.keys(filter).length > 0)
 
-  const applyFilter = (data: ApplicationFilter): void => {
-    const cleanedFilters = cleanFilterData(data)
-    const hasActiveFilters = Object.keys(cleanedFilters).length > 0
+  useEffect(() => {
+    reset({ ...defaultFilters, ...filter })
+  }, [filter, reset])
 
-    filterStorage.save(cleanedFilters)
-    navigate({
-      search: () => (hasActiveFilters ? { filter: cleanedFilters } : {}),
-    })
+  const clearFilters = () => {
+    if (filter) {
+      navigate({ search: ({ filter, ...rest }) => ({ ...rest, page: 1 }) })
+      return
+    }
+
+    reset(defaultFilters)
   }
-
-  const clearFilters = (): void => {
-    filterStorage.clear()
-    reset({})
-    navigate({ search: () => ({}) })
-  }
-
-  const hasActiveFilters = Boolean(filter)
 
   return (
     <div className='space-y-6 p-4'>
@@ -201,7 +217,7 @@ export function FilterApplicationForm() {
       </FieldGroup>
       <div className='flex justify-end gap-2'>
         <Button
-          disabled={!formState.isDirty && !hasActiveFilters}
+          disabled={!isDirty && !hasAppliedFilters}
           onClick={clearFilters}
           type='button'
           variant='outline'
@@ -209,8 +225,12 @@ export function FilterApplicationForm() {
           Clear Filters
         </Button>
         <Button
-          disabled={!formState.isDirty}
-          onClick={handleSubmit(applyFilter)}
+          disabled={!isDirty}
+          onClick={handleSubmit((filter) =>
+            navigate({
+              search: (prev) => ({ ...prev, filter: filter, page: 1 }),
+            })
+          )}
           type='button'
         >
           {isFetching ? <Loader2 className='size-4 animate-spin' /> : null}

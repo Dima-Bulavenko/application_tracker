@@ -18,7 +18,7 @@ from .company import (
     CompanyFilterParams as CompanyFilterParams,
     CompanyRead as CompanyRead,
 )
-from .config import BaseModelDTO as BaseModelDTO
+from .config import BaseModelDTO as BaseModelDTO, PaginatedResponse as PaginatedResponse
 from .oauth import (
     OAuthAuthorizeResponse as OAuthAuthorizeResponse,
     OAuthCallbackRequest as OAuthCallbackRequest,
