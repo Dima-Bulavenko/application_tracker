@@ -198,7 +198,7 @@ export function FilterApplicationForm() {
 
   const clearFilters = () => {
     if (filter) {
-      navigate({ search: ({ filter, ...rest }) => ({ ...rest }) })
+      navigate({ search: ({ filter, ...rest }) => ({ ...rest, page: 1 }) })
       return
     }
 
@@ -227,7 +227,9 @@ export function FilterApplicationForm() {
         <Button
           disabled={!isDirty}
           onClick={handleSubmit((filter) =>
-            navigate({ search: (prev) => ({ ...prev, filter: filter }) })
+            navigate({
+              search: (prev) => ({ ...prev, filter: filter, page: 1 }),
+            })
           )}
           type='button'
         >
