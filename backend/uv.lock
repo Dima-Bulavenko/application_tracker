@@ -250,6 +250,7 @@ dev = [
 ]
 lambda = [
     { name = "awslambdaric" },
+    { name = "httpx" },
     { name = "python-multipart" },
 ]
 
@@ -287,6 +288,7 @@ dev = [
 ]
 lambda = [
     { name = "awslambdaric", specifier = ">=4.0.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "python-multipart", specifier = ">=0.0.22" },
 ]
 

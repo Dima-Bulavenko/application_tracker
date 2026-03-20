@@ -20,6 +20,7 @@ dependencies = [
 [dependency-groups]
 lambda = [
     "awslambdaric>=4.0.0",
+    "httpx>=0.28.1",
     "python-multipart>=0.0.22",
 ]
 dev = [
