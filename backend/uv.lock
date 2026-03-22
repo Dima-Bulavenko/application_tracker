@@ -223,10 +223,12 @@ dependencies = [
     { name = "email-validator" },
     { name = "environs" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "mangum" },
     { name = "pwdlib", extra = ["argon2"] },
     { name = "pyjwt" },
+    { name = "python-multipart" },
     { name = "sqlalchemy" },
 ]
 
@@ -250,8 +252,6 @@ dev = [
 ]
 lambda = [
     { name = "awslambdaric" },
-    { name = "httpx" },
-    { name = "python-multipart" },
 ]
 
 [package.metadata]
@@ -261,10 +261,12 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.2.0,<3.0.0" },
     { name = "environs", specifier = ">=14.1.1,<15.0.0" },
     { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "jinja2", specifier = ">=3.1.6,<4.0.0" },
     { name = "mangum", specifier = ">=0.19.0,<0.20.0" },
     { name = "pwdlib", extras = ["argon2"], specifier = ">=0.3.0,<0.4.0" },
     { name = "pyjwt", specifier = ">=2.10.1,<3.0.0" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "sqlalchemy", specifier = ">=2.0.36,<3.0.0" },
 ]
 
@@ -286,11 +288,7 @@ dev = [
     { name = "types-aioboto3", extras = ["sqs"], specifier = ">=15.5.0,<16.0.0" },
     { name = "types-passlib", specifier = ">=1.7.7.20250602,<2.0.0" },
 ]
-lambda = [
-    { name = "awslambdaric", specifier = ">=4.0.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "python-multipart", specifier = ">=0.0.22" },
-]
+lambda = [{ name = "awslambdaric", specifier = ">=4.0.0" }]
 
 [[package]]
 name = "argon2-cffi"
