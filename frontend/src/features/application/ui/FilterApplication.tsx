@@ -22,7 +22,7 @@ export function FilterApplication() {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const filterPanel = (
     <Suspense fallback={<SuspenseFallback />}>
-      <FilterApplicationForm />
+      <FilterApplicationForm onApplySuccess={() => setOpen(false)} />
     </Suspense>
   )
 

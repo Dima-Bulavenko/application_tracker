@@ -174,7 +174,13 @@ export const defaultFilters: ApplicationFilter = {
   role_name: '',
 }
 
-export function FilterApplicationForm() {
+type FilterApplicationFormProps = {
+  onApplySuccess?: () => void
+}
+
+export function FilterApplicationForm({
+  onApplySuccess,
+}: FilterApplicationFormProps = {}) {
   const { filter } = routeApi.useSearch()
   const navigate = routeApi.useNavigate()
   const {
@@ -226,11 +232,13 @@ export function FilterApplicationForm() {
         </Button>
         <Button
           disabled={!isDirty}
-          onClick={handleSubmit((filter) =>
+          onClick={handleSubmit((filter) => {
             navigate({
               search: (prev) => ({ ...prev, filter: filter, page: 1 }),
             })
-          )}
+            console.log('should not be executed')
+            onApplySuccess?.()
+          })}
           type='button'
         >
           {isFetching ? <Loader2 className='size-4 animate-spin' /> : null}
