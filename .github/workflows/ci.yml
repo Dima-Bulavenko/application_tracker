@@ -5,6 +5,8 @@ permissions:
   security-events: write
 
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main, dev]
 
@@ -13,6 +15,7 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -29,48 +32,13 @@ jobs:
               - 'frontend/**'
               - '.github/workflows/ci.yml'
 
-  # Backend linting, formatting
-  backend-check:
-    name: Backend Checks
+  # Backend linting, formatting, type checking, and tests
+  backend:
+    name: Backend
     needs: changes
     if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          cache-dependency-glob: backend/uv.lock
-
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-
-      - name: Run Ruff (linter)
-        run: uv run ruff check .
-
-      - name: Run Ruff (formatter)
-        run: uv run ruff format --check .
-
-      - name: Run MyPy (type checking)
-        run: uv run mypy .
-
-  # Backend testing
-  backend-test:
-    name: Backend Tests
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
-    runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: ./backend
@@ -126,71 +94,77 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen --all-groups
 
-      - name: Run tests
-        run: uv run pytest app/tests/ -v
+      - name: Run Ruff (linter)
+        run: uv run ruff check .
 
-  # Frontend linting and type checking
-  # frontend-check:
-  #   name: Frontend Checks
-  #   needs: changes
-  #   if: needs.changes.outputs.frontend == 'true'
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./frontend
+      - name: Run Ruff (formatter)
+        run: uv run ruff format --check .
 
-  #   steps:
-  #     - uses: actions/checkout@v4
+      - name: Run MyPy (type checking)
+        run: uv run mypy .
 
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "23"
-  #         cache: "npm"
-  #         cache-dependency-path: frontend/package-lock.json
+      - name: Run tests with coverage
+        run: >
+          uv run pytest app/tests/ -v
+          --cov=app
+          --cov-report=xml
+          --cov-report=term-missing
+          --junitxml=test-results.xml
 
-  #     - name: Install dependencies
-  #       run: npm ci
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/test-results.xml
 
-  # - name: Run Biome check
-  #   run: npm run lint
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
 
-  # - name: Run Biome format check
-  #   run: npm run format:check
+  # Frontend linting, type checking, and build verification
+  frontend:
+    name: Frontend
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ./frontend
 
-  # - name: Run TypeScript type checking
-  #   run: npx tsc --noEmit
+    steps:
+      - uses: actions/checkout@v4
 
-  # # Frontend build verification
-  # frontend-build:
-  #   name: Frontend Build
-  #   needs: changes
-  #   if: needs.changes.outputs.frontend == 'true'
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./frontend
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-  #   steps:
-  #     - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: npm ci
 
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "23"
-  #         cache: "npm"
-  #         cache-dependency-path: frontend/package-lock.json
+      - name: Generate API client
+        run: npm run generate-client
 
-  #     - name: Install dependencies
-  #       run: npm ci
+      - name: Run Biome check
+        run: npm run check
 
-  #     - name: Build application
-  #       run: npm run build
+      - name: Build application
+        run: npm run build
 
   # Security scanning
   security-scan:
     name: Security Scan
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4

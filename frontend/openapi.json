@@ -1,0 +1,2210 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FastAPI",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/users": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Create User",
+        "description": "**Create** a user with provided email and password.\n\nSend link to provided email address for account activation.\n\nIf the user with the email exist, return success response but send warning email to the email address.",
+        "operationId": "create_user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/activate": {
+      "patch": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Activate User",
+        "description": "**Activate** user account using verification token.\n\nToken is typically sent via email during user registration.",
+        "operationId": "activate_user",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired activation token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User is already activated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/change-password": {
+      "patch": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Change Password",
+        "description": "**Change** user password.\n\nRequires valid access token for authentication.",
+        "operationId": "change_password",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UserChangePassword"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Old password is incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/set-password": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Set Password",
+        "description": "**Set** password for OAuth users who don't have a password yet.\n\nThis allows OAuth users to add password-based authentication to their account.\nRequires valid access token for authentication.",
+        "operationId": "set_password",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSetPassword"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "User already has a password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get Current User",
+        "description": "**Get** current user information.\n\nRequires valid access token for authentication.",
+        "operationId": "get_current_user",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Update User",
+        "operationId": "update_user",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Delete User",
+        "operationId": "delete_user",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing, invalid, or expired access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications": {
+      "get": {
+        "tags": [
+          "application"
+        ],
+        "summary": "Get Applications",
+        "operationId": "get_applications",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Number of items to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of items to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of items to skip before starting to collect the result set",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Number of items to skip before starting to collect the result set"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationOrderBy",
+              "default": "time_create"
+            }
+          },
+          {
+            "name": "order_direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Order Direction"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AppStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "work_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Type"
+            }
+          },
+          {
+            "name": "work_location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkLocation"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Work Location"
+            }
+          },
+          {
+            "name": "role_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Role Name"
+            }
+          },
+          {
+            "name": "company_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ApplicationReadWithCompany_"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "application"
+        ],
+        "summary": "Create Application",
+        "operationId": "create_application",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/applications/{application_id}": {
+      "get": {
+        "tags": [
+          "application"
+        ],
+        "summary": "Get Application By Id",
+        "operationId": "get_application_by_id",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User is not authorized to access this application",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Application not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "application"
+        ],
+        "summary": "Update Application",
+        "operationId": "update_application",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User is not authorized to update this application, or is not active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Application or User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "application"
+        ],
+        "summary": "Delete Application",
+        "operationId": "delete_application",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Application Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Access token is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Application not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "User is not authorized to delete this application",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/user": {
+      "get": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Get User Companies",
+        "operationId": "get_user_companies",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "Number of items to return",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of items to return"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of items to skip before starting to collect the result set",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Number of items to skip before starting to collect the result set"
+          },
+          {
+            "name": "order_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CompanyOrderBy",
+              "default": "name"
+            }
+          },
+          {
+            "name": "order_direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Order Direction"
+            }
+          },
+          {
+            "name": "name_contains",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name Contains"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyRead"
+                  },
+                  "title": "Response Get User Companies"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{company_id}": {
+      "get": {
+        "tags": [
+          "company"
+        ],
+        "summary": "Get Company",
+        "operationId": "get_company",
+        "parameters": [
+          {
+            "name": "company_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Company Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Application not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Login",
+        "description": "**Create** a user with provided email and password.\n\nSend link to provided email address for account activation.\n\nIf the user with the email exist, return success response but send warning email to the email address.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Refresh Token",
+        "operationId": "refresh_token",
+        "parameters": [
+          {
+            "name": "refresh",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Refresh"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Refresh token is not valid or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Logout",
+        "operationId": "logout",
+        "parameters": [
+          {
+            "name": "refresh",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Refresh"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/oauth/google/authorize": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Google Authorize",
+        "description": "Initiate Google OAuth flow\n\nRedirects user to Google authorization page.\nState token is stored in HTTPOnly cookie for CSRF protection.",
+        "operationId": "google_authorize",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAuthorizeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/oauth/google/callback": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Google Callback",
+        "description": "Handle Google OAuth callback\n\nThis endpoint receives the authorization code from Google and:\n1. Validates the state token (CSRF protection via cookie comparison)\n2. Exchanges code for access token\n3. Fetches user info from Google\n4. Creates or logs in user\n5. Issues JWT tokens\n6. Response to frontend with access token\n\nThe refresh token is set as an HTTPOnly secure cookie.",
+        "operationId": "google_callback",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "oauth_state",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Oauth State"
+            }
+          },
+          {
+            "name": "oauth_code_verifier",
+            "in": "cookie",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Oauth Code Verifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/oauth/linkedin/authorize": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Linkedin Authorize",
+        "description": "Initiate LinkedIn OAuth flow\n\nRedirects user to LinkedIn authorization page.\nState token is stored in HTTPOnly cookie for CSRF protection.",
+        "operationId": "linkedin_authorize",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthAuthorizeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/oauth/linkedin/callback": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Linkedin Callback",
+        "description": "Handle LinkedIn OAuth callback\n\nThis endpoint receives the authorization code from LinkedIn and:\n1. Validates the state token (CSRF protection via cookie comparison)\n2. Exchanges code for access token\n3. Fetches user info from LinkedIn\n4. Creates or logs in user\n5. Issues JWT tokens\n\nThe refresh token is set as an HTTPOnly secure cookie.",
+        "operationId": "linkedin_callback",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "State"
+            }
+          },
+          {
+            "name": "oauth_state",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Oauth State"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OAuthLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccessTokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token"
+        ],
+        "title": "AccessTokenResponse"
+      },
+      "AppStatus": {
+        "type": "string",
+        "enum": [
+          "applied",
+          "interview",
+          "offer",
+          "rejected"
+        ],
+        "title": "AppStatus"
+      },
+      "ApplicationCreate": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Role"
+          },
+          "company": {
+            "$ref": "#/components/schemas/CompanyCreate"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AppStatus",
+            "default": "applied"
+          },
+          "work_type": {
+            "$ref": "#/components/schemas/WorkType",
+            "default": "full_time"
+          },
+          "work_location": {
+            "$ref": "#/components/schemas/WorkLocation",
+            "default": "on_site"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "application_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Url"
+          },
+          "interview_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interview Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "company"
+        ],
+        "title": "ApplicationCreate"
+      },
+      "ApplicationOrderBy": {
+        "type": "string",
+        "enum": [
+          "time_create",
+          "time_update"
+        ],
+        "title": "ApplicationOrderBy"
+      },
+      "ApplicationRead": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Role"
+          },
+          "company_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Company Id"
+          },
+          "user_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "User Id"
+          },
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AppStatus"
+          },
+          "work_type": {
+            "$ref": "#/components/schemas/WorkType"
+          },
+          "work_location": {
+            "$ref": "#/components/schemas/WorkLocation"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "application_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Url"
+          },
+          "time_create": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time Create"
+          },
+          "time_update": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time Update"
+          },
+          "interview_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interview Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "company_id",
+          "user_id",
+          "id",
+          "status",
+          "work_type",
+          "work_location",
+          "time_create",
+          "time_update"
+        ],
+        "title": "ApplicationRead"
+      },
+      "ApplicationReadWithCompany": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Role"
+          },
+          "company_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Company Id"
+          },
+          "user_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "User Id"
+          },
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AppStatus"
+          },
+          "work_type": {
+            "$ref": "#/components/schemas/WorkType"
+          },
+          "work_location": {
+            "$ref": "#/components/schemas/WorkLocation"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "application_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Url"
+          },
+          "time_create": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time Create"
+          },
+          "time_update": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time Update"
+          },
+          "interview_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interview Date"
+          },
+          "company": {
+            "$ref": "#/components/schemas/CompanyRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "company_id",
+          "user_id",
+          "id",
+          "status",
+          "work_type",
+          "work_location",
+          "time_create",
+          "time_update",
+          "company"
+        ],
+        "title": "ApplicationReadWithCompany"
+      },
+      "ApplicationUpdate": {
+        "properties": {
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "work_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "application_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Url"
+          },
+          "interview_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interview Date"
+          }
+        },
+        "type": "object",
+        "title": "ApplicationUpdate"
+      },
+      "CompanyCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CompanyCreate"
+      },
+      "CompanyOrderBy": {
+        "type": "string",
+        "enum": [
+          "name"
+        ],
+        "title": "CompanyOrderBy"
+      },
+      "CompanyRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CompanyRead"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MessageResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "MessageResponse"
+      },
+      "OAuthAuthorizeResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url",
+            "description": "URL to redirect user to for OAuth authorization"
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "description": "CSRF protection state token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "state"
+        ],
+        "title": "OAuthAuthorizeResponse",
+        "description": "OAuth authorization URL response"
+      },
+      "OAuthLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token",
+            "description": "JWT access token"
+          },
+          "token_type": {
+            "type": "string",
+            "const": "bearer",
+            "title": "Token Type",
+            "description": "Token type",
+            "default": "bearer"
+          },
+          "is_new_user": {
+            "type": "boolean",
+            "title": "Is New User",
+            "description": "Whether this is a new user registration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "is_new_user"
+        ],
+        "title": "OAuthLoginResponse",
+        "description": "OAuth login/signup response with JWT tokens"
+      },
+      "PaginatedResponse_ApplicationReadWithCompany_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ApplicationReadWithCompany"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "has_more"
+        ],
+        "title": "PaginatedResponse[ApplicationReadWithCompany]"
+      },
+      "UserChangePassword": {
+        "properties": {
+          "old_password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "Old Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          },
+          "new_password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "New Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          },
+          "confirm_new_password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "Confirm New Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          }
+        },
+        "type": "object",
+        "required": [
+          "old_password",
+          "new_password",
+          "confirm_new_password"
+        ],
+        "title": "UserChangePassword"
+      },
+      "UserCreate": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "format": "email",
+            "title": "Username",
+            "description": "User's email address"
+          },
+          "password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "UserCreate"
+      },
+      "UserLogin": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "format": "email",
+            "title": "Username",
+            "description": "User's email address"
+          },
+          "password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "UserLogin"
+      },
+      "UserRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "username": {
+            "type": "string",
+            "format": "email",
+            "title": "Username",
+            "description": "User's email address"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "second_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Second Name"
+          },
+          "time_create": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time Create"
+          },
+          "time_update": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Time Update"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "is_password_set": {
+            "type": "boolean",
+            "title": "Is Password Set"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "username",
+          "time_create",
+          "time_update",
+          "is_password_set"
+        ],
+        "title": "UserRead"
+      },
+      "UserSetPassword": {
+        "properties": {
+          "new_password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "New Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          },
+          "confirm_new_password": {
+            "type": "string",
+            "pattern": "^(?=.*[A-Z])(?=.*\\d).{8,}$",
+            "title": "Confirm New Password",
+            "description": "Password must be 8 characters long, contain at least one uppercase letter and one number."
+          }
+        },
+        "type": "object",
+        "required": [
+          "new_password",
+          "confirm_new_password"
+        ],
+        "title": "UserSetPassword",
+        "description": "For OAuth users who want to set a password for the first time"
+      },
+      "UserUpdate": {
+        "properties": {
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "second_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Second Name"
+          }
+        },
+        "type": "object",
+        "title": "UserUpdate"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WorkLocation": {
+        "type": "string",
+        "enum": [
+          "on_site",
+          "remote",
+          "hybrid"
+        ],
+        "title": "WorkLocation"
+      },
+      "WorkType": {
+        "type": "string",
+        "enum": [
+          "full_time",
+          "part_time",
+          "internship",
+          "contract",
+          "other"
+        ],
+        "title": "WorkType"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "auth/login"
+          }
+        }
+      }
+    }
+  }
+}
