@@ -1,18 +1,13 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
 set -e # Finish script if any error occurs
 set -x # Allow to print command into console before a command executes
 
-# Generate OpenAPI schema from running backend application code
+# Generate OpenAPI schema from backend application code (no running server needed)
 cd backend
-uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi()))" > ../openapi.json
+uv run python -c "import app.main; import json; print(json.dumps(app.main.app.openapi(), indent=2))" > ../frontend/openapi.json
 cd ..
 
-# Move schema to frontend for client generation
-mv openapi.json frontend/
-
+# Generate TypeScript client from the schema
 cd frontend
 npm run generate-client
-
-# Clean up generated schema file (client lives in src/shared/api via config)
-rm openapi.json

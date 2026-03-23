@@ -1,47 +1,77 @@
 name: Deploy Frontend
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/cd-frontend.yml"
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
 
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 2
+
+      - name: Check for frontend changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -qE '^frontend/|^\.github/workflows/cd-frontend\.yml'; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Configure AWS credentials
+        if: steps.changes.outputs.deploy == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Download OpenAPI schema from deployed backend
-        run: |
-          curl -f -sS ${{ vars.API_URL }}/openapi.json -o frontend/openapi.json
+      - name: Set up Node.js
+        if: steps.changes.outputs.deploy == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.changes.outputs.deploy == 'true'
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Generate API client
+        if: steps.changes.outputs.deploy == 'true'
+        working-directory: ./frontend
+        run: npm run generate-client
 
       - name: Build React frontend
-        id: build-frontend
+        if: steps.changes.outputs.deploy == 'true'
+        working-directory: ./frontend
         env:
           VITE_API_URL: ${{ vars.API_URL }}
-        working-directory: ./frontend
-        run: |
-          npm ci
-          npm run generate-client
-          npm run build
+        run: npm run build
 
       - name: Sync frontend build to S3
+        if: steps.changes.outputs.deploy == 'true'
         working-directory: ./frontend
         run: |
           aws s3 sync dist/ s3://${{ secrets.S3_BUCKET_NAME }} --delete
 
       - name: Invalidate CloudFront cache
+        if: steps.changes.outputs.deploy == 'true'
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DIST_ID }} \
