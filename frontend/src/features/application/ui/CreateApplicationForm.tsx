@@ -46,7 +46,13 @@ const createApplicationFormSchema = z.object({
 type InputT = z.input<typeof createApplicationFormSchema>
 type OutputT = z.output<typeof createApplicationFormSchema>
 
-export function CreateApplicationForm() {
+interface CreateApplicationFormProps {
+  onSuccess?: () => void
+}
+
+export function CreateApplicationForm({
+  onSuccess,
+}: CreateApplicationFormProps) {
   const {
     control,
     handleSubmit,
@@ -68,9 +74,9 @@ export function CreateApplicationForm() {
     applicationCreateOptions()
   )
   const onSubmit: SubmitHandler<OutputT> = (data, event) => {
+    console.log(data)
     event?.preventDefault()
-    const payload = createApplicationFormSchema.parse(data)
-    createApp(payload)
+    createApp(data, { onSuccess })
   }
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
