@@ -15,7 +15,11 @@ export default defineConfig({
       generatedRouteTree: './src/app/routeTree.gen.ts',
       routesDirectory: './src/app/routes',
     }),
-    react(),
+    react({
+      babel: {
+        plugins: ['babel-plugin-react-compiler'],
+      },
+    }),
     visualizer({
       filename: 'stats.html',
       template: 'treemap',
