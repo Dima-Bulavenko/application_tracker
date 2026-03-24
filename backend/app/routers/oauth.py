@@ -125,9 +125,10 @@ async def google_callback(
         exception.status_code = status.HTTP_409_CONFLICT
         raise exception from e
     except OAuthAccountAlreadyLinkedToProviderError as e:
-        exception.detail = str(e)
-        exception.status_code = status.HTTP_409_CONFLICT
-        raise exception from e
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": str(e), "error_code": "ACCOUNT_LINKED_TO_PROVIDER", "provider": e.provider},
+        ) from e
     except OAuthError as e:
         exception.detail = str(e)
         raise exception from e
@@ -208,6 +209,9 @@ async def linkedin_callback(
     except OAuthAccountAlreadyLinkedError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except OAuthAccountAlreadyLinkedToProviderError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": str(e), "error_code": "ACCOUNT_LINKED_TO_PROVIDER", "provider": e.provider},
+        ) from e
     except OAuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

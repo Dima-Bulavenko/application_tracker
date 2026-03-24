@@ -7,3 +7,8 @@ class MessageResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     detail: str
+
+
+class OAuthErrorResponse(ErrorResponse):
+    error_code: str
+    provider: str

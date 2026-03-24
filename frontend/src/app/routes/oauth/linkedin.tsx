@@ -1,4 +1,5 @@
 import { createFileRoute, Navigate } from '@tanstack/react-router'
+import { AxiosError } from 'axios'
 import { zLinkedinCallbackData } from 'shared/api/gen/zod.gen'
 import LinkedInAuthorizationButton from 'shared/ui/LinkedInAuthorizationButton'
 import OAuthError from 'shared/ui/OAuthError'
@@ -22,7 +23,21 @@ function RouteComponent() {
   return <Navigate to={'/dashboard'} replace={true} />
 }
 
-function ErrorRouteComponent() {
+function ErrorRouteComponent({ error }: { error: Error }) {
+  if (
+    error instanceof AxiosError &&
+    error.response?.data?.detail?.error_code === 'ACCOUNT_LINKED_TO_PROVIDER'
+  ) {
+    const { message, provider } = error.response.data.detail
+    return (
+      <OAuthError
+        authButton={<LinkedInAuthorizationButton action='sign-in' />}
+        errorMessage={message}
+        provider={provider}
+      />
+    )
+  }
+
   return (
     <OAuthError authButton={<LinkedInAuthorizationButton action='sign-in' />} />
   )
