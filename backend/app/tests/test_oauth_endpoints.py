@@ -153,7 +153,7 @@ class TestGoogleAuthorizeEndpoint:
 
         # Should contain redirect_uri parameter pointing to OAuth endpoint
         assert "redirect_uri=" in auth_url
-        assert "/oauth/google" in auth_url
+        assert "%2Foauth%2Fgoogle" in auth_url
 
     async def test_authorization_url_includes_code_challenge_parameters(self, client: AsyncClient):
         """Test that authorization URL includes PKCE code challenge parameters"""
@@ -738,7 +738,7 @@ class TestLinkedInAuthorizeEndpoint:
         set_cookie_header = response.headers.get("set-cookie", "")
         assert "oauth_state=" in set_cookie_header
         assert "HttpOnly" in set_cookie_header
-        assert "SameSite=none" in set_cookie_header or "samesite=none" in set_cookie_header.lower()
+        assert "SameSite=strict" in set_cookie_header or "samesite=strict" in set_cookie_header.lower()
         assert "Max-Age=600" in set_cookie_header
 
     async def test_state_token_is_unique_per_request(self, client: AsyncClient):
@@ -832,7 +832,7 @@ class TestLinkedInAuthorizeEndpoint:
 
         # Should contain redirect_uri parameter pointing to OAuth endpoint
         assert "redirect_uri=" in auth_url
-        assert "/oauth/linkedin" in auth_url
+        assert "%2Foauth%2Flinkedin" in auth_url
 
 
 class TestLinkedInCallbackEndpoint:
@@ -933,14 +933,13 @@ class TestLinkedInCallbackEndpoint:
         # Check refresh token cookie is set
         assert "refresh" in response.cookies
 
-    async def test_missing_state_cookie_returns_400(self, client: AsyncClient):
-        """Test that missing oauth_state cookie returns 400 Bad Request"""
+    async def test_missing_state_cookie_returns_422(self, client: AsyncClient):
+        """Test that missing oauth_state cookie returns 422 Bad Request"""
         # Act: Call callback without state cookie
         response = await client.get("/auth/oauth/linkedin/callback?code=test_code&state=test_state")
 
         # Assert
-        assert response.status_code == 400
-        assert response.json()["detail"] == "Missing state cookie"
+        assert response.status_code == 422
 
     async def test_state_mismatch_returns_400(self, client: AsyncClient):
         """Test that state mismatch returns 400 Bad Request (CSRF protection)"""

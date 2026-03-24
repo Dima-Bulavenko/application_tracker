@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 import httpx
 
 from app import GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OAUTH_REDIRECT_URI
@@ -37,8 +39,7 @@ class GoogleOAuthProvider(IOAuthProvider):
             "code_challenge": self.code_challenge,
             "code_challenge_method": self.code_challenge_method,
         }
-        query_string = "&".join([f"{key}={value}" for key, value in params.items()])
-        return f"{self.AUTHORIZATION_URL}?{query_string}"
+        return f"{self.AUTHORIZATION_URL}?{urlencode(params)}"
 
     async def exchange_code_for_token(self, code: str) -> str:
         """Exchange authorization code for access token"""

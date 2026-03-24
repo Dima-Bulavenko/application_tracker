@@ -149,7 +149,7 @@ async def linkedin_authorize(response: Response) -> OAuthAuthorizeResponse:
         value=state,
         httponly=True,
         secure=True,
-        samesite="none",
+        samesite="strict",
         max_age=600,
     )
 
@@ -162,7 +162,7 @@ async def linkedin_callback(
     state: str,
     response: Response,
     oauth_service: OAuthServiceDep,
-    oauth_state_cookie: str | None = Cookie(None, alias="oauth_state"),
+    oauth_state_cookie: Annotated[str, Cookie(alias="oauth_state")],
 ) -> OAuthLoginResponse:
     """Handle LinkedIn OAuth callback
 
@@ -177,12 +177,6 @@ async def linkedin_callback(
     """
     response.delete_cookie(key="oauth_state")
     response.delete_cookie(key="oauth_code_verifier")
-
-    if not oauth_state_cookie:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing state cookie",
-        )
 
     if state != oauth_state_cookie:
         raise HTTPException(

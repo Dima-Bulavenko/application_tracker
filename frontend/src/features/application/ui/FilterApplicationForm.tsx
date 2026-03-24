@@ -236,7 +236,6 @@ export function FilterApplicationForm({
             navigate({
               search: (prev) => ({ ...prev, filter: filter, page: 1 }),
             })
-            console.log('should not be executed')
             onApplySuccess?.()
           })}
           type='button'

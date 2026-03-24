@@ -73,11 +73,13 @@ class OAuthStateProvider:
     """Generate state tokens for CSRF protection"""
 
     def __init__(self) -> None:
-        self.__state = secrets.token_urlsafe(32)
+        self.__state: str | None = None
 
     @property
     def state(self) -> str:
-        """Get state token for CSRF protection"""
+        """Get or generate state token for CSRF protection"""
+        if self.__state is None:
+            self.__state = secrets.token_urlsafe(32)
         return self.__state
 
 

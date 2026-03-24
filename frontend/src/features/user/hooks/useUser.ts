@@ -5,25 +5,35 @@ import {
   login,
   logout,
   type UserLogin,
+  type UserRead,
 } from 'shared/api/gen'
 import { client } from 'shared/api/gen/client.gen'
 import { useAuth } from 'shared/hooks/useAuth'
+
+type SetUser = (user: UserRead | null) => void
+
+async function authenticateAndSetUser(
+  accessToken: string,
+  setUser: SetUser
+): Promise<void> {
+  client.setConfig({ auth: accessToken })
+  try {
+    const { data: user } = await getCurrentUser<true>()
+    setUser(user)
+  } catch (err) {
+    client.setConfig({ auth: undefined })
+    setUser(null)
+    throw err
+  }
+}
 
 export function useLogin() {
   const { setUser } = useAuth()
 
   return async (data: UserLogin) => {
     return login({ body: data }).then(async ({ data }) => {
-      client.setConfig({ auth: data.access_token })
-      try {
-        const { data: user } = await getCurrentUser<true>()
-        setUser(user)
-        return data
-      } catch (err) {
-        client.setConfig({ auth: undefined })
-        setUser(null)
-        throw err
-      }
+      await authenticateAndSetUser(data.access_token, setUser)
+      return data
     })
   }
 }
@@ -43,16 +53,8 @@ export function useLoginWithGoogle() {
 
   return async (code: string, state: string) => {
     return googleCallback({ query: { code, state } }).then(async ({ data }) => {
-      client.setConfig({ auth: data.access_token })
-      try {
-        const { data: user } = await getCurrentUser<true>()
-        setUser(user)
-        return data
-      } catch (err) {
-        client.setConfig({ auth: undefined })
-        setUser(null)
-        throw err
-      }
+      await authenticateAndSetUser(data.access_token, setUser)
+      return data
     })
   }
 }
@@ -63,16 +65,8 @@ export function useLoginWithLinkedIn() {
   return async (code: string, state: string) => {
     return linkedinCallback({ query: { code, state } }).then(
       async ({ data }) => {
-        client.setConfig({ auth: data.access_token })
-        try {
-          const { data: user } = await getCurrentUser<true>()
-          setUser(user)
-          return data
-        } catch (err) {
-          client.setConfig({ auth: undefined })
-          setUser(null)
-          throw err
-        }
+        await authenticateAndSetUser(data.access_token, setUser)
+        return data
       }
     )
   }

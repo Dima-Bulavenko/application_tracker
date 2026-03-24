@@ -74,7 +74,6 @@ export function CreateApplicationForm({
     applicationCreateOptions()
   )
   const onSubmit: SubmitHandler<OutputT> = (data, event) => {
-    console.log(data)
     event?.preventDefault()
     createApp(data, { onSuccess })
   }
