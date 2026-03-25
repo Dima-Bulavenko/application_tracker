@@ -12,6 +12,11 @@ import {
   applicationKeys,
   userCompaniesOptions,
 } from 'entities/application/api/queryOptions'
+import {
+  type ApplicationFilter,
+  defaultFilters,
+  zApplicationFilterSchema,
+} from 'features/application/model/filterSchema'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type Control, useController, useForm } from 'react-hook-form'
@@ -27,21 +32,6 @@ import {
   SelectInput,
   SelectMultipleInput,
 } from 'shared/ui/SelectInput'
-import z from 'zod'
-
-export const zApplicationFilterSchema = z.object({
-  order_by: zApplicationOrderBy,
-  order_direction: z.enum(['asc', 'desc']),
-  status: z.array(zAppStatus),
-  work_type: z.array(zWorkType),
-  work_location: z.array(zWorkLocation),
-  role_name: z.string().max(40, 'Role name must be at most 40 characters'),
-  company_name: z
-    .string()
-    .max(40, 'Company name must be at most 40 characters'),
-})
-
-type ApplicationFilter = z.infer<typeof zApplicationFilterSchema>
 
 type FilterFormParam = {
   control: Control<ApplicationFilter>
@@ -162,16 +152,6 @@ function CompanyNameFilter({ control }: FilterFormParam) {
       />
     </FormField>
   )
-}
-
-export const defaultFilters: ApplicationFilter = {
-  company_name: '',
-  status: [],
-  work_location: [],
-  work_type: [],
-  order_by: 'time_create',
-  order_direction: 'desc',
-  role_name: '',
 }
 
 type FilterApplicationFormProps = {
