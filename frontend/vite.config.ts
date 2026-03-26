@@ -49,6 +49,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
+          zod: ['zod'],
           radix: [
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',
