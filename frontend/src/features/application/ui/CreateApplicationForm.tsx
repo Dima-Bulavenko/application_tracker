@@ -53,29 +53,36 @@ interface CreateApplicationFormProps {
 export function CreateApplicationForm({
   onSuccess,
 }: CreateApplicationFormProps) {
+  const defaultValues: InputT = {
+    application_url: '',
+    company: { name: '' },
+    note: '',
+    role: '',
+    status: 'applied',
+    work_type: 'full_time',
+    work_location: 'on_site',
+    interview_date: '',
+  }
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<InputT, unknown, OutputT>({
     resolver: zodResolver(createApplicationFormSchema),
-    defaultValues: {
-      application_url: '',
-      company: { name: '' },
-      note: '',
-      role: '',
-      status: 'applied',
-      work_type: 'full_time',
-      work_location: 'on_site',
-      interview_date: '',
-    },
+    defaultValues,
   })
   const { mutate: createApp, isPending } = useMutation(
     applicationCreateOptions()
   )
   const onSubmit: SubmitHandler<OutputT> = (data, event) => {
     event?.preventDefault()
-    createApp(data, { onSuccess })
+    createApp(data, {
+      onSuccess: () => {
+        reset(defaultValues)
+        onSuccess?.()
+      },
+    })
   }
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>
