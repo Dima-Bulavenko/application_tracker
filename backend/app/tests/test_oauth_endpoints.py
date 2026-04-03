@@ -678,9 +678,12 @@ class TestGoogleCallbackEndpoint:
         # Assert
         assert response.status_code == 409
         response_data = response.json()
-        assert "This account was created with Linkedin. Please use Linkedin to sign in." in response_data["detail"]
-        assert response_data["error_code"] == "ACCOUNT_LINKED_TO_PROVIDER"
-        assert response_data["provider"] == "linkedin"
+        assert (
+            "This account was created with Linkedin. Please use Linkedin to sign in."
+            in response_data["detail"]["message"]
+        )
+        assert response_data["detail"]["error_code"] == "ACCOUNT_LINKED_TO_PROVIDER"
+        assert response_data["detail"]["provider"] == "linkedin"
 
     async def test_missing_code_verifier_cookie(self, client: AsyncClient):
         """Test that missing oauth_code_verifier cookie returns 422 Unprocessable Entity"""
@@ -1308,6 +1311,8 @@ class TestLinkedInCallbackEndpoint:
         # Assert
         assert response.status_code == 409
         response_data = response.json()
-        assert "This account was created with Google. Please use Google to sign in." in response_data["detail"]
-        assert response_data["error_code"] == "ACCOUNT_LINKED_TO_PROVIDER"
-        assert response_data["provider"] == "google"
+        assert (
+            "This account was created with Google. Please use Google to sign in." in response_data["detail"]["message"]
+        )
+        assert response_data["detail"]["error_code"] == "ACCOUNT_LINKED_TO_PROVIDER"
+        assert response_data["detail"]["provider"] == "google"
