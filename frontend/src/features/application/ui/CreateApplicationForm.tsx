@@ -14,6 +14,7 @@ import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 const nullableTextSchema = z.preprocess((value: string) => {
@@ -81,6 +82,9 @@ export function CreateApplicationForm({
       onSuccess: () => {
         reset(defaultValues)
         onSuccess?.()
+        toast.success('Application created successfully', {
+          position: 'bottom-left',
+        })
       },
     })
   }

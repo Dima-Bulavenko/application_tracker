@@ -25,6 +25,7 @@ import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import type { ApplicationReadWithCompany as ApplicationRead } from 'shared/api/gen/types.gen'
 import { formatDate } from 'shared/lib/date'
+import { toast } from 'sonner'
 
 type Props = { application: ApplicationRead }
 
@@ -66,7 +67,11 @@ export function ApplicationCard({ application }: Props) {
             </DropdownMenuItem>
             <DropdownMenuItem
               variant='destructive'
-              onClick={() => deleteApp()}
+              onClick={() =>
+                deleteApp(undefined, {
+                  onSuccess: () => toast.success('Application deleted'),
+                })
+              }
               disabled={isPending}
             >
               <Trash2 className='mr-2 size-4' />

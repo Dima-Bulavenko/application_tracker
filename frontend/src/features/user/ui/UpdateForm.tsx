@@ -15,6 +15,7 @@ import { FormError } from 'shared/ui/FormError'
 import { FormField } from 'shared/ui/FormField'
 import SubmitButton from 'shared/ui/SubmitButton'
 import { TextInput } from 'shared/ui/TextInput'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 const nullableTextSchema = z.preprocess((value: string) => {
@@ -106,6 +107,7 @@ export function UpdateForm({ onSuccess }: UpdateFormProps = {}) {
     const dirtyData = getDirtyValues(dirtyFields, data)
     await updateUser<true>({ body: dirtyData }).then((res) => {
       setUser(res.data)
+      toast.success('Profile updated successfully')
       onSuccess?.()
     })
   }

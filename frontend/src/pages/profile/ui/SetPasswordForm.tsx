@@ -6,6 +6,7 @@ import { zUserSetPassword } from 'shared/api/gen/zod.gen'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { toast } from 'sonner'
 import z from 'zod'
 
 type FormType = z.infer<typeof zUserSetPassword>
@@ -51,7 +52,10 @@ export function SetPasswordForm({ onSuccess }: SetPasswordForm) {
       body: data,
       throwOnError: false,
     })
-    if (response.status === 200) return onSuccess?.()
+    if (response.status === 200) {
+      toast.success('Password set successfully')
+      return onSuccess?.()
+    }
     if (response.status === 422 && Array.isArray(response.error?.detail)) {
       response.error.detail.forEach((err) => {
         const fieldName = err.loc[err.loc.length - 1]
