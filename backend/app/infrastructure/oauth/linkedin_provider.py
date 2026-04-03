@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 import httpx
 
 from app import LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, OAUTH_REDIRECT_URI
@@ -31,8 +33,7 @@ class LinkedInOAuthProvider(IOAuthProvider):
             "scope": "openid profile email",
             "state": self.state,
         }
-        query_string = "&".join([f"{key}={value}" for key, value in params.items()])
-        return f"{self.AUTHORIZATION_URL}?{query_string}"
+        return f"{self.AUTHORIZATION_URL}?{urlencode(params)}"
 
     async def exchange_code_for_token(self, code: str) -> str:
         """Exchange authorization code for access token"""

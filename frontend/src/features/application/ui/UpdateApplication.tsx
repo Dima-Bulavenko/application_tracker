@@ -15,6 +15,8 @@ import { SuspenseFallback } from 'shared/ui/SuspenseFallback'
 
 type UpdateApplicationProps = {
   application: ApplicationReadWithCompany
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 const { UpdateApplicationForm } = lazyImport(
@@ -22,17 +24,33 @@ const { UpdateApplicationForm } = lazyImport(
   'UpdateApplicationForm'
 )
 
-export function UpdateApplication({ application }: UpdateApplicationProps) {
-  const [open, setOpen] = useState(false)
+export function UpdateApplication({
+  application,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: UpdateApplicationProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = (value: boolean) => {
+    if (isControlled) {
+      controlledOnOpenChange?.(value)
+    } else {
+      setInternalOpen(value)
+    }
+  }
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>
-        <Pencil className='size-4' />
-        Edit
-      </Button>
+      {!isControlled && (
+        <Button onClick={() => setOpen(true)}>
+          <Pencil className='size-4' />
+          Edit
+        </Button>
+      )}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className='w-[85vw] overflow-y-auto sm:max-w-[600px]'>
+        <SheetContent className='w-[85vw] overflow-y-auto sm:max-w-150'>
           <SheetHeader>
             <SheetTitle>Update Application</SheetTitle>
             <SheetDescription>

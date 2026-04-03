@@ -6,6 +6,7 @@ import { zUserChangePassword } from 'shared/api/gen/zod.gen'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { toast } from 'sonner'
 import z from 'zod'
 
 type FormType = z.infer<typeof zUserChangePassword>
@@ -53,7 +54,10 @@ export function ChangePasswordForm({ onSuccess }: ChangePasswordForm) {
       body: data,
       throwOnError: false,
     })
-    if (response.status === 200) return onSuccess?.()
+    if (response.status === 200) {
+      toast.success('Password changed successfully')
+      return onSuccess?.()
+    }
     if (response.status === 400)
       return setError('old_password', {
         message: 'Current password is incorrect',

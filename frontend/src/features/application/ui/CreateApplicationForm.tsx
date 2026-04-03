@@ -14,6 +14,7 @@ import { zAppStatus, zWorkLocation, zWorkType } from 'shared/api/gen/zod.gen'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 const nullableTextSchema = z.preprocess((value: string) => {
@@ -46,31 +47,46 @@ const createApplicationFormSchema = z.object({
 type InputT = z.input<typeof createApplicationFormSchema>
 type OutputT = z.output<typeof createApplicationFormSchema>
 
-export function CreateApplicationForm() {
+interface CreateApplicationFormProps {
+  onSuccess?: () => void
+}
+
+export function CreateApplicationForm({
+  onSuccess,
+}: CreateApplicationFormProps) {
+  const defaultValues: InputT = {
+    application_url: '',
+    company: { name: '' },
+    note: '',
+    role: '',
+    status: 'applied',
+    work_type: 'full_time',
+    work_location: 'on_site',
+    interview_date: '',
+  }
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<InputT, unknown, OutputT>({
     resolver: zodResolver(createApplicationFormSchema),
-    defaultValues: {
-      application_url: '',
-      company: { name: '' },
-      note: '',
-      role: '',
-      status: 'applied',
-      work_type: 'full_time',
-      work_location: 'on_site',
-      interview_date: '',
-    },
+    defaultValues,
   })
   const { mutate: createApp, isPending } = useMutation(
     applicationCreateOptions()
   )
   const onSubmit: SubmitHandler<OutputT> = (data, event) => {
     event?.preventDefault()
-    const payload = createApplicationFormSchema.parse(data)
-    createApp(payload)
+    createApp(data, {
+      onSuccess: () => {
+        reset(defaultValues)
+        onSuccess?.()
+        toast.success('Application created successfully', {
+          position: 'bottom-left',
+        })
+      },
+    })
   }
   return (
     <Form onSubmit={handleSubmit(onSubmit)}>

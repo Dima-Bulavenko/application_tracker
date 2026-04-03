@@ -17,6 +17,7 @@ import { getDirtyValues } from 'shared/api/get_dirty_values'
 import { Form } from 'shared/ui/Form'
 import { FormError } from 'shared/ui/FormError'
 import SubmitButton from 'shared/ui/SubmitButton'
+import { toast } from 'sonner'
 import { z } from 'zod'
 
 const nullableTextSchema = z.preprocess((value: string) => {
@@ -75,7 +76,11 @@ export function UpdateApplicationForm(appData: ApplicationReadWithCompany) {
     event?.preventDefault()
     const newData = getDirtyValues(dirtyFields, data)
     if (newData) {
-      updateApp(newData)
+      updateApp(newData, {
+        onSuccess: () => {
+          toast.success('Application updated successfully')
+        },
+      })
     }
   }
   return (

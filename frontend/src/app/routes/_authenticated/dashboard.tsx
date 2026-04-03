@@ -3,7 +3,7 @@ import { applicationsOptions } from 'entities/application/api/queryOptions'
 import {
   defaultFilters,
   zApplicationFilterSchema,
-} from 'features/application/ui/FilterApplicationForm'
+} from 'features/application/model/filterSchema'
 import { DashboardPage } from 'pages/dashboard/ui/DashboardPage'
 import { getPaginationPrams } from 'shared/lib/getPaginationPrams'
 import z from 'zod'

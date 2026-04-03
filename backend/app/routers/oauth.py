@@ -125,9 +125,10 @@ async def google_callback(
         exception.status_code = status.HTTP_409_CONFLICT
         raise exception from e
     except OAuthAccountAlreadyLinkedToProviderError as e:
-        exception.detail = str(e)
-        exception.status_code = status.HTTP_409_CONFLICT
-        raise exception from e
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": str(e), "error_code": "ACCOUNT_LINKED_TO_PROVIDER", "provider": e.provider},
+        ) from e
     except OAuthError as e:
         exception.detail = str(e)
         raise exception from e
@@ -149,7 +150,7 @@ async def linkedin_authorize(response: Response) -> OAuthAuthorizeResponse:
         value=state,
         httponly=True,
         secure=True,
-        samesite="none",
+        samesite="strict",
         max_age=600,
     )
 
@@ -162,7 +163,7 @@ async def linkedin_callback(
     state: str,
     response: Response,
     oauth_service: OAuthServiceDep,
-    oauth_state_cookie: str | None = Cookie(None, alias="oauth_state"),
+    oauth_state_cookie: Annotated[str, Cookie(alias="oauth_state")],
 ) -> OAuthLoginResponse:
     """Handle LinkedIn OAuth callback
 
@@ -177,12 +178,6 @@ async def linkedin_callback(
     """
     response.delete_cookie(key="oauth_state")
     response.delete_cookie(key="oauth_code_verifier")
-
-    if not oauth_state_cookie:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing state cookie",
-        )
 
     if state != oauth_state_cookie:
         raise HTTPException(
@@ -214,6 +209,9 @@ async def linkedin_callback(
     except OAuthAccountAlreadyLinkedError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
     except OAuthAccountAlreadyLinkedToProviderError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": str(e), "error_code": "ACCOUNT_LINKED_TO_PROVIDER", "provider": e.provider},
+        ) from e
     except OAuthError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e

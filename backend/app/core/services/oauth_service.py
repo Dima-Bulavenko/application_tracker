@@ -74,9 +74,11 @@ class OAuthService:
                 return tokens, False
             else:
                 # User exists with different OAuth provider
-                provider = existing_email_user.oauth_provider.value.capitalize()
+                provider = existing_email_user.oauth_provider.value
                 raise OAuthAccountAlreadyLinkedToProviderError(
-                    f"This account was created with {provider}. Please use {provider} to sign in."
+                    f"This account was created with {provider.capitalize()}."
+                    f" Please use {provider.capitalize()} to sign in.",
+                    provider=provider,
                 )
 
         # Create new OAuth user

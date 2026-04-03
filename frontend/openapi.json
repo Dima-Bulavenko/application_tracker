@@ -1360,16 +1360,9 @@
           {
             "name": "oauth_state",
             "in": "cookie",
-            "required": false,
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
               "title": "Oauth State"
             }
           }

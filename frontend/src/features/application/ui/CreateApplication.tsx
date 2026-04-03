@@ -39,7 +39,7 @@ export function CreateApplication() {
           </SheetHeader>
           <Separator />
           <Suspense fallback={<SuspenseFallback />}>
-            {open && <CreateApplicationForm />}
+            <CreateApplicationForm onSuccess={() => setOpen(false)} />
           </Suspense>
         </SheetContent>
       </Sheet>

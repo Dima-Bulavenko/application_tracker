@@ -13,6 +13,7 @@ import {
 import { useEffect } from 'react'
 import { useAuth } from 'shared/hooks/useAuth'
 import { AuthProvider } from './AuthProvider'
+import { Toaster } from './components/ui/sonner'
 import { router } from './router'
 
 const queryClient = new QueryClient({
@@ -52,6 +53,7 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <InnerApp />
+        <Toaster position='bottom-left' />
       </AuthProvider>
     </QueryClientProvider>
   )

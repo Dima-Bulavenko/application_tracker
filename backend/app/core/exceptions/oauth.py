@@ -34,4 +34,6 @@ class OAuthAccountAlreadyLinkedError(OAuthError):
 class OAuthAccountAlreadyLinkedToProviderError(OAuthError):
     """Exception raised when OAuth account is already linked to a different provider"""
 
-    pass
+    def __init__(self, message: str, provider: str) -> None:
+        super().__init__(message)
+        self.provider = provider
